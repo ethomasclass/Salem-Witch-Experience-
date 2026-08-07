@@ -576,6 +576,45 @@ export function drawAnswer(g, view, s, text, caret) {
   g.textAlign = 'left';
 }
 
+/**
+ * The "you can interact with this" prompt, floating over the player.
+ *
+ * Added because playtesting found the real failure mode: documents are
+ * 16px sheets lying on tables, and standing in front of one looks exactly
+ * like standing in front of nothing. Naming the verb — read, look, talk —
+ * also finally distinguishes the two systems, which no amount of writing in
+ * a README was going to do.
+ */
+export function drawPrompt(g, s, sx, sy, verb) {
+  const label = `Z · ${verb}`;
+  g.font = `700 ${7.5 * s}px system-ui, -apple-system, sans-serif`;
+  const w = g.measureText(label).width + 12 * s;
+  const h = 13 * s;
+  const bob = Math.round(Math.sin(Date.now() / 320) * 1.5) * s;
+  const x = Math.round(sx - w / 2);
+  // Clear of the tile in front, so the prompt never covers the thing it is
+  // pointing at.
+  const y = Math.round(sy - h - 17 * s + bob);
+
+  g.fillStyle = 'rgba(14,16,20,0.86)';
+  g.fillRect(x, y, w, h);
+  g.fillStyle = '#e8c46a';
+  g.fillRect(x, y, w, 1.5 * s);
+  // Little tail pointing down at the player.
+  g.beginPath();
+  g.moveTo(x + w / 2 - 3 * s, y + h);
+  g.lineTo(x + w / 2 + 3 * s, y + h);
+  g.lineTo(x + w / 2, y + h + 3 * s);
+  g.closePath();
+  g.fillStyle = 'rgba(14,16,20,0.86)';
+  g.fill();
+
+  g.fillStyle = '#efe6cf';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(label, x + w / 2, y + h / 2);
+}
+
 /** Title screen. */
 export function drawTitle(g, view, s, hasSave, index) {
   g.fillStyle = '#14161a';

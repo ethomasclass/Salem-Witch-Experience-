@@ -1621,14 +1621,29 @@ function buildBars() {
   return s;
 }
 
-/** A loose sheet of paper — where a document can be copied from. */
+/**
+ * A loose sheet of paper — where a document can be copied from.
+ *
+ * Drawn to sit UP off the surface it is on, with a hard drop shadow and a
+ * lifted corner, because the first version was a flat pale rectangle that
+ * disappeared into the table it was lying on and players could not find the
+ * documents at all.
+ */
 function buildPaper() {
-  const s = surface(TS, TS);
+  const s = surface(TS, TS + 4);
   const g = s.g;
-  rect(g, 2, 5, 12, 9, '#ddd4bd');
-  stroke(g, 2, 5, 12, 9, '#9a8f77');
-  for (let i = 0; i < 4; i++) hline(g, 4, 7 + i * 2, 8 - (i % 2) * 2, '#8d8571');
-  px(g, 12, 12, '#6b5540');
+  // Shadow first: this is what separates the sheet from the table top.
+  rect(g, 2, 12, 13, 3, 'rgba(18,16,14,0.45)');
+  // Two sheets, slightly offset, so it reads as a small pile.
+  rect(g, 1, 3, 13, 10, '#b9ad92');
+  rect(g, 2, 2, 13, 10, '#efe6cf');
+  stroke(g, 2, 2, 13, 10, '#6b6250');
+  // Ruled writing.
+  for (let i = 0; i < 4; i++) hline(g, 4, 4 + i * 2, 9 - (i % 2) * 3, '#8d8571');
+  // A wax seal / signature blot, and a turned-up corner.
+  px(g, 12, 9, '#8f3d2b'); px(g, 13, 9, '#8f3d2b'); px(g, 12, 10, '#8f3d2b');
+  rect(g, 12, 2, 3, 3, '#d6cbb0');
+  line(g, 12, 5, 15, 2, '#6b6250');
   return s;
 }
 
@@ -7385,6 +7400,45 @@ function drawAnswer(g, view, s, text, caret) {
   g.textAlign = 'left';
 }
 
+/**
+ * The "you can interact with this" prompt, floating over the player.
+ *
+ * Added because playtesting found the real failure mode: documents are
+ * 16px sheets lying on tables, and standing in front of one looks exactly
+ * like standing in front of nothing. Naming the verb — read, look, talk —
+ * also finally distinguishes the two systems, which no amount of writing in
+ * a README was going to do.
+ */
+function drawPrompt(g, s, sx, sy, verb) {
+  const label = `Z · ${verb}`;
+  g.font = `700 ${7.5 * s}px system-ui, -apple-system, sans-serif`;
+  const w = g.measureText(label).width + 12 * s;
+  const h = 13 * s;
+  const bob = Math.round(Math.sin(Date.now() / 320) * 1.5) * s;
+  const x = Math.round(sx - w / 2);
+  // Clear of the tile in front, so the prompt never covers the thing it is
+  // pointing at.
+  const y = Math.round(sy - h - 17 * s + bob);
+
+  g.fillStyle = 'rgba(14,16,20,0.86)';
+  g.fillRect(x, y, w, h);
+  g.fillStyle = '#e8c46a';
+  g.fillRect(x, y, w, 1.5 * s);
+  // Little tail pointing down at the player.
+  g.beginPath();
+  g.moveTo(x + w / 2 - 3 * s, y + h);
+  g.lineTo(x + w / 2 + 3 * s, y + h);
+  g.lineTo(x + w / 2, y + h + 3 * s);
+  g.closePath();
+  g.fillStyle = 'rgba(14,16,20,0.86)';
+  g.fill();
+
+  g.fillStyle = '#efe6cf';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(label, x + w / 2, y + h / 2);
+}
+
 /** Title screen. */
 function drawTitle(g, view, s, hasSave, index) {
   g.fillStyle = '#14161a';
@@ -7702,6 +7756,27 @@ class Game {
   }
 
   /* ---------------- interaction ---------------- */
+
+  /** The verb for whatever the player is facing, or null. Drives the prompt
+   *  that floats over their head — the single most effective fix found in
+   *  playtesting, because a 16px sheet of paper on a table is invisible. */
+  facingVerb() {
+    const map = this.mapFor(this.player.map);
+    const [dx, dy] = DIR_VEC[this.player.dir];
+    let [fx, fy] = this.facingTile();
+
+    if (map.actors.some((a) => a.tx === fx && a.ty === fy)) return 'talk';
+    if (map.talkThrough.has(`${fx},${fy}`)) {
+      const bx = fx + dx, by = fy + dy;
+      if (map.actors.some((a) => a.tx === bx && a.ty === by)) return 'talk';
+      fx = bx; fy = by;
+    }
+    const spot = interactAt(map, fx, fy);
+    if (!spot) return null;
+    if (spot.doc) return this.state.hasDoc(spot.doc) ? 'read again' : 'read';
+    if (spot.bench || CLUES[spot.id]) return 'look';
+    return null;
+  }
 
   facingTile() {
     const [dx, dy] = DIR_VEC[this.player.dir];
@@ -8024,6 +8099,17 @@ class Game {
     g.fillRect(v.x + 8 * s, v.y + 8 * s, lw, 18 * s);
     g.fillStyle = '#d8d4c8';
     g.fillText(label, v.x + 16 * s, v.y + 13 * s);
+
+    // Interaction prompt, pinned over the player.
+    if (this.mode === 'play') {
+      const verb = this.facingVerb();
+      if (verb) {
+        const z = map.indoor ? 2 : 1;
+        const sx = v.x + (Math.round(this.player.px) - cam.x + TS / 2) * z * s;
+        const sy = v.y + (Math.round(this.player.py) - cam.y - (SPR_H - TS)) * z * s;
+        drawPrompt(g, s, sx, sy, verb);
+      }
+    }
 
     // Objective HUD, above everything except the notebook.
     if (this.mode !== 'notebook') {

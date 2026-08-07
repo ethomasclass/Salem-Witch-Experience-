@@ -905,14 +905,29 @@ export function buildBars() {
   return s;
 }
 
-/** A loose sheet of paper — where a document can be copied from. */
+/**
+ * A loose sheet of paper — where a document can be copied from.
+ *
+ * Drawn to sit UP off the surface it is on, with a hard drop shadow and a
+ * lifted corner, because the first version was a flat pale rectangle that
+ * disappeared into the table it was lying on and players could not find the
+ * documents at all.
+ */
 export function buildPaper() {
-  const s = surface(TS, TS);
+  const s = surface(TS, TS + 4);
   const g = s.g;
-  rect(g, 2, 5, 12, 9, '#ddd4bd');
-  stroke(g, 2, 5, 12, 9, '#9a8f77');
-  for (let i = 0; i < 4; i++) hline(g, 4, 7 + i * 2, 8 - (i % 2) * 2, '#8d8571');
-  px(g, 12, 12, '#6b5540');
+  // Shadow first: this is what separates the sheet from the table top.
+  rect(g, 2, 12, 13, 3, 'rgba(18,16,14,0.45)');
+  // Two sheets, slightly offset, so it reads as a small pile.
+  rect(g, 1, 3, 13, 10, '#b9ad92');
+  rect(g, 2, 2, 13, 10, '#efe6cf');
+  stroke(g, 2, 2, 13, 10, '#6b6250');
+  // Ruled writing.
+  for (let i = 0; i < 4; i++) hline(g, 4, 4 + i * 2, 9 - (i % 2) * 3, '#8d8571');
+  // A wax seal / signature blot, and a turned-up corner.
+  px(g, 12, 9, '#8f3d2b'); px(g, 13, 9, '#8f3d2b'); px(g, 12, 10, '#8f3d2b');
+  rect(g, 12, 2, 3, 3, '#d6cbb0');
+  line(g, 12, 5, 15, 2, '#6b6250');
   return s;
 }
 

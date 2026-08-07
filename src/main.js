@@ -13,7 +13,7 @@ import { TS } from './engine/art-ground.js';
 import { buildActor, buildPortrait, PLAYER_SPEC, SPR_H } from './engine/art-actors.js';
 import {
   dialogueLayout, drawDialogue, drawChoices, drawNotebook, drawTitle, drawToast,
-  drawObjective, drawReader, drawDocTab, drawNotebookTabs, drawAnswer,
+  drawObjective, drawReader, drawDocTab, drawNotebookTabs, drawAnswer, drawPrompt,
 } from './engine/ui.js';
 import { Audio } from './engine/audio.js';
 import { currentStep, progress, STANDING, chapterComplete, remainingIn } from './content/objectives.js';
@@ -275,6 +275,27 @@ class Game {
   }
 
   /* ---------------- interaction ---------------- */
+
+  /** The verb for whatever the player is facing, or null. Drives the prompt
+   *  that floats over their head — the single most effective fix found in
+   *  playtesting, because a 16px sheet of paper on a table is invisible. */
+  facingVerb() {
+    const map = this.mapFor(this.player.map);
+    const [dx, dy] = DIR_VEC[this.player.dir];
+    let [fx, fy] = this.facingTile();
+
+    if (map.actors.some((a) => a.tx === fx && a.ty === fy)) return 'talk';
+    if (map.talkThrough.has(`${fx},${fy}`)) {
+      const bx = fx + dx, by = fy + dy;
+      if (map.actors.some((a) => a.tx === bx && a.ty === by)) return 'talk';
+      fx = bx; fy = by;
+    }
+    const spot = interactAt(map, fx, fy);
+    if (!spot) return null;
+    if (spot.doc) return this.state.hasDoc(spot.doc) ? 'read again' : 'read';
+    if (spot.bench || CLUES[spot.id]) return 'look';
+    return null;
+  }
 
   facingTile() {
     const [dx, dy] = DIR_VEC[this.player.dir];
@@ -597,6 +618,17 @@ class Game {
     g.fillRect(v.x + 8 * s, v.y + 8 * s, lw, 18 * s);
     g.fillStyle = '#d8d4c8';
     g.fillText(label, v.x + 16 * s, v.y + 13 * s);
+
+    // Interaction prompt, pinned over the player.
+    if (this.mode === 'play') {
+      const verb = this.facingVerb();
+      if (verb) {
+        const z = map.indoor ? 2 : 1;
+        const sx = v.x + (Math.round(this.player.px) - cam.x + TS / 2) * z * s;
+        const sy = v.y + (Math.round(this.player.py) - cam.y - (SPR_H - TS)) * z * s;
+        drawPrompt(g, s, sx, sy, verb);
+      }
+    }
 
     // Objective HUD, above everything except the notebook.
     if (this.mode !== 'notebook') {

@@ -20,8 +20,16 @@ full-screen reader opens: original text on the left, plain modern English on
 the right, citation at the bottom. Press **Z** again to copy it into the
 notebook, then **X** to close.
 
-If a normal dialogue box appeared, it is already recorded. If a full screen
-with two columns appeared, press **Z** once more.
+**The game now tells you which is which.** Stand facing anything you can
+interact with and a small yellow prompt appears over your head:
+
+- **`Z · talk`** — a person
+- **`Z · look`** — something you examine. One press and it is recorded.
+- **`Z · read`** — a document. Press Z to open the reader, **Z again to copy**,
+  then X to close.
+- **`Z · read again`** — a document you have already copied.
+
+If no prompt appears, there is nothing in front of you. Turn, or step closer.
 
 **Press N for the notebook, then ← or → to switch tabs:**
 `What I was told` and `What I copied down  n/15`.
