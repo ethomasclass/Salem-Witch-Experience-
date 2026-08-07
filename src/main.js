@@ -60,6 +60,10 @@ class Game {
     this.saved = GameState.load();
     this.resize();
     addEventListener('resize', () => this.resize());
+    // The canvas sits in an aspect-ratio box, so its size can change without
+    // the window changing at all — notably when embedded in a host page that
+    // resizes the frame after load.
+    if (window.ResizeObserver) new ResizeObserver(() => this.resize()).observe(canvas);
   }
 
   /* ---------------- setup ---------------- */

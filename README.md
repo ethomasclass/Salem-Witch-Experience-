@@ -50,18 +50,33 @@ to the September chapter. No portrait mood variants are in use yet.
 
 ## Running it
 
-The game is plain HTML, CSS and ES modules. There is no build step and no
-dependencies.
+### For a classroom — the single file
 
-It **must be served over http** — browsers block ES modules loaded from
-`file://`, so double-clicking `index.html` will not work.
+**[`dist/salem-village-1692.html`](dist/salem-village-1692.html)** is the whole
+game in one self-contained file, about 150 KB. Download it and double-click
+it. No server, no install, no network. Email it, put it on a shared drive, or
+upload it to Canvas or Google Classroom as a file.
+
+That file is checked in deliberately rather than gitignored, so a teacher can
+download one thing from GitHub and have a working game. Rebuild it after any
+change to `src/`:
+
+```sh
+node tools/bundle.mjs
+```
+
+### For editing the source
+
+The game is plain HTML, CSS and ES modules — no build tooling, no
+dependencies. In this form it **must be served over http**, because browsers
+block ES modules loaded from `file://`:
 
 ```sh
 python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
-Any static host works. GitHub Pages is the obvious one for classroom use.
+Any static host works for a shared link. GitHub Pages is the obvious one.
 
 ### Controls
 
@@ -126,6 +141,8 @@ work.
 
 ```
 index.html            page shell, touch controls, export buttons
+tools/bundle.mjs      concatenates the modules into one standalone file
+dist/                 the built single-file game (checked in on purpose)
 src/
   palette.js          every colour in the game, with the reasoning
   main.js             game loop, input handling, mode switching
