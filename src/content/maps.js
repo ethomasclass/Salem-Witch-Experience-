@@ -1,0 +1,350 @@
+// Salem Village and its interiors, March 1692.
+//
+// Geography is compressed but not invented. The meetinghouse sits at the
+// centre with the parsonage close by; Ingersoll's ordinary is a short walk
+// off; the Nurse homestead lies west and the Putnam land east, with the
+// disputed Topsfield boundary north through the woods. Salem Town is five
+// miles south, and the road there is walkable — the design doc is firm that
+// the player should have that distance "in their legs" rather than be told
+// about it.
+//
+// Ground is built with small stamping helpers rather than hand-typed ASCII.
+// Counting columns in a 46-wide string is how ragged maps and mystery
+// collision bugs happen; these helpers cannot produce a ragged grid.
+
+/* ---------------------------------------------------------------------- *
+ * Ground helpers
+ * ---------------------------------------------------------------------- */
+
+function grid(w, h, fill = '.') {
+  return Array.from({ length: h }, () => new Array(w).fill(fill));
+}
+
+const rows = (g) => g.map((r) => r.join(''));
+
+function box(g, x, y, w, h, ch) {
+  for (let j = y; j < y + h; j++) {
+    if (!g[j]) continue;
+    for (let i = x; i < x + w; i++) {
+      if (i < 0 || i >= g[j].length) continue;
+      g[j][i] = ch;
+    }
+  }
+}
+
+/** Horizontal road, `t` tiles thick, starting at row y. */
+function hroad(g, x0, x1, y, t = 2, ch = '-') { box(g, x0, y, x1 - x0 + 1, t, ch); }
+
+/** Vertical road. */
+function vroad(g, x, y0, y1, t = 2, ch = '-') { box(g, x, y0, t, y1 - y0 + 1, ch); }
+
+/**
+ * A rough patch of old snow lying in the shade.
+ *
+ * A strict circle test at small radii produces a hard plus-shape that reads
+ * as a rendering artefact rather than as snow, so the edge is fattened and
+ * then eroded with a deterministic hash. Same seed every load — the map must
+ * not shimmer between sessions.
+ */
+function patch(g, cx, cy, r, ch = '*') {
+  const h = (x, y) => {
+    let n = x * 374761393 + y * 668265263 + r * 144665;
+    n = (n ^ (n >>> 13)) >>> 0;
+    return ((Math.imul(n, 1274126177) ^ (n >>> 16)) >>> 0) / 4294967296;
+  };
+  const rr = r * r + r * 0.9;
+  for (let j = -r - 1; j <= r + 1; j++) {
+    for (let i = -r - 1; i <= r + 1; i++) {
+      const d = i * i + j * j;
+      if (d > rr) continue;
+      // Erode the outer ring so the blob has an irregular coastline.
+      if (d > rr - r * 1.4 && h(cx + i, cy + j) < 0.45) continue;
+      const y = cy + j, x = cx + i;
+      if (!g[y] || x < 0 || x >= g[y].length) continue;
+      if (g[y][x] === '.') g[y][x] = ch;   // never cover a road
+    }
+  }
+}
+
+/** A room: wall border, floor inside, one door gap in the bottom wall. */
+function room(w, h, doorX) {
+  const g = grid(w, h, 'f');
+  box(g, 0, 0, w, 1, '#');
+  box(g, 0, h - 1, w, 1, '#');
+  box(g, 0, 0, 1, h, '#');
+  box(g, w - 1, 0, 1, h, '#');
+  g[h - 1][doorX] = 'f';
+  return g;
+}
+
+/** Scatter evergreens along a rectangle's edge, skipping listed columns. */
+function treeLine(kind, x0, x1, y, step = 2, skip = []) {
+  const out = [];
+  for (let x = x0; x <= x1; x += step) {
+    if (skip.includes(x)) continue;
+    out.push({ kind, x, y });
+  }
+  return out;
+}
+
+/* ---------------------------------------------------------------------- *
+ * The village
+ * ---------------------------------------------------------------------- */
+
+const VW = 46, VH = 38;
+
+function villageGround() {
+  const g = grid(VW, VH, '.');
+
+  // The two roads that organise the whole village.
+  hroad(g, 4, 41, 20, 2);          // east-west, past the meetinghouse
+  vroad(g, 22, 16, VH - 1, 2);     // north-south, out toward Salem Town
+
+  // Spurs to each door.
+  vroad(g, 10, 22, 28, 1);         // parsonage
+  vroad(g, 33, 17, 20, 1);         // Ingersoll's ordinary
+  vroad(g, 33, 22, 29, 1);         // Putnam house
+  vroad(g, 7, 14, 20, 1);          // Nurse homestead
+  vroad(g, 28, 3, 20, 1);          // north, into the woods
+
+  // Old snow in the shaded north and along the treelines.
+  patch(g, 6, 4, 3); patch(g, 17, 3, 4); patch(g, 38, 5, 3);
+  patch(g, 2, 16, 2); patch(g, 43, 27, 3); patch(g, 12, 34, 2);
+  patch(g, 40, 14, 2);
+
+  return rows(g);
+}
+
+export const VILLAGE = {
+  id: 'village',
+  name: 'Salem Village',
+  ground: villageGround(),
+  props: [
+    // --- the meetinghouse, centre of everything ------------------------
+    { kind: 'meetinghouse', x: 18, y: 10, w: 9, h: 6, doorCol: 4 },
+
+    // --- the parsonage. Note how small the woodpile is beside it. ------
+    { kind: 'house', x: 8, y: 24, w: 6, h: 5, doorCol: 2, windows: [1, 4], chimney: 'center' },
+    { kind: 'woodpile', x: 14, y: 27 },
+
+    // --- Ingersoll's ordinary ------------------------------------------
+    { kind: 'house', x: 30, y: 12, w: 7, h: 5, doorCol: 3, windows: [1, 5], chimney: 'left' },
+
+    // --- the Nurse homestead, west ------------------------------------
+    { kind: 'house', x: 4, y: 9, w: 6, h: 5, doorCol: 3, windows: [1, 4], chimney: 'right' },
+    { kind: 'fence', x: 4, y: 15 }, { kind: 'fence', x: 5, y: 15 },
+    { kind: 'fence', x: 6, y: 15 }, { kind: 'fence', x: 8, y: 15 },
+    { kind: 'fence', x: 9, y: 15 }, { kind: 'fence', x: 10, y: 15 },
+
+    // --- the Putnam house, east ----------------------------------------
+    { kind: 'house', x: 31, y: 25, w: 6, h: 5, doorCol: 2, windows: [0, 4], chimney: 'center' },
+    { kind: 'fence', x: 30, y: 31 }, { kind: 'fence', x: 31, y: 31 },
+    { kind: 'fence', x: 32, y: 31 }, { kind: 'fence', x: 34, y: 31 },
+    { kind: 'fence', x: 35, y: 31 }, { kind: 'fence', x: 36, y: 31 },
+
+    { kind: 'well', x: 25, y: 22 },
+
+    // --- the disputed boundary, north in the woods ---------------------
+    { kind: 'marker', x: 15, y: 4 },
+
+    // --- woods ----------------------------------------------------------
+    ...treeLine('pine', 0, 44, 0, 2),
+    ...treeLine('pine', 0, 44, 2, 4, [28]),
+    ...treeLine('pine', 0, 12, 6, 3),
+    ...treeLine('pine', 18, 26, 5, 3),
+    ...treeLine('pine', 34, 44, 6, 3),
+    ...treeLine('pine', 0, 2, 10, 2),
+    ...treeLine('pine', 42, 44, 10, 2),
+    ...treeLine('pine', 0, 2, 24, 3),
+    ...treeLine('pine', 42, 44, 24, 3),
+    ...treeLine('pine', 0, 18, 35, 3),
+    ...treeLine('pine', 26, 44, 35, 3),
+    { kind: 'baretree', x: 12, y: 17 },
+    { kind: 'baretree', x: 27, y: 30 },
+    { kind: 'baretree', x: 16, y: 30 },
+    { kind: 'baretree', x: 38, y: 20 },
+    { kind: 'baretree', x: 20, y: 3 },
+  ],
+  warps: [
+    { x: 22, y: 15, to: 'meetinghouse', tx: 6, ty: 8, dir: 'up' },
+    { x: 10, y: 28, to: 'parsonage', tx: 5, ty: 7, dir: 'up' },
+    { x: 33, y: 16, to: 'tavern', tx: 5, ty: 7, dir: 'up' },
+    { x: 7, y: 13, to: 'nursehouse', tx: 4, ty: 6, dir: 'up' },
+    { x: 33, y: 29, to: 'putnamhouse', tx: 4, ty: 6, dir: 'up' },
+    { x: 22, y: 37, to: 'road', tx: 7, ty: 1, dir: 'down' },
+    { x: 23, y: 37, to: 'road', tx: 8, ty: 1, dir: 'down' },
+  ],
+  interact: [
+    { id: 'woodpile', x: 14, y: 27, w: 2, h: 1 },
+    { id: 'marker', x: 15, y: 4 },
+    { id: 'well', x: 25, y: 22, w: 2, h: 2 },
+    { id: 'meetinghouseOutside', x: 18, y: 15, w: 4, h: 1 },
+    { id: 'meetinghouseOutside', x: 23, y: 15, w: 4, h: 1 },
+  ],
+  npcs: [
+    { id: 'mercy', x: 29, y: 23, dir: 'down' },
+  ],
+};
+
+/* ---------------------------------------------------------------------- *
+ * The road to Salem Town
+ *
+ * Five miles. The player only has to walk a compressed version of it once,
+ * but the far end must visibly be a richer place — that resentment is one of
+ * the four causal threads and it is far better felt than explained.
+ * ---------------------------------------------------------------------- */
+
+function roadGround() {
+  const g = grid(16, 36, '.');
+  vroad(g, 7, 0, 35, 2);
+  patch(g, 2, 6, 2); patch(g, 13, 14, 3); patch(g, 3, 22, 2);
+  // The verge is better kept as you approach the town.
+  box(g, 5, 30, 6, 6, '-');
+  return rows(g);
+}
+
+export const ROAD = {
+  id: 'road',
+  name: 'The road to Salem Town',
+  ground: roadGround(),
+  props: [
+    ...treeLine('pine', 0, 4, 2, 2),
+    ...treeLine('pine', 11, 14, 3, 2),
+    ...treeLine('pine', 0, 4, 8, 2),
+    ...treeLine('pine', 11, 14, 10, 2),
+    ...treeLine('pine', 0, 4, 15, 3),
+    ...treeLine('pine', 11, 14, 17, 3),
+    { kind: 'baretree', x: 2, y: 20 },
+    { kind: 'baretree', x: 12, y: 23 },
+    // Salem Town money: bigger houses, more glass, better kept.
+    { kind: 'house', x: 0, y: 26, w: 6, h: 6, doorCol: 3, windows: [0, 1, 4], chimney: 'left' },
+    { kind: 'house', x: 10, y: 28, w: 6, h: 6, doorCol: 2, windows: [0, 4, 5], chimney: 'right' },
+    { kind: 'fence', x: 6, y: 32 }, { kind: 'fence', x: 6, y: 33 },
+    { kind: 'fence', x: 9, y: 33 }, { kind: 'fence', x: 9, y: 34 },
+  ],
+  warps: [
+    { x: 7, y: 0, to: 'village', tx: 22, ty: 36, dir: 'up' },
+    { x: 8, y: 0, to: 'village', tx: 23, ty: 36, dir: 'up' },
+  ],
+  triggers: [
+    { id: 'roadEnd', x: 7, y: 30, w: 2, h: 1 },
+  ],
+  interact: [],
+  npcs: [],
+};
+
+/* ---------------------------------------------------------------------- *
+ * Interiors
+ * ---------------------------------------------------------------------- */
+
+export const PARSONAGE = {
+  id: 'parsonage',
+  name: 'The parsonage',
+  indoor: true,
+  ground: (() => {
+    const g = room(11, 9, 5);
+    box(g, 3, 2, 5, 1, 'H');     // hearthstone apron
+    return rows(g);
+  })(),
+  props: [
+    { kind: 'hearth', x: 4, y: 1 },
+    { kind: 'table', x: 2, y: 5 },
+  ],
+  warps: [{ x: 5, y: 8, to: 'village', tx: 10, ty: 29, dir: 'down' }],
+  interact: [
+    { id: 'parsonageHearth', x: 4, y: 1, w: 3, h: 2 },
+  ],
+  npcs: [
+    { id: 'tituba', x: 3, y: 3, dir: 'down' },
+    { id: 'parris', x: 8, y: 4, dir: 'left' },
+  ],
+};
+
+export const MEETINGHOUSE = {
+  id: 'meetinghouse',
+  name: 'The meetinghouse',
+  indoor: true,
+  ground: rows(room(13, 10, 6)),
+  props: [
+    { kind: 'seatingchart', x: 5, y: 1 },
+    ...[2, 3, 4, 8, 9, 10].map((x) => ({ kind: 'pew', x, y: 5 })),
+    ...[2, 3, 4, 8, 9, 10].map((x) => ({ kind: 'pew', x, y: 7 })),
+  ],
+  warps: [{ x: 6, y: 9, to: 'village', tx: 22, ty: 16, dir: 'down' }],
+  interact: [
+    { id: 'seatingChart', x: 5, y: 1, w: 2, h: 2 },
+    { id: 'pews', x: 2, y: 5, w: 3, h: 1 },
+    { id: 'pews', x: 8, y: 7, w: 3, h: 1 },
+  ],
+  npcs: [],
+};
+
+export const TAVERN = {
+  id: 'tavern',
+  name: "Ingersoll's ordinary",
+  indoor: true,
+  ground: (() => {
+    const g = room(11, 9, 5);
+    box(g, 7, 1, 3, 1, 'H');
+    return rows(g);
+  })(),
+  props: [
+    { kind: 'hearth', x: 7, y: 1 },
+    { kind: 'table', x: 2, y: 3 },
+    { kind: 'accountbook', x: 2, y: 3 },
+    { kind: 'table', x: 2, y: 6 },
+  ],
+  warps: [{ x: 5, y: 8, to: 'village', tx: 33, ty: 17, dir: 'down' }],
+  interact: [
+    { id: 'accountBook', x: 2, y: 3, w: 2, h: 1 },
+  ],
+  npcs: [
+    { id: 'ingersoll', x: 6, y: 4, dir: 'left' },
+  ],
+};
+
+export const NURSEHOUSE = {
+  id: 'nursehouse',
+  name: 'The Nurse homestead',
+  indoor: true,
+  ground: (() => {
+    const g = room(9, 8, 4);
+    box(g, 2, 2, 3, 1, 'H');
+    return rows(g);
+  })(),
+  props: [
+    { kind: 'hearth', x: 2, y: 1 },
+    { kind: 'table', x: 5, y: 4 },
+  ],
+  warps: [{ x: 4, y: 7, to: 'village', tx: 7, ty: 14, dir: 'down' }],
+  interact: [],
+  npcs: [{ id: 'nurse', x: 5, y: 3, dir: 'down' }],
+};
+
+export const PUTNAMHOUSE = {
+  id: 'putnamhouse',
+  name: 'The Putnam house',
+  indoor: true,
+  ground: (() => {
+    const g = room(10, 8, 4);
+    box(g, 5, 2, 3, 1, 'H');
+    return rows(g);
+  })(),
+  props: [
+    { kind: 'hearth', x: 5, y: 1 },
+    { kind: 'table', x: 2, y: 4 },
+  ],
+  warps: [{ x: 4, y: 7, to: 'village', tx: 33, ty: 30, dir: 'down' }],
+  interact: [],
+  npcs: [{ id: 'annjr', x: 3, y: 3, dir: 'down' }],
+};
+
+export const MAPS = {
+  village: VILLAGE,
+  road: ROAD,
+  parsonage: PARSONAGE,
+  meetinghouse: MEETINGHOUSE,
+  tavern: TAVERN,
+  nursehouse: NURSEHOUSE,
+  putnamhouse: PUTNAMHOUSE,
+};
