@@ -13,19 +13,23 @@ The full design is in [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## Status
 
-**Chapter one — March 1692 — is playable.** The other five chapters are
-designed but not built.
+**Chapter zero (the memorial, present day) and chapter one (March 1692) are
+playable.** The remaining chapters are designed but not built.
 
 | | |
 |---|---|
 | Audience | High school, general US History |
-| Runtime, when complete | ~30 min |
-| Runtime, current build | ~8 min |
+| Runtime, when complete | ~32 min |
+| Runtime, current build | ~11 min |
 | Platform | Browser, no install, no accounts |
 | Look | GBA-era Pokémon, oblique projection |
 
 ### What is in this build
 
+- **The Salem Witch Trials Memorial**, present day: twenty benches carrying the
+  real names, means of execution and dates; the threshold stones, whose
+  inscriptions are cut off mid-sentence by the wall; and Nora, seventeen,
+  working a summer job.
 - **The village**: meetinghouse, parsonage, Ingersoll's ordinary, the Nurse
   homestead, the Putnam house, the woods, and the road to Salem Town.
 - **Six characters** with topic-based conversations: Tituba, Rev. Samuel
@@ -109,6 +113,10 @@ automatically.
 ---
 
 ## Historical grounding
+
+The game opens at the memorial on Charter Street, dedicated in 1992. The
+threshold inscriptions really do run into the wall and stop mid-sentence, and
+the player really is standing on them.
 
 The March chapter is set in the first week of March 1692, deliberately: Betty
 Parris and Abigail Williams have been ill since midwinter, Doctor Griggs has

@@ -102,7 +102,7 @@ function villageGround() {
 
   // Spurs to each door.
   vroad(g, 10, 22, 28, 1);         // parsonage
-  vroad(g, 33, 17, 20, 1);         // Ingersoll's ordinary
+  vroad(g, 33, 17, 20, 1);         // Ingersoll's tavern
   vroad(g, 33, 22, 29, 1);         // Putnam house
   vroad(g, 7, 14, 20, 1);          // Nurse homestead
   vroad(g, 28, 3, 20, 1);          // north, into the woods
@@ -127,7 +127,7 @@ export const VILLAGE = {
     { kind: 'house', x: 8, y: 24, w: 6, h: 5, doorCol: 2, windows: [1, 4], chimney: 'center' },
     { kind: 'woodpile', x: 14, y: 27 },
 
-    // --- Ingersoll's ordinary ------------------------------------------
+    // --- Ingersoll's ordinary (the tavern) -----------------------------
     { kind: 'house', x: 30, y: 12, w: 7, h: 5, doorCol: 3, windows: [1, 5], chimney: 'left' },
 
     // --- the Nurse homestead, west ------------------------------------
@@ -227,7 +227,11 @@ export const ROAD = {
     { x: 8, y: 0, to: 'village', tx: 23, ty: 36, dir: 'up' },
   ],
   triggers: [
+    // Walking south from the village: the payoff at the rich end.
     { id: 'roadEnd', x: 7, y: 30, w: 2, h: 1 },
+    // Walking north at the start of the game: arriving in the village. Fires
+    // once, on the opening walk, so it never interrupts a later trip south.
+    { id: 'arriveVillage', x: 7, y: 2, w: 2, h: 1 },
   ],
   interact: [],
   npcs: [],
@@ -281,7 +285,7 @@ export const MEETINGHOUSE = {
 
 export const TAVERN = {
   id: 'tavern',
-  name: "Ingersoll's ordinary",
+  name: "Ingersoll's tavern",
   indoor: true,
   ground: (() => {
     const g = room(11, 9, 5);
@@ -339,7 +343,131 @@ export const PUTNAMHOUSE = {
   npcs: [{ id: 'annjr', x: 3, y: 3, dir: 'down' }],
 };
 
+/* ---------------------------------------------------------------------- *
+ * Present day — the Salem Witch Trials Memorial, Charter Street
+ *
+ * Dedicated in 1992 for the tercentenary. A low granite enclosure with
+ * twenty benches cantilevered out of the wall, one per person executed,
+ * each cut with a name, a means of execution and a date. Black locust
+ * trees inside. At the entrance, the victims' own protests of innocence
+ * are inscribed into the threshold stones — and they run into the wall and
+ * stop mid-sentence, to be walked over by everyone who comes in.
+ *
+ * That threshold is the first thing the player touches in this game, and
+ * it is the whole thesis in one object: their words were cut off, and we
+ * are still walking on them.
+ * ---------------------------------------------------------------------- */
+
+// The twenty executed, in the order they were killed. Nineteen hanged on
+// Proctor's Ledge; Giles Corey pressed to death for refusing to plead.
+export const EXECUTED = [
+  { name: 'BRIDGET BISHOP',   fate: 'HANGED',           date: 'JUNE 10, 1692' },
+  { name: 'SARAH GOOD',       fate: 'HANGED',           date: 'JULY 19, 1692' },
+  { name: 'ELIZABETH HOWE',   fate: 'HANGED',           date: 'JULY 19, 1692' },
+  { name: 'SUSANNAH MARTIN',  fate: 'HANGED',           date: 'JULY 19, 1692' },
+  { name: 'REBECCA NURSE',    fate: 'HANGED',           date: 'JULY 19, 1692' },
+  { name: 'SARAH WILDES',     fate: 'HANGED',           date: 'JULY 19, 1692' },
+  { name: 'GEORGE BURROUGHS', fate: 'HANGED',           date: 'AUGUST 19, 1692' },
+  { name: 'MARTHA CARRIER',   fate: 'HANGED',           date: 'AUGUST 19, 1692' },
+  { name: 'GEORGE JACOBS SR.',fate: 'HANGED',           date: 'AUGUST 19, 1692' },
+  { name: 'JOHN PROCTOR',     fate: 'HANGED',           date: 'AUGUST 19, 1692' },
+  { name: 'JOHN WILLARD',     fate: 'HANGED',           date: 'AUGUST 19, 1692' },
+  { name: 'GILES COREY',      fate: 'PRESSED TO DEATH', date: 'SEPTEMBER 19, 1692' },
+  { name: 'MARTHA COREY',     fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'MARY EASTEY',      fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'ALICE PARKER',     fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'MARY PARKER',      fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'ANN PUDEATOR',     fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'WILMOT REDD',      fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'MARGARET SCOTT',   fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'SAMUEL WARDWELL',  fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+];
+
+const MW = 28, MH = 34;
+
+// Where the twenty benches sit. Order matters: this list is zipped against
+// EXECUTED in order, and slot 4 — Rebecca Nurse — is deliberately the one
+// beside the gap in the north wall. The last name the player reads in the
+// present is hers, with the date she is hanged, and then they step through
+// the gap into the March before any of it happened.
+const BENCH_SLOTS = [
+  { x: 6, y: 20 }, { x: 6, y: 18 }, { x: 6, y: 16 }, { x: 6, y: 14 },
+  { x: 15, y: 5 },                                    // <- beside the gap
+  { x: 6, y: 12 }, { x: 6, y: 10 }, { x: 6, y: 8 }, { x: 6, y: 6 },
+  { x: 8, y: 5 }, { x: 10, y: 5 }, { x: 17, y: 5 },
+  ...[6, 8, 10, 12, 14, 16, 18, 20].map((y) => ({ x: 20, y })),
+];
+
+function memorialGround() {
+  const g = grid(MW, MH, 'B');     // red brick sidewalk, a city block
+  box(g, 5, 4, 18, 18, 'G');       // granite paving inside the enclosure
+  box(g, 6, 5, 16, 16, 'L');       // the lawn
+  box(g, 0, 24, MW, 3, 'A');       // Charter Street
+  return rows(g);
+}
+
+// The low wall: three sides plus a south face, with a gap at x=13-14 in each
+// of the north and south walls — the entrance, and the way out of 1692.
+const WALL_GAP = [13, 14];
+const memorialWall = () => [
+  ...Array.from({ length: 18 }, (_, i) => ({ kind: 'lowwall', x: 5, y: 4 + i })),
+  ...Array.from({ length: 18 }, (_, i) => ({ kind: 'lowwall', x: 22, y: 4 + i })),
+  ...Array.from({ length: 16 }, (_, i) => 6 + i)
+    .filter((x) => !WALL_GAP.includes(x))
+    .flatMap((x) => [{ kind: 'lowwall', x, y: 4 }, { kind: 'lowwall', x, y: 21 }]),
+];
+
+export const MEMORIAL = {
+  id: 'memorial',
+  name: 'Salem Witch Trials Memorial',
+  era: 'present',
+  ground: memorialGround(),
+  props: [
+    ...memorialWall(),
+    ...BENCH_SLOTS.map((b) => ({ kind: 'membench', x: b.x, y: b.y })),
+
+    { kind: 'locust', x: 9, y: 9 },
+    { kind: 'locust', x: 16, y: 15 },
+    { kind: 'locust', x: 1, y: 15 },
+    { kind: 'locust', x: 24, y: 8 },
+
+    { kind: 'signboard', x: 17, y: 22 },
+    { kind: 'bin', x: 3, y: 23 },
+
+    // Across the street. Salem sells this history; the game just shows it.
+    { kind: 'shopfront', x: 8, y: 29, w: 7, h: 5 },
+  ],
+  // Stepping through the gap in the north wall puts you at the Salem Town
+  // end of the road in 1692 — so the first thing you do in the past is walk
+  // the five miles from the money to the village that resents it. No
+  // explanation of how you got there, ever: any mechanism invites a student
+  // to interrogate the mechanism instead of the history.
+  warps: [
+    { x: 13, y: 4, to: 'road', tx: 7, ty: 28, dir: 'up', script: 'arrive1692' },
+    { x: 14, y: 4, to: 'road', tx: 8, ty: 28, dir: 'up', script: 'arrive1692' },
+  ],
+  interact: [
+    { id: 'threshold', x: 13, y: 21, w: 2, h: 1 },
+    { id: 'memorialSign', x: 17, y: 22, w: 2, h: 2 },
+    { id: 'shopWindow', x: 8, y: 29, w: 7, h: 1 },
+    // Each bench carries its own inscription.
+    ...BENCH_SLOTS.map((b, i) => ({
+      id: 'bench', x: b.x, y: b.y, w: 2, h: 1, bench: EXECUTED[i],
+    })),
+  ],
+  triggers: [
+    { id: 'arriveMemorial', x: 11, y: 22, w: 6, h: 1 },
+    // The threshold is too important to leave to chance, so it fires by
+    // being walked over — which is also exactly how it works in life.
+    { id: 'threshold', x: 13, y: 21, w: 2, h: 1 },
+  ],
+  npcs: [
+    { id: 'nora', x: 18, y: 19, dir: 'left' },
+  ],
+};
+
 export const MAPS = {
+  memorial: MEMORIAL,
   village: VILLAGE,
   road: ROAD,
   parsonage: PARSONAGE,

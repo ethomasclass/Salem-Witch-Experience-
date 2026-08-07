@@ -86,6 +86,56 @@ function paintFloor(g, v) {
   vline(g, joint, 0, TS, P.floorSeam);
 }
 
+/* ---- present day ------------------------------------------------------ */
+
+function paintLawn(g, v) {
+  // Mown, watered, municipal. The deliberate opposite of the 1692 grass:
+  // green, even, and obviously looked after by somebody with a budget.
+  rect(g, 0, 0, TS, TS, P.lawn);
+  speckle(g, 0, 0, TS, TS, P.lawnLo, 0.14, 61 + v * 5);
+  speckle(g, 0, 0, TS, TS, P.lawnHi, 0.10, 73 + v * 9);
+  // Mower stripes, alternating by tile column so the lawn reads as tended.
+  if (v & 1) {
+    for (let y = 0; y < TS; y++) if ((y & 3) === 0) hline(g, 0, y, TS, P.lawnHi);
+  }
+}
+
+function paintPaving(g, v) {
+  // Granite pavers. Big slabs, tight joints.
+  rect(g, 0, 0, TS, TS, P.granite);
+  speckle(g, 0, 0, TS, TS, P.graniteLo, 0.16, 83 + v * 4);
+  speckle(g, 0, 0, TS, TS, P.graniteHi, 0.10, 89 + v * 7);
+  // Joints, staggered per variant so it reads as coursed rather than tiled.
+  hline(g, 0, 0, TS, P.graniteDeep);
+  const j = (v & 1) ? 0 : 8;
+  vline(g, j, 0, TS, P.graniteDeep);
+  hline(g, 0, 8, TS, P.graniteDeep);
+  vline(g, (j + 8) % TS, 8, 8, P.graniteDeep);
+}
+
+function paintBrick(g, v) {
+  // Running bond, four courses to a tile, staggered by variant.
+  rect(g, 0, 0, TS, TS, P.mortar);
+  const off = (v & 1) ? 4 : 0;
+  for (let row = 0; row < 4; row++) {
+    const y = row * 4;
+    const stagger = ((row & 1) ? 4 : 0) + off;
+    for (let x = -8; x < TS; x += 8) {
+      const bx = x + stagger;
+      rect(g, bx, y, 7, 3, P.brick);
+      hline(g, bx, y, 7, P.brickHi);
+      px(g, bx + 6, y + 2, P.brickLo);
+    }
+  }
+  speckle(g, 0, 0, TS, TS, P.brickLo, 0.08, 107 + v * 5);
+}
+
+function paintAsphalt(g, v) {
+  rect(g, 0, 0, TS, TS, P.asphalt);
+  speckle(g, 0, 0, TS, TS, P.asphaltLo, 0.22, 97 + v * 3);
+  speckle(g, 0, 0, TS, TS, P.asphaltHi, 0.12, 101 + v * 6);
+}
+
 function paintWall(g, v) {
   // Interior wall: riven vertical sheathing boards, no plaster and no paint.
   // Most village houses were unfinished inside; the boards were the wall.
@@ -114,6 +164,10 @@ const PAINTERS = {
   floor: paintFloor,
   wall: paintWall,
   hearthstone: paintHearthstone,
+  lawn: paintLawn,
+  paving: paintPaving,
+  brick: paintBrick,
+  asphalt: paintAsphalt,
 };
 
 /* ---------------------------------------------------------------------- *
@@ -130,6 +184,10 @@ const RIM = {
   floor: { edge: P.floorSeam, inner: null },
   wall:  { edge: P.outline, inner: null },
   hearthstone: { edge: P.stoneLo, inner: null },
+  lawn:  { edge: P.lawnDeep, inner: P.lawnLo },
+  paving:{ edge: P.graniteDeep, inner: null },
+  brick: { edge: P.brickLo, inner: null },
+  asphalt:{ edge: P.asphaltLo, inner: null },
 };
 
 function applyRim(g, type, mask) {

@@ -77,6 +77,36 @@ export const P = {
   brushHi:   '#6a5e46',
   brush:     '#564c38',
 
+  // ---- present day ------------------------------------------------------
+  // The other half of the game. 1692 is cold greys and muted earth; the
+  // present is warmer, greener and more saturated, so a student can tell
+  // which century they are standing in before reading a single word.
+  lawnHi:    '#7f9757',
+  lawn:      '#69814b',
+  lawnLo:    '#566a3d',
+  lawnDeep:  '#455630',
+
+  // Salem's downtown sidewalks are red brick. Using it here is accurate and
+  // it also does the heavy lifting of separating three materials that would
+  // otherwise all be grey: brick outside, granite enclosure, green lawn.
+  brickHi:   '#8f5c4a',
+  brick:     '#7b4d3f',
+  brickLo:   '#653f34',
+  mortar:    '#94897d',
+
+  graniteHi: '#aeaeaa',
+  granite:   '#94928e',
+  graniteLo: '#787674',
+  graniteDeep:'#5d5b59',
+
+  asphaltHi: '#4e4f52',
+  asphalt:   '#414245',
+  asphaltLo: '#343538',
+
+  leafHi:    '#8fa961',
+  leaf:      '#728b4d',
+  leafLo:    '#586d3b',
+
   // ---- ink --------------------------------------------------------------
   outline:   '#26262a',
   ink:       '#1b1c1f',
@@ -104,6 +134,11 @@ export const CLOTH = {
   slate:    ['#5c626c', '#4b5058', '#3b3f46'],
   black:    ['#3e3c3d', '#312f30', '#242223'],
   linen:    ['#cfc8b6', '#b5ae9c', '#98917f'],
+
+  // Present day.
+  staffTeal:['#41908b', '#31716d', '#245452'],
+  denim:    ['#4d5d76', '#3c495e', '#2d3748'],
+  hoodie:   ['#4a6d8c', '#3b5871', '#2c4356'],
 };
 
 // Skin ramps: highlight, mid, shadow.

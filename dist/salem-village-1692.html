@@ -161,7 +161,7 @@
 
 <header id="masthead">
   <h1>Salem Village, 1692</h1>
-  <span class="chapter">Chapter one · March</span>
+  <span class="chapter">Present day → March 1692</span>
   <span class="tag">Nothing has happened yet.</span>
 </header>
 
@@ -266,6 +266,36 @@ const P = {
   brushHi:   '#6a5e46',
   brush:     '#564c38',
 
+  // ---- present day ------------------------------------------------------
+  // The other half of the game. 1692 is cold greys and muted earth; the
+  // present is warmer, greener and more saturated, so a student can tell
+  // which century they are standing in before reading a single word.
+  lawnHi:    '#7f9757',
+  lawn:      '#69814b',
+  lawnLo:    '#566a3d',
+  lawnDeep:  '#455630',
+
+  // Salem's downtown sidewalks are red brick. Using it here is accurate and
+  // it also does the heavy lifting of separating three materials that would
+  // otherwise all be grey: brick outside, granite enclosure, green lawn.
+  brickHi:   '#8f5c4a',
+  brick:     '#7b4d3f',
+  brickLo:   '#653f34',
+  mortar:    '#94897d',
+
+  graniteHi: '#aeaeaa',
+  granite:   '#94928e',
+  graniteLo: '#787674',
+  graniteDeep:'#5d5b59',
+
+  asphaltHi: '#4e4f52',
+  asphalt:   '#414245',
+  asphaltLo: '#343538',
+
+  leafHi:    '#8fa961',
+  leaf:      '#728b4d',
+  leafLo:    '#586d3b',
+
   // ---- ink --------------------------------------------------------------
   outline:   '#26262a',
   ink:       '#1b1c1f',
@@ -293,6 +323,11 @@ const CLOTH = {
   slate:    ['#5c626c', '#4b5058', '#3b3f46'],
   black:    ['#3e3c3d', '#312f30', '#242223'],
   linen:    ['#cfc8b6', '#b5ae9c', '#98917f'],
+
+  // Present day.
+  staffTeal:['#41908b', '#31716d', '#245452'],
+  denim:    ['#4d5d76', '#3c495e', '#2d3748'],
+  hoodie:   ['#4a6d8c', '#3b5871', '#2c4356'],
 };
 
 // Skin ramps: highlight, mid, shadow.
@@ -532,6 +567,56 @@ function paintFloor(g, v) {
   vline(g, joint, 0, TS, P.floorSeam);
 }
 
+/* ---- present day ------------------------------------------------------ */
+
+function paintLawn(g, v) {
+  // Mown, watered, municipal. The deliberate opposite of the 1692 grass:
+  // green, even, and obviously looked after by somebody with a budget.
+  rect(g, 0, 0, TS, TS, P.lawn);
+  speckle(g, 0, 0, TS, TS, P.lawnLo, 0.14, 61 + v * 5);
+  speckle(g, 0, 0, TS, TS, P.lawnHi, 0.10, 73 + v * 9);
+  // Mower stripes, alternating by tile column so the lawn reads as tended.
+  if (v & 1) {
+    for (let y = 0; y < TS; y++) if ((y & 3) === 0) hline(g, 0, y, TS, P.lawnHi);
+  }
+}
+
+function paintPaving(g, v) {
+  // Granite pavers. Big slabs, tight joints.
+  rect(g, 0, 0, TS, TS, P.granite);
+  speckle(g, 0, 0, TS, TS, P.graniteLo, 0.16, 83 + v * 4);
+  speckle(g, 0, 0, TS, TS, P.graniteHi, 0.10, 89 + v * 7);
+  // Joints, staggered per variant so it reads as coursed rather than tiled.
+  hline(g, 0, 0, TS, P.graniteDeep);
+  const j = (v & 1) ? 0 : 8;
+  vline(g, j, 0, TS, P.graniteDeep);
+  hline(g, 0, 8, TS, P.graniteDeep);
+  vline(g, (j + 8) % TS, 8, 8, P.graniteDeep);
+}
+
+function paintBrick(g, v) {
+  // Running bond, four courses to a tile, staggered by variant.
+  rect(g, 0, 0, TS, TS, P.mortar);
+  const off = (v & 1) ? 4 : 0;
+  for (let row = 0; row < 4; row++) {
+    const y = row * 4;
+    const stagger = ((row & 1) ? 4 : 0) + off;
+    for (let x = -8; x < TS; x += 8) {
+      const bx = x + stagger;
+      rect(g, bx, y, 7, 3, P.brick);
+      hline(g, bx, y, 7, P.brickHi);
+      px(g, bx + 6, y + 2, P.brickLo);
+    }
+  }
+  speckle(g, 0, 0, TS, TS, P.brickLo, 0.08, 107 + v * 5);
+}
+
+function paintAsphalt(g, v) {
+  rect(g, 0, 0, TS, TS, P.asphalt);
+  speckle(g, 0, 0, TS, TS, P.asphaltLo, 0.22, 97 + v * 3);
+  speckle(g, 0, 0, TS, TS, P.asphaltHi, 0.12, 101 + v * 6);
+}
+
 function paintWall(g, v) {
   // Interior wall: riven vertical sheathing boards, no plaster and no paint.
   // Most village houses were unfinished inside; the boards were the wall.
@@ -560,6 +645,10 @@ const PAINTERS = {
   floor: paintFloor,
   wall: paintWall,
   hearthstone: paintHearthstone,
+  lawn: paintLawn,
+  paving: paintPaving,
+  brick: paintBrick,
+  asphalt: paintAsphalt,
 };
 
 /* ---------------------------------------------------------------------- *
@@ -576,6 +665,10 @@ const RIM = {
   floor: { edge: P.floorSeam, inner: null },
   wall:  { edge: P.outline, inner: null },
   hearthstone: { edge: P.stoneLo, inner: null },
+  lawn:  { edge: P.lawnDeep, inner: P.lawnLo },
+  paving:{ edge: P.graniteDeep, inner: null },
+  brick: { edge: P.brickLo, inner: null },
+  asphalt:{ edge: P.asphaltLo, inner: null },
 };
 
 function applyRim(g, type, mask) {
@@ -1075,6 +1168,175 @@ function buildPew() {
   rect(g, 0, 9, TS, 3, P.bark);
   rect(g, 1, 12, 2, 4, P.barkLo);
   rect(g, TS - 3, 12, 2, 4, P.barkLo);
+  return s;
+}
+
+/* ---------------------------------------------------------------------- *
+ * Present day — the Salem Witch Trials Memorial, Charter Street
+ * ---------------------------------------------------------------------- */
+
+/**
+ * One memorial bench: a granite slab cantilevered out of the low wall, with
+ * a name, a means of execution and a date cut into its edge. There are
+ * twenty of them and they are identical, which is the point — the design
+ * refuses to rank the dead or make any one of them the interesting one.
+ */
+function buildMemBench() {
+  const W = 2 * TS, H = TS;
+  const s = surface(W, H + 5);
+  const g = s.g;
+  // A hard cast shadow first — this is granite sitting on granite, and the
+  // shadow is doing most of the work of separating the two.
+  rect(g, 2, 12, W - 3, 4, 'rgba(18,20,24,0.5)');
+  // Slab, lit from upper-left.
+  rect(g, 1, 3, W - 2, 10, P.granite);
+  rect(g, 2, 3, W - 4, 4, P.graniteHi);
+  rect(g, 1, 11, W - 2, 2, P.graniteDeep);
+  stroke(g, 1, 3, W - 2, 10, P.outline);
+  speckle(g, 2, 5, W - 4, 6, P.graniteLo, 0.16, 401);
+  // The inscribed edge — reads as lettering without being readable.
+  for (let x = 5; x < W - 5; x += 3) px(g, x, 9, P.graniteDeep);
+  ellipse(g, W / 2, H + 2, 13, 2, P.shadow);
+  return s;
+}
+
+/** A course of the low granite enclosure wall. */
+function buildLowWall() {
+  const s = surface(TS, TS + 4);
+  const g = s.g;
+  // Cast shadow, so the enclosure reads as a wall you are standing inside
+  // rather than a change of paving.
+  rect(g, 0, 14, TS, 4, 'rgba(18,20,24,0.42)');
+  rect(g, 0, 1, TS, 14, P.granite);
+  rect(g, 0, 1, TS, 4, P.graniteHi);       // top face catching the light
+  hline(g, 0, 5, TS, P.graniteLo);
+  rect(g, 0, 12, TS, 3, P.graniteDeep);    // shaded base course
+  speckle(g, 0, 6, TS, 6, P.graniteLo, 0.20, 409);
+  speckle(g, 0, 6, TS, 6, P.graniteHi, 0.08, 419);
+  hline(g, 0, 1, TS, P.outline);
+  hline(g, 0, 15, TS, P.outline);
+  vline(g, 0, 1, 15, P.graniteDeep);       // block joint
+  return s;
+}
+
+/** Black locust, in leaf. The memorial is planted with them. */
+function buildLocust() {
+  const W = 3 * TS, H = 4 * TS;
+  const s = surface(W, H + 4);
+  const g = s.g;
+  const cx = Math.round(W / 2), base = H;
+
+  // Trunk.
+  for (let i = 0; i < 26; i++) {
+    const y = base - 1 - i;
+    const hw = Math.max(2, Math.round(4 - (i / 26) * 2));
+    rect(g, cx - hw, y, hw * 2, 1, P.bark);
+    px(g, cx - hw, y, P.outline);
+    px(g, cx + hw - 1, y, P.barkHi);
+  }
+  // Canopy: three overlapping masses so it doesn't read as one blob.
+  const lobes = [
+    [cx, base - 40, 20, 13], [cx - 13, base - 32, 13, 9], [cx + 13, base - 33, 13, 9],
+    [cx - 5, base - 48, 12, 8], [cx + 7, base - 47, 11, 8],
+  ];
+  for (const [x, y, rx, ry] of lobes) {
+    ellipse(g, x, y, rx + 1, ry + 1, P.outline);
+    ellipse(g, x, y, rx, ry, P.leaf);
+  }
+  for (const [x, y, rx, ry] of lobes) {
+    ellipse(g, x - 3, y - 3, Math.round(rx * 0.55), Math.round(ry * 0.5), P.leafHi);
+    ellipse(g, x + 4, y + 4, Math.round(rx * 0.4), Math.round(ry * 0.35), P.leafLo);
+  }
+  speckle(g, 4, base - 58, W - 8, 34, P.leafLo, 0.10, 431);
+  speckle(g, 4, base - 58, W - 8, 34, P.leafHi, 0.07, 439);
+
+  ellipse(g, cx, base + 1, 14, 3, P.shadow);
+  return s;
+}
+
+/** An interpretive sign on two posts — the kind every historic site has. */
+function buildSignboard() {
+  const W = 2 * TS, H = 2 * TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+  rect(g, 6, 16, 3, 14, '#4a4d52');
+  rect(g, W - 9, 16, 3, 14, '#4a4d52');
+  rect(g, 1, 3, W - 2, 15, '#2f4a52');
+  stroke(g, 1, 3, W - 2, 15, P.outline);
+  rect(g, 3, 5, W - 6, 11, '#3d616b');
+  // Text ruling and a small image block, angled reader-style.
+  for (let i = 0; i < 4; i++) hline(g, 5, 7 + i * 2, W - 16, '#9fc0c7');
+  rect(g, W - 12, 7, 8, 7, '#8aa9b0');
+  ellipse(g, W / 2, H + 1, 11, 2, P.shadow);
+  return s;
+}
+
+/** A public bin. Small, mundane, and doing a lot of work to say "present". */
+function buildBin() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  rect(g, 3, 4, 10, 12, '#3c4348');
+  stroke(g, 3, 4, 10, 12, P.outline);
+  rect(g, 2, 2, 12, 3, '#4d565c');
+  stroke(g, 2, 2, 12, 3, P.outline);
+  vline(g, 5, 6, 9, '#4d565c');
+  vline(g, 10, 6, 9, '#4d565c');
+  ellipse(g, 8, 16, 7, 2, P.shadow);
+  return s;
+}
+
+/**
+ * A storefront across the street. Salem sells this history — witch hats,
+ * fridge magnets, ghost tours — about two hundred feet from the memorial.
+ * The game never editorialises about it. It just puts it in frame.
+ */
+function buildShopfront(wT = 6, hT = 5) {
+  const W = wT * TS, H = hT * TS;
+  const s = surface(W, H + 6);
+  const g = s.g;
+  const foundH = 4;
+  const upperH = Math.round(H * 0.44);
+
+  // Upper storey: painted clapboard, sash windows.
+  rect(g, 0, 0, W, upperH, '#6d5f5a');
+  for (let y = 3; y < upperH; y += 4) { hline(g, 0, y, W, '#5b4f4b'); hline(g, 0, y + 1, W, '#7d6e68'); }
+  for (let i = 1; i < wT - 1; i += 2) {
+    const wx = i * TS + 3;
+    rect(g, wx - 1, 7, 12, 15, '#3a3230');
+    rect(g, wx, 8, 10, 13, '#2b3037');
+    hline(g, wx, 14, 10, '#8f9aa2');
+    vline(g, wx + 5, 8, 13, '#8f9aa2');
+    hline(g, wx + 1, 9, 3, P.glassLit);
+  }
+  hline(g, 0, upperH - 1, W, P.outline);
+
+  // Awning — a hard, saturated stripe that reads modern instantly.
+  const ay = upperH;
+  for (let x = 0; x < W; x++) {
+    rect(g, x, ay, 1, 7, (Math.floor(x / 8) % 2) ? '#8a3b34' : '#d8cfc0');
+  }
+  hline(g, 0, ay, W, P.outline);
+  hline(g, 0, ay + 7, W, P.outline);
+  rect(g, 0, ay + 8, W, 2, 'rgba(20,20,24,0.4)');
+
+  // Shopfront glazing: one big plate window and a door.
+  const gy = ay + 10, gh = H - foundH - gy;
+  rect(g, 0, gy, W, gh, '#3b3330');
+  rect(g, 3, gy + 2, W - 22, gh - 4, '#2a3138');
+  stroke(g, 3, gy + 2, W - 22, gh - 4, '#8d827a');
+  // Reflected sky across the glass, and merchandise silhouettes behind it.
+  for (let i = 0; i < 3; i++) rect(g, 6 + i * 5, gy + 4, 2, gh - 8, 'rgba(150,175,195,0.16)');
+  for (let i = 0; i < 4; i++) rect(g, 8 + i * 9, gy + gh - 10, 5, 6, 'rgba(220,200,150,0.35)');
+  // Door.
+  rect(g, W - 17, gy + 2, 13, gh - 4, '#4a4038');
+  rect(g, W - 15, gy + 4, 9, gh - 12, '#2a3138');
+  stroke(g, W - 17, gy + 2, 13, gh - 4, P.outline);
+
+  // Foundation.
+  rect(g, 0, H - foundH, W, foundH, P.graniteLo);
+  hline(g, 0, H - foundH, W, P.outline);
+  g.fillStyle = P.shadow;
+  g.fillRect(2, H, W - 4, 4);
   return s;
 }
 
@@ -1809,6 +2071,16 @@ class Input {
 // exit artifact readable as a piece of student thinking instead of a save
 // file dump.
 const KNOWLEDGE = {
+  // --- present day -------------------------------------------------------
+  'present.memorial':  'The Salem Witch Trials Memorial has twenty benches — one for each person executed in 1692.',
+  'present.threshold': 'The victims\' own words are carved into the stones at the entrance, and every one of them is cut off mid-sentence by the wall. That was a design decision.',
+  'present.nurse':     'One of the benches reads REBECCA NURSE · HANGED · JULY 19, 1692.',
+  'present.jaildeaths':'Five more people died in jail waiting for trial. They do not have benches.',
+  'present.nograves':  'None of the twenty are buried at the memorial. They were denied graves.',
+  'present.tourism':   'There is a shop selling witch hats and ghost tours about two hundred feet from the benches.',
+  'present.realquestion': 'Nora gets asked "was it real?" every day. Her answer: no witches, but a real court really killed twenty real people and wrote it all down.',
+  'present.johnson':   'Elizabeth Johnson Jr. was the last person still uncleared — for 329 years, because she had no descendants to push for it. An eighth-grade civics class in North Andover got her exonerated in 2022.',
+
   // --- things seen -------------------------------------------------------
   'clue.woodpile':   'The parsonage woodpile is nearly empty. His contract promised him firewood.',
   'clue.seating':    'The meetinghouse seats are assigned. The best rows go to the wealthiest families, and everyone sees the chart every Sunday.',
@@ -1835,6 +2107,7 @@ const KNOWLEDGE = {
 /** Display name for whoever a piece of knowledge came from. */
 const SOURCES = {
   observed:   'I saw this myself',
+  nora:       'Told to me by Nora, at the memorial',
   tituba:     'Told to me by Tituba',
   parris:     'Told to me by Rev. Parris',
   annjr:      'Told to me by Ann Putnam Jr.',
@@ -1864,7 +2137,94 @@ function notebookEntries(state) {
 //
 // These are written as narration (no speaker, no portrait) so they read as
 // the player noticing rather than as someone explaining.
+
+/* ---------------------------------------------------------------------- *
+ * Present day
+ *
+ * Different register on purpose. The 1692 voice is period-inflected; this
+ * one is plain contemporary English, because the player is a student
+ * standing on a city street in Massachusetts and it should feel like it.
+ * ---------------------------------------------------------------------- */
+
+/** A bench inscription. Twenty of these, and they are all the same shape —
+ *  which is the memorial's actual design argument: no ranking, no
+ *  interesting one, just twenty people and what was done to them. */
+function benchScript(b) {
+  const lines = [
+    { say: 'A granite slab, cantilevered out of the wall. Just long enough to sit on.', who: null },
+    { say: `Cut into the edge:  ${b.name}`, who: null },
+    { say: `${b.fate} · ${b.date}`, who: null },
+  ];
+  if (b.name === 'REBECCA NURSE') {
+    lines.push(
+      { learn: 'present.nurse', source: 'observed' },
+      { say: 'It is exactly like the other nineteen. Same stone, same lettering, same length.', who: null },
+      { say: 'You will want to remember this one.', who: null },
+    );
+  } else if (b.name === 'GILES COREY') {
+    lines.push({ say: 'It is the only one that does not say HANGED.', who: null });
+  }
+  return lines;
+}
+const PRESENT_CLUES = {
+
+  arriveMemorial: [
+    { say: 'Charter Street, Salem, Massachusetts. Present day.', who: null },
+    { say: 'Traffic behind you. A gift shop across the road with witch hats in the window.', who: null },
+    { say: 'And in front of you, through a gap in a low granite wall, a small square of grass with twenty stone benches around the edge of it.', who: null },
+    { learn: 'present.memorial', source: 'observed' },
+  ],
+
+  /* The threshold stones. This is the first thing the player touches, and
+   * it is the entire game in one object. It is also completely real. */
+  threshold: [
+    { say: 'The entrance is paved with flat stones, and there is writing carved into them. You are standing on it.', who: null },
+    { say: 'They are quotes. Things the accused actually said at their trials.', who: null },
+    { say: '"I am wholly innocent of such wickedness —"', who: null },
+    { say: '"God knows I am innocent —"', who: null },
+    { say: '"I can deny it to my dying day —"', who: null },
+    { say: 'You keep waiting for the ends of the sentences.', who: null },
+    { say: 'They run into the base of the wall and stop. All of them. Mid-sentence, mid-word, cut off in stone.', who: null },
+    { learn: 'present.threshold', source: 'observed' },
+    { say: 'That is not damage. Somebody designed it that way.', who: null },
+  ],
+
+  memorialSign: [
+    { say: 'An interpretive sign, the kind every historic site has.', who: null },
+    { say: 'Dedicated in 1992, three hundred years after the trials. Twenty benches for the twenty people executed.', who: null },
+    { say: 'Nineteen were hanged. One was crushed to death under stones for refusing to enter a plea.', who: null },
+    { say: 'Five more died in jail waiting for trial. They do not have benches.', who: null },
+    { learn: 'present.jaildeaths', source: 'observed' },
+  ],
+
+  shopWindow: [
+    { say: 'The shop across the street sells witch hats, fridge magnets, hot sauce with a cartoon witch on the label, and tickets for a ghost tour leaving at seven.', who: null },
+    { say: 'It is a normal shop. People are inside buying things and none of them look like villains.', who: null },
+    { learn: 'present.tourism', source: 'observed' },
+    { say: 'It is about two hundred feet from the benches.', who: null },
+  ],
+
+  /* The transition. No mechanism, no explanation, no comment afterwards. */
+  arrive1692: [
+    { say: 'You step through the gap in the wall.', who: null },
+    { say: '...', who: null },
+    { say: 'The traffic noise is gone. So is the road, and the wall, and the shop.', who: null },
+    { say: 'You are standing on a rutted cart track in cold air that smells like woodsmoke and low tide. There are two large houses behind you with glass in every window.', who: null },
+    { say: 'This is Salem Town, and it is the first week of March, 1692.', who: null },
+    { say: 'Nobody has been arrested. Nothing has happened yet.', who: null },
+    { say: 'The village is five miles north. Start walking.', who: null },
+  ],
+
+  arriveVillage: [
+    { say: 'That took a while.', who: null },
+    { say: 'The houses have been getting smaller for the last mile. Less glass. No paint at all now.', who: null },
+    { learn: 'clue.road', source: 'observed' },
+    { say: 'This is Salem Village. Everyone who lives here walks that road to pay their taxes, argue their land claims, and answer to the court in the town you just left.', who: null },
+    { say: 'Then they walk back.', who: null },
+  ],
+};
 const CLUES = {
+  ...PRESENT_CLUES,
 
   /* Reverend Parris's contract promised him firewood. The village stopped
    * delivering it. The whole salary dispute, rendered as an object you can
@@ -1891,9 +2251,9 @@ const CLUES = {
   seatingChart: [
     { say: 'A sheet nailed to the wall by the door, where nobody can avoid it.', who: null },
     { say: 'It is the seating. Every household in the village, assigned a place.', who: null },
-    { say: 'The front rows are written in a heavier hand: the men who pay the largest rates, and their wives, and the elders. Behind them, in smaller writing, everyone else. At the back, names with no title at all.', who: null },
+    { say: 'The front rows are written in a heavier hand: the men who pay the most tax, and their wives, and the elders. Behind them, in smaller writing, everyone else. At the back, names with no title at all.', who: null },
     { learn: 'clue.seating', source: 'observed' },
-    { say: 'Twice every Sabbath, this whole village sits down in the exact order of who matters. Nobody has to be told where they stand. They can read it on the wall.', who: null },
+    { say: 'Twice every Sunday, this whole village sits down in the exact order of who matters. Nobody has to be told where they stand. They can read it on the wall.', who: null },
   ],
 
   pews: [
@@ -1936,7 +2296,7 @@ const CLUES = {
     { say: 'More glass. Painted trim. A second storey. Fenced gardens, kept up. One of these houses has more window than the whole of Salem Village put together.', who: null },
     { learn: 'clue.road', source: 'observed' },
     { say: 'This is Salem Town. It is five miles from the meetinghouse you started at, and it is a different world, and everyone in the village walks this road.', who: null },
-    { say: 'They walk it to pay their rates, argue their deeds, and answer to the court. Then they walk back.', who: null },
+    { say: 'They walk it to pay their taxes, argue their land claims, and answer to the court. Then they walk back.', who: null },
   ],
 };
 
@@ -1961,6 +2321,104 @@ const CLUES = {
 
 const LINEN = '#d8d2c2';
 const NPCS = {
+
+  /* -------------------------------------------------------------------- *
+   * NORA ALVAREZ, 17 — present day
+   *
+   * Summer job at the memorial. The design doc calls for a peer voice, and
+   * the rule for every present-day character is that they ask questions
+   * rather than answer them: the moment a modern character starts
+   * explaining the seventeenth century, the game turns into a worksheet
+   * with a walking animation.
+   *
+   * She sounds seventeen. Contractions, deflection, a joke when it gets
+   * heavy. She is not a docent and she is not the theme.
+   * -------------------------------------------------------------------- */
+  nora: {
+    id: 'nora',
+    name: 'Nora',
+    spec: {
+      flesh: FLESH.olive, hair: HAIR.black,
+      coat: CLOTH.staffTeal, under: CLOTH.denim,
+    },
+    greet: [
+      {
+        if: { notSpokenTo: ['nora'] },
+        then: [
+          { say: 'A girl about your age, in a staff polo, sitting on the wall with her phone face-down beside her.', who: null },
+          'Hey. You can sit on them, by the way. Everyone stands there trying to figure out if they\'re allowed.',
+          'You\'re allowed. That\'s the whole point of a bench.',
+        ],
+        else: ['Hey again.'],
+      },
+    ],
+    topics: [
+      {
+        id: 'job', label: 'Do you work here?',
+        lines: [
+          'Sort of. I do the visitor cart in summer and I keep an eye on this place.',
+          'It\'s mostly telling people the bathroom is not in the cemetery.',
+          { say: 'She nods at the graveyard on the other side of the wall.', who: null },
+          'That\'s the Old Burying Point back there. It\'s older than the memorial by about three hundred years, and people get them confused constantly.',
+          'None of the twenty are buried here, if that\'s what you were going to ask. They didn\'t get graves. That was sort of the point of executing them as witches.',
+          { learn: 'present.nograves' },
+        ],
+      },
+      {
+        id: 'real', label: 'Do people ask you if it was real?',
+        lines: [
+          { say: 'She laughs, but not like it\'s funny.', who: null },
+          'Every single day.',
+          '"Was it real?" And I never know what to tell them, because — what are you asking me?',
+          'Because if you mean were there actual witches, then no, obviously.',
+          'But if you mean did twenty real people actually get killed by an actual court that actually sat right over there and wrote it all down —',
+          { say: 'She taps the bench she\'s sitting on.', who: null },
+          'Then it\'s the realest thing in this whole city.',
+          { learn: 'present.realquestion' },
+          'And people go "oh, right," and then they go buy a witch hat. I\'m not even mad about it. I just think it\'s weird that both things are on the same street.',
+        ],
+      },
+      {
+        id: 'shop', label: 'What do you think about the shops?',
+        require: ['present.tourism'],
+        lines: [
+          { say: 'She shrugs, and it\'s a real shrug, not a dismissive one.', who: null },
+          'My cousin works at one. It pays better than this does.',
+          'Look — this city has, like, a million visitors a year and most of them come because of the witch thing. That pays for roads. It pays for my school.',
+          'I\'m not going to stand here and tell you those people are monsters for selling a magnet.',
+          'It\'s just... nobody in 1692 called themselves a witch. That was the accusation. That was the thing that got them killed.',
+          { say: 'She looks at the shop for a second.', who: null },
+          'And now it\'s the brand. That\'s all. I don\'t have a solution, I just notice it.',
+        ],
+      },
+      {
+        id: 'johnson', label: 'Has anything changed recently?',
+        lines: [
+          'Actually, yeah. Two thousand twenty-two.',
+          'So there was one person still on the list who\'d never been officially cleared. Elizabeth Johnson Jr. Convicted, sentenced to hang, never executed — and then just... never formally pardoned. For three hundred and twenty-nine years.',
+          'Everybody else got cleared eventually. She didn\'t, because she had no descendants to push for it. Nobody was left to be annoyed on her behalf.',
+          { say: 'She sits up a bit.', who: null },
+          'And then an eighth-grade civics class in North Andover found out and decided that was ridiculous.',
+          'They did the research, they wrote the bill, they got a state senator to file it. It went through as an amendment to the state budget.',
+          { learn: 'present.johnson' },
+          'Thirteen-year-olds. In 2022. Cleared her name.',
+          'So when people ask me if this is old history, I usually just tell them that.',
+        ],
+      },
+      {
+        id: 'gap', label: 'What\'s the gap in the wall for?',
+        require: ['present.threshold'],
+        lines: [
+          { say: 'She looks where you\'re pointing — the opening in the far wall.', who: null },
+          'Huh. I actually don\'t know.',
+          'I\'ve worked here two summers and I\'ve never gone through it.',
+          { say: 'She picks her phone back up.', who: null },
+          'You should go look, I guess. Tell me what\'s over there.',
+        ],
+      },
+    ],
+    farewell: ['See you.'],
+  },
 
   /* -------------------------------------------------------------------- *
    * TITUBA
@@ -2126,7 +2584,7 @@ const NPCS = {
           'My call to this village was agreed in writing. Salary, and the parsonage, and my firewood found for me. That was the agreement.',
           'I have had no firewood delivered since November.',
           { learn: ['fact.salary'] },
-          'And in October they elected a village committee out of the very men who have opposed me from the first day, and that committee has not collected the rate for my salary since.',
+          'And in October they elected a new village committee, made up of the very men who have opposed me from the first day. That committee sets the rate — the tax that pays me — and they have not collected a penny of it since.',
           'They will not dismiss me. That would require a vote, and a reason, and courage.',
           { say: 'He straightens the sheets that are crossed through.', who: null },
           'So instead they let me be cold, and wait for me to leave of my own accord.',
@@ -2191,7 +2649,7 @@ const NPCS = {
         then: [
           { say: 'A girl of about twelve, sitting very straight, mending something she has clearly been given to keep her occupied.', who: null },
           'You are the one who has been walking about the village.',
-          'Mother says I am not to talk to people I do not know.',
+          'Mother says I\'m not to talk to people I don\'t know.',
           { say: 'She keeps talking.', who: null },
           'What do you want to know?',
         ],
@@ -2203,7 +2661,7 @@ const NPCS = {
         id: 'girls', label: 'The girls at the parsonage.',
         lines: [
           'Betty and Abigail.',
-          'I have seen them. Everyone has seen them, they do not hide it any more.',
+          'I\'ve seen them. Everyone has. They don\'t hide it any more.',
           { learn: ['fact.girls'] },
           { say: 'She threads the needle again, badly, and starts over.', who: null },
           'When it takes them they do not look like themselves. Abigail ran across the room on all fours.',
@@ -2218,12 +2676,12 @@ const NPCS = {
         lines: [
           { say: 'The mending stops.', who: null },
           'My mother has buried children.',
-          'More than one. I am not going to say how many to a stranger.',
+          'More than one. I\'m not going to tell a stranger how many.',
           { learn: ['fact.annsr'] },
           'She wakes in the night sometimes and says their names, and my father tells me to go back to bed.',
           { say: 'She looks at the door as if checking it.', who: null },
           'In this house we do not say that a thing is nobody\'s fault. If a child dies there is a reason, and if there is a reason there is somebody it belongs to.',
-          'That is what I have been taught. I do not know another way to think about it.',
+          'That\'s what I\'ve been taught. I don\'t know another way to think about it.',
         ],
       },
       {
@@ -2294,7 +2752,7 @@ const NPCS = {
         then: [
           { say: 'She is hauling water and does not put the bucket down.', who: null },
           'If you are looking for Mr. Putnam he is not here.',
-          'If you are looking to gawp at the girls, the parsonage is that way and you are not the first today.',
+          'If you\'re here to stare at the girls, the parsonage is that way, and you\'re not the first today.',
         ],
         else: ['Still here, then.'],
       },
@@ -2327,7 +2785,7 @@ const NPCS = {
             then: ['The Putnams call it charity that they took me. I call it a place to sleep and work enough to earn it. Both are true.'],
             else: [],
           },
-          'I do not sleep well. That is the part they complain of.',
+          'I don\'t sleep well. That\'s the part they complain about.',
           { say: 'She looks north, past the trees, for slightly too long.', who: null },
           'When those girls scream that they see something in the room, this village thinks it is hearing about the Devil.',
           'I have been in a room where the thing you are afraid of is actually outside the door. It does not sound different from the inside.',
@@ -2392,7 +2850,7 @@ const NPCS = {
           'We took this farm on a mortgage. Three hundred acres. We are paying it still and we will be paying it when I am gone.',
           { learn: ['fact.nurseland'] },
           { say: 'She says it with plain pride, and no apology.', who: null },
-          'I am a covenanted member of the church in Salem Town. I walk in when I am able. I am not always able now.',
+          'I am a full member of the church in Salem Town — I took the covenant, which not everybody here has. I walk in when I am able. I am not always able now.',
         ],
       },
       {
@@ -2427,7 +2885,7 @@ const NPCS = {
           'It is nothing. It is what neighbours do.',
           { say: 'She says the next part gently, and it is the most frightening thing anyone says to you in this village.', who: null },
           'You cannot live five miles from a family for forty years and not have something between you.',
-          'Everyone here has something between them and somebody. It has never signified.',
+          'Everyone here has something between them and somebody. It has never once come to anything.',
         ],
       },
       {
@@ -2437,7 +2895,7 @@ const NPCS = {
           'Ah. You have looked at the chart.',
           'They seat us by what we are worth. Rates paid, land held, age, standing. The committee sits and decides it and then it is nailed up where everyone can read it.',
           { learn: ['fact.factions'] },
-          'And every Sabbath, twice, the whole village sits down in the exact order of who matters.',
+          'And twice every Sunday, the whole village sits down in the exact order of who matters.',
           { say: 'She almost laughs.', who: null },
           'I have been moved forward once in my life and back once. I remember both.',
           'You may think that is a small vanity in an old woman. Go and stand in that room and look at who is in the front and who is at the back, and then tell me it is small.',
@@ -2467,7 +2925,7 @@ const NPCS = {
         then: [
           'Sit where you like. It is early yet.',
           { say: 'A heavy man of about sixty, wiping something that is already clean.', who: null },
-          'I keep the ordinary and I am a deacon of the church, which means I hear everything twice — once sober and once not.',
+          'I keep the ordinary — that\'s what we call a tavern — and I\'m a deacon of the church. Which means I hear everything twice. Once sober and once not.',
         ],
         else: ['Back for more, are you.'],
       },
@@ -2497,7 +2955,7 @@ const NPCS = {
           'He was called here in eighty-nine and the terms were agreed — salary, the parsonage, his firewood found for him.',
           { learn: ['fact.salary'] },
           'And then in October the village elected a new committee, and every man on it is one of those that never wanted him.',
-          'They have not collected his rate since. Nor sent his wood.',
+          'They have not collected the tax that pays him since. Nor sent his wood.',
           {
             if: { knows: ['clue.woodpile'] },
             then: ['You have seen his woodpile, I dare say. Then you have seen the argument.'],
@@ -2650,7 +3108,7 @@ function villageGround() {
 
   // Spurs to each door.
   vroad(g, 10, 22, 28, 1);         // parsonage
-  vroad(g, 33, 17, 20, 1);         // Ingersoll's ordinary
+  vroad(g, 33, 17, 20, 1);         // Ingersoll's tavern
   vroad(g, 33, 22, 29, 1);         // Putnam house
   vroad(g, 7, 14, 20, 1);          // Nurse homestead
   vroad(g, 28, 3, 20, 1);          // north, into the woods
@@ -2674,7 +3132,7 @@ const VILLAGE = {
     { kind: 'house', x: 8, y: 24, w: 6, h: 5, doorCol: 2, windows: [1, 4], chimney: 'center' },
     { kind: 'woodpile', x: 14, y: 27 },
 
-    // --- Ingersoll's ordinary ------------------------------------------
+    // --- Ingersoll's ordinary (the tavern) -----------------------------
     { kind: 'house', x: 30, y: 12, w: 7, h: 5, doorCol: 3, windows: [1, 5], chimney: 'left' },
 
     // --- the Nurse homestead, west ------------------------------------
@@ -2773,7 +3231,11 @@ const ROAD = {
     { x: 8, y: 0, to: 'village', tx: 23, ty: 36, dir: 'up' },
   ],
   triggers: [
+    // Walking south from the village: the payoff at the rich end.
     { id: 'roadEnd', x: 7, y: 30, w: 2, h: 1 },
+    // Walking north at the start of the game: arriving in the village. Fires
+    // once, on the opening walk, so it never interrupts a later trip south.
+    { id: 'arriveVillage', x: 7, y: 2, w: 2, h: 1 },
   ],
   interact: [],
   npcs: [],
@@ -2824,7 +3286,7 @@ const MEETINGHOUSE = {
 };
 const TAVERN = {
   id: 'tavern',
-  name: "Ingersoll's ordinary",
+  name: "Ingersoll's tavern",
   indoor: true,
   ground: (() => {
     const g = room(11, 9, 5);
@@ -2879,7 +3341,130 @@ const PUTNAMHOUSE = {
   interact: [],
   npcs: [{ id: 'annjr', x: 3, y: 3, dir: 'down' }],
 };
+
+/* ---------------------------------------------------------------------- *
+ * Present day — the Salem Witch Trials Memorial, Charter Street
+ *
+ * Dedicated in 1992 for the tercentenary. A low granite enclosure with
+ * twenty benches cantilevered out of the wall, one per person executed,
+ * each cut with a name, a means of execution and a date. Black locust
+ * trees inside. At the entrance, the victims' own protests of innocence
+ * are inscribed into the threshold stones — and they run into the wall and
+ * stop mid-sentence, to be walked over by everyone who comes in.
+ *
+ * That threshold is the first thing the player touches in this game, and
+ * it is the whole thesis in one object: their words were cut off, and we
+ * are still walking on them.
+ * ---------------------------------------------------------------------- */
+
+// The twenty executed, in the order they were killed. Nineteen hanged on
+// Proctor's Ledge; Giles Corey pressed to death for refusing to plead.
+const EXECUTED = [
+  { name: 'BRIDGET BISHOP',   fate: 'HANGED',           date: 'JUNE 10, 1692' },
+  { name: 'SARAH GOOD',       fate: 'HANGED',           date: 'JULY 19, 1692' },
+  { name: 'ELIZABETH HOWE',   fate: 'HANGED',           date: 'JULY 19, 1692' },
+  { name: 'SUSANNAH MARTIN',  fate: 'HANGED',           date: 'JULY 19, 1692' },
+  { name: 'REBECCA NURSE',    fate: 'HANGED',           date: 'JULY 19, 1692' },
+  { name: 'SARAH WILDES',     fate: 'HANGED',           date: 'JULY 19, 1692' },
+  { name: 'GEORGE BURROUGHS', fate: 'HANGED',           date: 'AUGUST 19, 1692' },
+  { name: 'MARTHA CARRIER',   fate: 'HANGED',           date: 'AUGUST 19, 1692' },
+  { name: 'GEORGE JACOBS SR.',fate: 'HANGED',           date: 'AUGUST 19, 1692' },
+  { name: 'JOHN PROCTOR',     fate: 'HANGED',           date: 'AUGUST 19, 1692' },
+  { name: 'JOHN WILLARD',     fate: 'HANGED',           date: 'AUGUST 19, 1692' },
+  { name: 'GILES COREY',      fate: 'PRESSED TO DEATH', date: 'SEPTEMBER 19, 1692' },
+  { name: 'MARTHA COREY',     fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'MARY EASTEY',      fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'ALICE PARKER',     fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'MARY PARKER',      fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'ANN PUDEATOR',     fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'WILMOT REDD',      fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'MARGARET SCOTT',   fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+  { name: 'SAMUEL WARDWELL',  fate: 'HANGED',           date: 'SEPTEMBER 22, 1692' },
+];
+
+const MW = 28, MH = 34;
+
+// Where the twenty benches sit. Order matters: this list is zipped against
+// EXECUTED in order, and slot 4 — Rebecca Nurse — is deliberately the one
+// beside the gap in the north wall. The last name the player reads in the
+// present is hers, with the date she is hanged, and then they step through
+// the gap into the March before any of it happened.
+const BENCH_SLOTS = [
+  { x: 6, y: 20 }, { x: 6, y: 18 }, { x: 6, y: 16 }, { x: 6, y: 14 },
+  { x: 15, y: 5 },                                    // <- beside the gap
+  { x: 6, y: 12 }, { x: 6, y: 10 }, { x: 6, y: 8 }, { x: 6, y: 6 },
+  { x: 8, y: 5 }, { x: 10, y: 5 }, { x: 17, y: 5 },
+  ...[6, 8, 10, 12, 14, 16, 18, 20].map((y) => ({ x: 20, y })),
+];
+
+function memorialGround() {
+  const g = grid(MW, MH, 'B');     // red brick sidewalk, a city block
+  box(g, 5, 4, 18, 18, 'G');       // granite paving inside the enclosure
+  box(g, 6, 5, 16, 16, 'L');       // the lawn
+  box(g, 0, 24, MW, 3, 'A');       // Charter Street
+  return rows(g);
+}
+
+// The low wall: three sides plus a south face, with a gap at x=13-14 in each
+// of the north and south walls — the entrance, and the way out of 1692.
+const WALL_GAP = [13, 14];
+const memorialWall = () => [
+  ...Array.from({ length: 18 }, (_, i) => ({ kind: 'lowwall', x: 5, y: 4 + i })),
+  ...Array.from({ length: 18 }, (_, i) => ({ kind: 'lowwall', x: 22, y: 4 + i })),
+  ...Array.from({ length: 16 }, (_, i) => 6 + i)
+    .filter((x) => !WALL_GAP.includes(x))
+    .flatMap((x) => [{ kind: 'lowwall', x, y: 4 }, { kind: 'lowwall', x, y: 21 }]),
+];
+const MEMORIAL = {
+  id: 'memorial',
+  name: 'Salem Witch Trials Memorial',
+  era: 'present',
+  ground: memorialGround(),
+  props: [
+    ...memorialWall(),
+    ...BENCH_SLOTS.map((b) => ({ kind: 'membench', x: b.x, y: b.y })),
+
+    { kind: 'locust', x: 9, y: 9 },
+    { kind: 'locust', x: 16, y: 15 },
+    { kind: 'locust', x: 1, y: 15 },
+    { kind: 'locust', x: 24, y: 8 },
+
+    { kind: 'signboard', x: 17, y: 22 },
+    { kind: 'bin', x: 3, y: 23 },
+
+    // Across the street. Salem sells this history; the game just shows it.
+    { kind: 'shopfront', x: 8, y: 29, w: 7, h: 5 },
+  ],
+  // Stepping through the gap in the north wall puts you at the Salem Town
+  // end of the road in 1692 — so the first thing you do in the past is walk
+  // the five miles from the money to the village that resents it. No
+  // explanation of how you got there, ever: any mechanism invites a student
+  // to interrogate the mechanism instead of the history.
+  warps: [
+    { x: 13, y: 4, to: 'road', tx: 7, ty: 28, dir: 'up', script: 'arrive1692' },
+    { x: 14, y: 4, to: 'road', tx: 8, ty: 28, dir: 'up', script: 'arrive1692' },
+  ],
+  interact: [
+    { id: 'threshold', x: 13, y: 21, w: 2, h: 1 },
+    { id: 'memorialSign', x: 17, y: 22, w: 2, h: 2 },
+    { id: 'shopWindow', x: 8, y: 29, w: 7, h: 1 },
+    // Each bench carries its own inscription.
+    ...BENCH_SLOTS.map((b, i) => ({
+      id: 'bench', x: b.x, y: b.y, w: 2, h: 1, bench: EXECUTED[i],
+    })),
+  ],
+  triggers: [
+    { id: 'arriveMemorial', x: 11, y: 22, w: 6, h: 1 },
+    // The threshold is too important to leave to chance, so it fires by
+    // being walked over — which is also exactly how it works in life.
+    { id: 'threshold', x: 13, y: 21, w: 2, h: 1 },
+  ],
+  npcs: [
+    { id: 'nora', x: 18, y: 19, dir: 'left' },
+  ],
+};
 const MAPS = {
+  memorial: MEMORIAL,
   village: VILLAGE,
   road: ROAD,
   parsonage: PARSONAGE,
@@ -2913,6 +3498,11 @@ const GROUND = {
   '#': 'wall',
   'H': 'hearthstone',
   'x': 'void',
+  // Present day.
+  'L': 'lawn',
+  'G': 'paving',
+  'B': 'brick',
+  'A': 'asphalt',
 };
 
 const SOLID_GROUND = new Set(['water', 'void', 'wall']);
@@ -2938,6 +3528,14 @@ const PROPS = {
   table:        { w: 2, h: 1, build: () => buildTable() },
   pew:          { w: 1, h: 1, build: () => buildPew() },
   accountbook:  { w: 1, h: 1, build: () => buildAccountBook(), passable: true },
+
+  // Present day.
+  membench:     { w: 2, h: 1, build: () => buildMemBench() },
+  lowwall:      { w: 1, h: 1, build: () => buildLowWall() },
+  locust:       { w: 3, h: 4, build: () => buildLocust(), solidRows: 1 },
+  signboard:    { w: 2, h: 2, build: () => buildSignboard(), solidRows: 1 },
+  bin:          { w: 1, h: 1, build: () => buildBin() },
+  shopfront:    { w: 6, h: 5, build: (o) => buildShopfront(o.w || 6, o.h || 5), sized: true },
 };
 
 let TILES = null;
@@ -3037,6 +3635,7 @@ function buildMap(def) {
 
   return {
     id: def.id, name: def.name, indoor: !!def.indoor,
+    era: def.era || '1692',
     w, h, terrain, solid, props, warps, interact, triggers,
     npcs: [], def,
   };
@@ -3104,7 +3703,7 @@ function renderMap(g, map, cam, actors) {
 
   // --- ground ---------------------------------------------------------
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.fillStyle = map.indoor ? '#0d0e11' : '#20232a';
+  g.fillStyle = map.indoor ? '#0d0e11' : (map.era === 'present' ? '#2b3038' : '#20232a');
   g.fillRect(0, 0, VIEW_W, VIEW_H);
   if (z !== 1) g.setTransform(z, 0, 0, z, 0, 0);
 
@@ -3160,6 +3759,15 @@ function renderMap(g, map, cam, actors) {
     grd.addColorStop(1, 'rgba(8,8,12,0.5)');
     g.fillStyle = grd;
     g.fillRect(0, 0, VIEW_W, VIEW_H);
+  } else if (map.era === 'present') {
+    // A warm lift over the present-day maps. The terrain and props already
+    // do most of the work of separating the eras; this is the last few
+    // percent, so a student registers the century before reading a word.
+    g.save();
+    g.globalCompositeOperation = 'soft-light';
+    g.fillStyle = 'rgba(255, 196, 122, 0.30)';
+    g.fillRect(0, 0, VIEW_W, VIEW_H);
+    g.restore();
   }
 }
 
@@ -3350,12 +3958,14 @@ function drawToast(g, view, s, text, alpha) {
   if (alpha <= 0) return;
   g.save();
   g.globalAlpha = Math.min(1, alpha);
-  // Sits clear of the place-name label in the top-left corner.
+  // Tucked under the place-name label rather than beside it — some map
+  // names are long, and "Salem Witch Trials Memorial" collides with
+  // anything sharing that line.
   g.font = `600 ${8.5 * s}px system-ui, -apple-system, sans-serif`;
   const w = g.measureText(text).width + 20 * s;
   const h = 17 * s;
-  const x = view.x + view.w - w - 8 * s;
-  const y = view.y + 8 * s;
+  const x = view.x + 8 * s;
+  const y = view.y + 30 * s;
   g.fillStyle = 'rgba(26,26,30,0.88)';
   g.fillRect(x, y, w, h);
   g.fillStyle = P.accent;
@@ -3551,7 +4161,7 @@ class Game {
     this.playerFrames = buildActor(PLAYER_SPEC);
 
     this.player = {
-      map: 'village', tx: 22, ty: 18, px: 22 * TS, py: 18 * TS,
+      map: 'memorial', tx: 13, ty: 25, px: 13 * TS, py: 25 * TS,
       dir: 'down', dirIndex: DIR_INDEX.down, moving: false, t: 0,
       fromX: 0, fromY: 0, steps: 0, animFrame: 0,
       frames: this.playerFrames,
@@ -3631,8 +4241,10 @@ class Game {
       GameState.clear();
       this.state = new GameState();
       this.runner = new DialogueRunner(this.state);
-      this.player.map = 'village';
-      this.setTile(22, 18);
+      this.player.map = 'memorial';
+      this.setTile(13, 25);
+      this.player.dir = 'up';
+      this.player.dirIndex = DIR_INDEX.up;
     }
     this.mode = 'play';
     this.state.visited.add(this.player.map);
@@ -3640,15 +4252,13 @@ class Game {
   }
 
   openingBeat() {
-    // One short framing before the player is let loose. The design doc is
-    // firm that the question is never posed as an essay prompt, so this
-    // says what the player is and then gets out of the way.
+    // Deliberately almost nothing. The game opens on a street in Salem in
+    // the present day, and the memorial itself does the framing — the
+    // threshold stones, twenty benches, and a bored seventeen-year-old.
+    // The one thing worth saying out loud is the rule the whole game runs
+    // on, and even that waits until the player has stepped into 1692.
     this.startScript([
-      { say: 'Salem Village, Massachusetts Bay. The first week of March, 1692.', who: null },
-      { say: 'Two girls in the minister\'s house have been ill since winter, and the doctor has stopped looking for a cause in their bodies.', who: null },
-      { say: 'Nobody has been arrested. Nothing has happened yet.', who: null },
-      { say: 'You cannot change any of this. You can walk around, and talk to people, and notice things.', who: null },
-      { say: 'Press N at any time to look at what you have been told.', who: null },
+      { say: 'Arrow keys or WASD to walk. Z to look at things and to talk. N for your notebook.', who: null },
     ], null);
   }
 
@@ -3758,15 +4368,19 @@ class Game {
     if (npc) { this.talkTo(npc); return; }
 
     const spot = interactAt(map, fx, fy);
-    if (spot && CLUES[spot.id]) {
-      const before = this.state.flags.size;
-      this.startScript(CLUES[spot.id], null, () => {
-        this.mode = 'play';
-        this.dlg = null;
-        if (this.state.flags.size > before) this.showToast('Noted in your notebook');
-        this.save();
-      });
-    }
+    if (!spot) return;
+    // Memorial benches are generated from their inscription data rather than
+    // hand-written twenty times over.
+    const script = spot.bench ? benchScript(spot.bench) : CLUES[spot.id];
+    if (!script) return;
+
+    const before = this.state.flags.size;
+    this.startScript(script, null, () => {
+      this.mode = 'play';
+      this.dlg = null;
+      if (this.state.flags.size > before) this.showToast('Noted in your notebook');
+      this.save();
+    });
   }
 
   showToast(text) { this.toast = { text, t: 2.6 }; }
@@ -3820,6 +4434,18 @@ class Game {
     this.mapFor(w.to);
     this.fade = 0.28;
     this.save();
+
+    // A warp can carry its own arrival beat. Only one does: the gap in the
+    // memorial wall, which is where the player crosses three centuries and
+    // the game declines to explain how.
+    if (w.script && CLUES[w.script] && !this.state.knows(`fired.warp.${w.script}`)) {
+      this.state.learn(`fired.warp.${w.script}`, 'observed');
+      this.startScript(CLUES[w.script], null, () => {
+        this.mode = 'play';
+        this.dlg = null;
+        this.save();
+      });
+    }
   }
 
   /* ---------------- update ---------------- */
@@ -3968,7 +4594,7 @@ class Game {
     const entries = notebookEntries(this.state);
     const lines = [
       'SALEM VILLAGE, 1692 — what I saw and was told',
-      'Chapter one: March 1692',
+      'The memorial, and Salem Village in March 1692',
       '',
     ];
     if (!entries.length) {

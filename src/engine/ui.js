@@ -187,12 +187,14 @@ export function drawToast(g, view, s, text, alpha) {
   if (alpha <= 0) return;
   g.save();
   g.globalAlpha = Math.min(1, alpha);
-  // Sits clear of the place-name label in the top-left corner.
+  // Tucked under the place-name label rather than beside it — some map
+  // names are long, and "Salem Witch Trials Memorial" collides with
+  // anything sharing that line.
   g.font = `600 ${8.5 * s}px system-ui, -apple-system, sans-serif`;
   const w = g.measureText(text).width + 20 * s;
   const h = 17 * s;
-  const x = view.x + view.w - w - 8 * s;
-  const y = view.y + 8 * s;
+  const x = view.x + 8 * s;
+  const y = view.y + 30 * s;
   g.fillStyle = 'rgba(26,26,30,0.88)';
   g.fillRect(x, y, w, h);
   g.fillStyle = P.accent;

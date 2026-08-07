@@ -452,6 +452,175 @@ export function buildPew() {
   return s;
 }
 
+/* ---------------------------------------------------------------------- *
+ * Present day — the Salem Witch Trials Memorial, Charter Street
+ * ---------------------------------------------------------------------- */
+
+/**
+ * One memorial bench: a granite slab cantilevered out of the low wall, with
+ * a name, a means of execution and a date cut into its edge. There are
+ * twenty of them and they are identical, which is the point — the design
+ * refuses to rank the dead or make any one of them the interesting one.
+ */
+export function buildMemBench() {
+  const W = 2 * TS, H = TS;
+  const s = surface(W, H + 5);
+  const g = s.g;
+  // A hard cast shadow first — this is granite sitting on granite, and the
+  // shadow is doing most of the work of separating the two.
+  rect(g, 2, 12, W - 3, 4, 'rgba(18,20,24,0.5)');
+  // Slab, lit from upper-left.
+  rect(g, 1, 3, W - 2, 10, P.granite);
+  rect(g, 2, 3, W - 4, 4, P.graniteHi);
+  rect(g, 1, 11, W - 2, 2, P.graniteDeep);
+  stroke(g, 1, 3, W - 2, 10, P.outline);
+  speckle(g, 2, 5, W - 4, 6, P.graniteLo, 0.16, 401);
+  // The inscribed edge — reads as lettering without being readable.
+  for (let x = 5; x < W - 5; x += 3) px(g, x, 9, P.graniteDeep);
+  ellipse(g, W / 2, H + 2, 13, 2, P.shadow);
+  return s;
+}
+
+/** A course of the low granite enclosure wall. */
+export function buildLowWall() {
+  const s = surface(TS, TS + 4);
+  const g = s.g;
+  // Cast shadow, so the enclosure reads as a wall you are standing inside
+  // rather than a change of paving.
+  rect(g, 0, 14, TS, 4, 'rgba(18,20,24,0.42)');
+  rect(g, 0, 1, TS, 14, P.granite);
+  rect(g, 0, 1, TS, 4, P.graniteHi);       // top face catching the light
+  hline(g, 0, 5, TS, P.graniteLo);
+  rect(g, 0, 12, TS, 3, P.graniteDeep);    // shaded base course
+  speckle(g, 0, 6, TS, 6, P.graniteLo, 0.20, 409);
+  speckle(g, 0, 6, TS, 6, P.graniteHi, 0.08, 419);
+  hline(g, 0, 1, TS, P.outline);
+  hline(g, 0, 15, TS, P.outline);
+  vline(g, 0, 1, 15, P.graniteDeep);       // block joint
+  return s;
+}
+
+/** Black locust, in leaf. The memorial is planted with them. */
+export function buildLocust() {
+  const W = 3 * TS, H = 4 * TS;
+  const s = surface(W, H + 4);
+  const g = s.g;
+  const cx = Math.round(W / 2), base = H;
+
+  // Trunk.
+  for (let i = 0; i < 26; i++) {
+    const y = base - 1 - i;
+    const hw = Math.max(2, Math.round(4 - (i / 26) * 2));
+    rect(g, cx - hw, y, hw * 2, 1, P.bark);
+    px(g, cx - hw, y, P.outline);
+    px(g, cx + hw - 1, y, P.barkHi);
+  }
+  // Canopy: three overlapping masses so it doesn't read as one blob.
+  const lobes = [
+    [cx, base - 40, 20, 13], [cx - 13, base - 32, 13, 9], [cx + 13, base - 33, 13, 9],
+    [cx - 5, base - 48, 12, 8], [cx + 7, base - 47, 11, 8],
+  ];
+  for (const [x, y, rx, ry] of lobes) {
+    ellipse(g, x, y, rx + 1, ry + 1, P.outline);
+    ellipse(g, x, y, rx, ry, P.leaf);
+  }
+  for (const [x, y, rx, ry] of lobes) {
+    ellipse(g, x - 3, y - 3, Math.round(rx * 0.55), Math.round(ry * 0.5), P.leafHi);
+    ellipse(g, x + 4, y + 4, Math.round(rx * 0.4), Math.round(ry * 0.35), P.leafLo);
+  }
+  speckle(g, 4, base - 58, W - 8, 34, P.leafLo, 0.10, 431);
+  speckle(g, 4, base - 58, W - 8, 34, P.leafHi, 0.07, 439);
+
+  ellipse(g, cx, base + 1, 14, 3, P.shadow);
+  return s;
+}
+
+/** An interpretive sign on two posts — the kind every historic site has. */
+export function buildSignboard() {
+  const W = 2 * TS, H = 2 * TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+  rect(g, 6, 16, 3, 14, '#4a4d52');
+  rect(g, W - 9, 16, 3, 14, '#4a4d52');
+  rect(g, 1, 3, W - 2, 15, '#2f4a52');
+  stroke(g, 1, 3, W - 2, 15, P.outline);
+  rect(g, 3, 5, W - 6, 11, '#3d616b');
+  // Text ruling and a small image block, angled reader-style.
+  for (let i = 0; i < 4; i++) hline(g, 5, 7 + i * 2, W - 16, '#9fc0c7');
+  rect(g, W - 12, 7, 8, 7, '#8aa9b0');
+  ellipse(g, W / 2, H + 1, 11, 2, P.shadow);
+  return s;
+}
+
+/** A public bin. Small, mundane, and doing a lot of work to say "present". */
+export function buildBin() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  rect(g, 3, 4, 10, 12, '#3c4348');
+  stroke(g, 3, 4, 10, 12, P.outline);
+  rect(g, 2, 2, 12, 3, '#4d565c');
+  stroke(g, 2, 2, 12, 3, P.outline);
+  vline(g, 5, 6, 9, '#4d565c');
+  vline(g, 10, 6, 9, '#4d565c');
+  ellipse(g, 8, 16, 7, 2, P.shadow);
+  return s;
+}
+
+/**
+ * A storefront across the street. Salem sells this history — witch hats,
+ * fridge magnets, ghost tours — about two hundred feet from the memorial.
+ * The game never editorialises about it. It just puts it in frame.
+ */
+export function buildShopfront(wT = 6, hT = 5) {
+  const W = wT * TS, H = hT * TS;
+  const s = surface(W, H + 6);
+  const g = s.g;
+  const foundH = 4;
+  const upperH = Math.round(H * 0.44);
+
+  // Upper storey: painted clapboard, sash windows.
+  rect(g, 0, 0, W, upperH, '#6d5f5a');
+  for (let y = 3; y < upperH; y += 4) { hline(g, 0, y, W, '#5b4f4b'); hline(g, 0, y + 1, W, '#7d6e68'); }
+  for (let i = 1; i < wT - 1; i += 2) {
+    const wx = i * TS + 3;
+    rect(g, wx - 1, 7, 12, 15, '#3a3230');
+    rect(g, wx, 8, 10, 13, '#2b3037');
+    hline(g, wx, 14, 10, '#8f9aa2');
+    vline(g, wx + 5, 8, 13, '#8f9aa2');
+    hline(g, wx + 1, 9, 3, P.glassLit);
+  }
+  hline(g, 0, upperH - 1, W, P.outline);
+
+  // Awning — a hard, saturated stripe that reads modern instantly.
+  const ay = upperH;
+  for (let x = 0; x < W; x++) {
+    rect(g, x, ay, 1, 7, (Math.floor(x / 8) % 2) ? '#8a3b34' : '#d8cfc0');
+  }
+  hline(g, 0, ay, W, P.outline);
+  hline(g, 0, ay + 7, W, P.outline);
+  rect(g, 0, ay + 8, W, 2, 'rgba(20,20,24,0.4)');
+
+  // Shopfront glazing: one big plate window and a door.
+  const gy = ay + 10, gh = H - foundH - gy;
+  rect(g, 0, gy, W, gh, '#3b3330');
+  rect(g, 3, gy + 2, W - 22, gh - 4, '#2a3138');
+  stroke(g, 3, gy + 2, W - 22, gh - 4, '#8d827a');
+  // Reflected sky across the glass, and merchandise silhouettes behind it.
+  for (let i = 0; i < 3; i++) rect(g, 6 + i * 5, gy + 4, 2, gh - 8, 'rgba(150,175,195,0.16)');
+  for (let i = 0; i < 4; i++) rect(g, 8 + i * 9, gy + gh - 10, 5, 6, 'rgba(220,200,150,0.35)');
+  // Door.
+  rect(g, W - 17, gy + 2, 13, gh - 4, '#4a4038');
+  rect(g, W - 15, gy + 4, 9, gh - 12, '#2a3138');
+  stroke(g, W - 17, gy + 2, 13, gh - 4, P.outline);
+
+  // Foundation.
+  rect(g, 0, H - foundH, W, foundH, P.graniteLo);
+  hline(g, 0, H - foundH, W, P.outline);
+  g.fillStyle = P.shadow;
+  g.fillRect(2, H, W - 4, 4);
+  return s;
+}
+
 /** Ingersoll's account book, open on the tavern table. Debt as a map of
  *  resentment — who owes whom, in one object. */
 export function buildAccountBook() {

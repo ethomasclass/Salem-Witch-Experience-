@@ -8,6 +8,16 @@
 // file dump.
 
 export const KNOWLEDGE = {
+  // --- present day -------------------------------------------------------
+  'present.memorial':  'The Salem Witch Trials Memorial has twenty benches — one for each person executed in 1692.',
+  'present.threshold': 'The victims\' own words are carved into the stones at the entrance, and every one of them is cut off mid-sentence by the wall. That was a design decision.',
+  'present.nurse':     'One of the benches reads REBECCA NURSE · HANGED · JULY 19, 1692.',
+  'present.jaildeaths':'Five more people died in jail waiting for trial. They do not have benches.',
+  'present.nograves':  'None of the twenty are buried at the memorial. They were denied graves.',
+  'present.tourism':   'There is a shop selling witch hats and ghost tours about two hundred feet from the benches.',
+  'present.realquestion': 'Nora gets asked "was it real?" every day. Her answer: no witches, but a real court really killed twenty real people and wrote it all down.',
+  'present.johnson':   'Elizabeth Johnson Jr. was the last person still uncleared — for 329 years, because she had no descendants to push for it. An eighth-grade civics class in North Andover got her exonerated in 2022.',
+
   // --- things seen -------------------------------------------------------
   'clue.woodpile':   'The parsonage woodpile is nearly empty. His contract promised him firewood.',
   'clue.seating':    'The meetinghouse seats are assigned. The best rows go to the wealthiest families, and everyone sees the chart every Sunday.',
@@ -34,6 +44,7 @@ export const KNOWLEDGE = {
 /** Display name for whoever a piece of knowledge came from. */
 export const SOURCES = {
   observed:   'I saw this myself',
+  nora:       'Told to me by Nora, at the memorial',
   tituba:     'Told to me by Tituba',
   parris:     'Told to me by Rev. Parris',
   annjr:      'Told to me by Ann Putnam Jr.',

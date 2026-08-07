@@ -16,7 +16,7 @@ import {
 } from './engine/ui.js';
 import { MAPS } from './content/maps.js';
 import { NPCS } from './content/npcs.js';
-import { CLUES } from './content/clues.js';
+import { CLUES, benchScript } from './content/clues.js';
 import { notebookEntries, sourceName, KNOWLEDGE } from './content/knowledge.js';
 
 const MOVE_TIME = 0.16;      // seconds per tile
@@ -51,7 +51,7 @@ class Game {
     this.playerFrames = buildActor(PLAYER_SPEC);
 
     this.player = {
-      map: 'village', tx: 22, ty: 18, px: 22 * TS, py: 18 * TS,
+      map: 'memorial', tx: 13, ty: 25, px: 13 * TS, py: 25 * TS,
       dir: 'down', dirIndex: DIR_INDEX.down, moving: false, t: 0,
       fromX: 0, fromY: 0, steps: 0, animFrame: 0,
       frames: this.playerFrames,
@@ -131,8 +131,10 @@ class Game {
       GameState.clear();
       this.state = new GameState();
       this.runner = new DialogueRunner(this.state);
-      this.player.map = 'village';
-      this.setTile(22, 18);
+      this.player.map = 'memorial';
+      this.setTile(13, 25);
+      this.player.dir = 'up';
+      this.player.dirIndex = DIR_INDEX.up;
     }
     this.mode = 'play';
     this.state.visited.add(this.player.map);
@@ -140,15 +142,13 @@ class Game {
   }
 
   openingBeat() {
-    // One short framing before the player is let loose. The design doc is
-    // firm that the question is never posed as an essay prompt, so this
-    // says what the player is and then gets out of the way.
+    // Deliberately almost nothing. The game opens on a street in Salem in
+    // the present day, and the memorial itself does the framing — the
+    // threshold stones, twenty benches, and a bored seventeen-year-old.
+    // The one thing worth saying out loud is the rule the whole game runs
+    // on, and even that waits until the player has stepped into 1692.
     this.startScript([
-      { say: 'Salem Village, Massachusetts Bay. The first week of March, 1692.', who: null },
-      { say: 'Two girls in the minister\'s house have been ill since winter, and the doctor has stopped looking for a cause in their bodies.', who: null },
-      { say: 'Nobody has been arrested. Nothing has happened yet.', who: null },
-      { say: 'You cannot change any of this. You can walk around, and talk to people, and notice things.', who: null },
-      { say: 'Press N at any time to look at what you have been told.', who: null },
+      { say: 'Arrow keys or WASD to walk. Z to look at things and to talk. N for your notebook.', who: null },
     ], null);
   }
 
@@ -258,15 +258,19 @@ class Game {
     if (npc) { this.talkTo(npc); return; }
 
     const spot = interactAt(map, fx, fy);
-    if (spot && CLUES[spot.id]) {
-      const before = this.state.flags.size;
-      this.startScript(CLUES[spot.id], null, () => {
-        this.mode = 'play';
-        this.dlg = null;
-        if (this.state.flags.size > before) this.showToast('Noted in your notebook');
-        this.save();
-      });
-    }
+    if (!spot) return;
+    // Memorial benches are generated from their inscription data rather than
+    // hand-written twenty times over.
+    const script = spot.bench ? benchScript(spot.bench) : CLUES[spot.id];
+    if (!script) return;
+
+    const before = this.state.flags.size;
+    this.startScript(script, null, () => {
+      this.mode = 'play';
+      this.dlg = null;
+      if (this.state.flags.size > before) this.showToast('Noted in your notebook');
+      this.save();
+    });
   }
 
   showToast(text) { this.toast = { text, t: 2.6 }; }
@@ -320,6 +324,18 @@ class Game {
     this.mapFor(w.to);
     this.fade = 0.28;
     this.save();
+
+    // A warp can carry its own arrival beat. Only one does: the gap in the
+    // memorial wall, which is where the player crosses three centuries and
+    // the game declines to explain how.
+    if (w.script && CLUES[w.script] && !this.state.knows(`fired.warp.${w.script}`)) {
+      this.state.learn(`fired.warp.${w.script}`, 'observed');
+      this.startScript(CLUES[w.script], null, () => {
+        this.mode = 'play';
+        this.dlg = null;
+        this.save();
+      });
+    }
   }
 
   /* ---------------- update ---------------- */
@@ -468,7 +484,7 @@ class Game {
     const entries = notebookEntries(this.state);
     const lines = [
       'SALEM VILLAGE, 1692 — what I saw and was told',
-      'Chapter one: March 1692',
+      'The memorial, and Salem Village in March 1692',
       '',
     ];
     if (!entries.length) {

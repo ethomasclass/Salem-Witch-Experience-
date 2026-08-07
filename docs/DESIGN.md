@@ -34,11 +34,53 @@ living in it for half an hour — not things you read on a worksheet.
 
 ---
 
-## Structure — one village, three passes, three trips home
+## Structure — one village, three passes, four trips home
 
 Do not spread thirty minutes across a large map. Build one small village and
 dress it three times. It's cheap to produce and it's the entire emotional engine
 of the game.
+
+Total runtime ≈ 32 min.
+
+### Present · ≈ 3 min — Chapter zero: the memorial
+
+**The game opens in the present day, at the Salem Witch Trials Memorial on
+Charter Street.** Not a generic "present" — this location specifically, because
+it is also the closing location. One map, built once, used twice, and the game
+becomes a loop instead of a line.
+
+Three things happen here, and none of them is a text crawl:
+
+1. **The threshold stones.** The entrance is paved with the victims' own
+   protests of innocence, and every inscription runs into the base of the wall
+   and stops mid-sentence. That is a real feature of the 1992 memorial, and it
+   is the entire thesis of the game in one object the player physically walks
+   over. It fires on being stepped on, not on being examined — too important to
+   leave to chance.
+2. **Twenty benches**, each cut with a name, a means of execution, and a date.
+   All identical: the memorial refuses to rank the dead or make any one of them
+   the interesting one, and so does the game.
+3. **One person to talk to** — Nora, seventeen, summer job. Peer voice.
+
+**The player is given a name before they meet anybody.** The bench beside the
+gap in the north wall reads REBECCA NURSE · HANGED · JULY 19, 1692. So the
+player walks into her kitchen in March already knowing the date she dies, and
+knowing it while she does not. When she says *"everyone here has something
+between them and somebody, it has never once come to anything"* — that lands
+like a stone.
+
+This inverts the usual mystery structure on purpose: **give them the outcome,
+withhold the cause.** Knowing whodunnit and investigating *why* is what
+historical thinking actually is, and it is what the assignment asks for.
+
+**Do not explain the time travel.** Any mechanism — a device, a dream, an
+exhibit — invites a clever sixteen-year-old to interrogate the mechanism instead
+of the history. The player steps through a gap in the wall. Nobody remarks on
+it, then or ever.
+
+They arrive at the **Salem Town** end of the road, so the first thing they do in
+1692 is walk five miles from the money to the village that resents it. The road
+walk stops being an optional detour and becomes the opening.
 
 ### March 1692 · ≈ 8 min — Nothing has happened yet
 
@@ -201,6 +243,20 @@ living historian puts words in a real person's mouth. Their positions should be
 the real historiographical schools, with the actual books credited on screen so a
 curious student can chase them.
 
+> **The rule for every present-day character: they ask questions, they don't
+> answer them.**
+>
+> The moment a modern character starts explaining the seventeenth century, the
+> game turns into a worksheet with a walking animation. Nora doesn't tell the
+> player what to think about the gift shops — she says her cousin works at one
+> and it pays better than her job does, and that nobody in 1692 called
+> themselves a witch, and that she doesn't have a solution, she just notices it.
+>
+> The single exception is the legal historian on spectral evidence. That
+> genuinely is technical, and it is the interlude that reframes the trials from
+> "people were superstitious" to "the court had rules, and the rules were the
+> problem."
+
 - **The archaeologist** at the parsonage foundation — what objects say that
   people don't.
 - **The legal historian** — spectral evidence, the lost charter, no defense
@@ -257,8 +313,30 @@ curious student can chase them.
 
 ---
 
+## Two registers
+
+The game runs in two voices and the gap between them is doing work.
+
+**1692** is period-inflected but readable. No "forsooth", no dialect spelling.
+Where a period word carries real meaning it is used *and glossed in dialogue* —
+Ingersoll says "I keep the ordinary — that's what we call a tavern"; Parris
+explains that the rate is the tax that pays his salary. The UI always uses the
+plain modern word.
+
+**The present** is plain contemporary English, with contractions, hesitations
+and jokes. Nora sounds seventeen because she is. If a present-day scene could be
+mistaken for a museum placard, rewrite it.
+
+Within 1692, register also tracks character: Ann Putnam Jr. (12) and Mercy
+Lewis (19) use contractions; Parris, Rebecca Nurse and Ingersoll speak more
+formally. That is characterisation as well as readability.
+
+---
+
 ## Decisions
 
+0. **Open in the present, at the memorial.** ~3 min chapter zero. See the
+   structure section. Total runtime moves to ~32 min; March is not cut.
 1. **Player stake — someone notices you.** Pure observer through March and June.
    One rupture in September, and only one. See the Sept 1692 beat.
 2. **Course — general US History.** The ending prioritizes sourcing and causal

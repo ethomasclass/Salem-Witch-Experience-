@@ -23,6 +23,104 @@ const LINEN = '#d8d2c2';
 export const NPCS = {
 
   /* -------------------------------------------------------------------- *
+   * NORA ALVAREZ, 17 — present day
+   *
+   * Summer job at the memorial. The design doc calls for a peer voice, and
+   * the rule for every present-day character is that they ask questions
+   * rather than answer them: the moment a modern character starts
+   * explaining the seventeenth century, the game turns into a worksheet
+   * with a walking animation.
+   *
+   * She sounds seventeen. Contractions, deflection, a joke when it gets
+   * heavy. She is not a docent and she is not the theme.
+   * -------------------------------------------------------------------- */
+  nora: {
+    id: 'nora',
+    name: 'Nora',
+    spec: {
+      flesh: FLESH.olive, hair: HAIR.black,
+      coat: CLOTH.staffTeal, under: CLOTH.denim,
+    },
+    greet: [
+      {
+        if: { notSpokenTo: ['nora'] },
+        then: [
+          { say: 'A girl about your age, in a staff polo, sitting on the wall with her phone face-down beside her.', who: null },
+          'Hey. You can sit on them, by the way. Everyone stands there trying to figure out if they\'re allowed.',
+          'You\'re allowed. That\'s the whole point of a bench.',
+        ],
+        else: ['Hey again.'],
+      },
+    ],
+    topics: [
+      {
+        id: 'job', label: 'Do you work here?',
+        lines: [
+          'Sort of. I do the visitor cart in summer and I keep an eye on this place.',
+          'It\'s mostly telling people the bathroom is not in the cemetery.',
+          { say: 'She nods at the graveyard on the other side of the wall.', who: null },
+          'That\'s the Old Burying Point back there. It\'s older than the memorial by about three hundred years, and people get them confused constantly.',
+          'None of the twenty are buried here, if that\'s what you were going to ask. They didn\'t get graves. That was sort of the point of executing them as witches.',
+          { learn: 'present.nograves' },
+        ],
+      },
+      {
+        id: 'real', label: 'Do people ask you if it was real?',
+        lines: [
+          { say: 'She laughs, but not like it\'s funny.', who: null },
+          'Every single day.',
+          '"Was it real?" And I never know what to tell them, because — what are you asking me?',
+          'Because if you mean were there actual witches, then no, obviously.',
+          'But if you mean did twenty real people actually get killed by an actual court that actually sat right over there and wrote it all down —',
+          { say: 'She taps the bench she\'s sitting on.', who: null },
+          'Then it\'s the realest thing in this whole city.',
+          { learn: 'present.realquestion' },
+          'And people go "oh, right," and then they go buy a witch hat. I\'m not even mad about it. I just think it\'s weird that both things are on the same street.',
+        ],
+      },
+      {
+        id: 'shop', label: 'What do you think about the shops?',
+        require: ['present.tourism'],
+        lines: [
+          { say: 'She shrugs, and it\'s a real shrug, not a dismissive one.', who: null },
+          'My cousin works at one. It pays better than this does.',
+          'Look — this city has, like, a million visitors a year and most of them come because of the witch thing. That pays for roads. It pays for my school.',
+          'I\'m not going to stand here and tell you those people are monsters for selling a magnet.',
+          'It\'s just... nobody in 1692 called themselves a witch. That was the accusation. That was the thing that got them killed.',
+          { say: 'She looks at the shop for a second.', who: null },
+          'And now it\'s the brand. That\'s all. I don\'t have a solution, I just notice it.',
+        ],
+      },
+      {
+        id: 'johnson', label: 'Has anything changed recently?',
+        lines: [
+          'Actually, yeah. Two thousand twenty-two.',
+          'So there was one person still on the list who\'d never been officially cleared. Elizabeth Johnson Jr. Convicted, sentenced to hang, never executed — and then just... never formally pardoned. For three hundred and twenty-nine years.',
+          'Everybody else got cleared eventually. She didn\'t, because she had no descendants to push for it. Nobody was left to be annoyed on her behalf.',
+          { say: 'She sits up a bit.', who: null },
+          'And then an eighth-grade civics class in North Andover found out and decided that was ridiculous.',
+          'They did the research, they wrote the bill, they got a state senator to file it. It went through as an amendment to the state budget.',
+          { learn: 'present.johnson' },
+          'Thirteen-year-olds. In 2022. Cleared her name.',
+          'So when people ask me if this is old history, I usually just tell them that.',
+        ],
+      },
+      {
+        id: 'gap', label: 'What\'s the gap in the wall for?',
+        require: ['present.threshold'],
+        lines: [
+          { say: 'She looks where you\'re pointing — the opening in the far wall.', who: null },
+          'Huh. I actually don\'t know.',
+          'I\'ve worked here two summers and I\'ve never gone through it.',
+          { say: 'She picks her phone back up.', who: null },
+          'You should go look, I guess. Tell me what\'s over there.',
+        ],
+      },
+    ],
+    farewell: ['See you.'],
+  },
+
+  /* -------------------------------------------------------------------- *
    * TITUBA
    *
    * Enslaved in the Parris household. The records call her "Tituba Indian";
@@ -186,7 +284,7 @@ export const NPCS = {
           'My call to this village was agreed in writing. Salary, and the parsonage, and my firewood found for me. That was the agreement.',
           'I have had no firewood delivered since November.',
           { learn: ['fact.salary'] },
-          'And in October they elected a village committee out of the very men who have opposed me from the first day, and that committee has not collected the rate for my salary since.',
+          'And in October they elected a new village committee, made up of the very men who have opposed me from the first day. That committee sets the rate — the tax that pays me — and they have not collected a penny of it since.',
           'They will not dismiss me. That would require a vote, and a reason, and courage.',
           { say: 'He straightens the sheets that are crossed through.', who: null },
           'So instead they let me be cold, and wait for me to leave of my own accord.',
@@ -251,7 +349,7 @@ export const NPCS = {
         then: [
           { say: 'A girl of about twelve, sitting very straight, mending something she has clearly been given to keep her occupied.', who: null },
           'You are the one who has been walking about the village.',
-          'Mother says I am not to talk to people I do not know.',
+          'Mother says I\'m not to talk to people I don\'t know.',
           { say: 'She keeps talking.', who: null },
           'What do you want to know?',
         ],
@@ -263,7 +361,7 @@ export const NPCS = {
         id: 'girls', label: 'The girls at the parsonage.',
         lines: [
           'Betty and Abigail.',
-          'I have seen them. Everyone has seen them, they do not hide it any more.',
+          'I\'ve seen them. Everyone has. They don\'t hide it any more.',
           { learn: ['fact.girls'] },
           { say: 'She threads the needle again, badly, and starts over.', who: null },
           'When it takes them they do not look like themselves. Abigail ran across the room on all fours.',
@@ -278,12 +376,12 @@ export const NPCS = {
         lines: [
           { say: 'The mending stops.', who: null },
           'My mother has buried children.',
-          'More than one. I am not going to say how many to a stranger.',
+          'More than one. I\'m not going to tell a stranger how many.',
           { learn: ['fact.annsr'] },
           'She wakes in the night sometimes and says their names, and my father tells me to go back to bed.',
           { say: 'She looks at the door as if checking it.', who: null },
           'In this house we do not say that a thing is nobody\'s fault. If a child dies there is a reason, and if there is a reason there is somebody it belongs to.',
-          'That is what I have been taught. I do not know another way to think about it.',
+          'That\'s what I\'ve been taught. I don\'t know another way to think about it.',
         ],
       },
       {
@@ -354,7 +452,7 @@ export const NPCS = {
         then: [
           { say: 'She is hauling water and does not put the bucket down.', who: null },
           'If you are looking for Mr. Putnam he is not here.',
-          'If you are looking to gawp at the girls, the parsonage is that way and you are not the first today.',
+          'If you\'re here to stare at the girls, the parsonage is that way, and you\'re not the first today.',
         ],
         else: ['Still here, then.'],
       },
@@ -387,7 +485,7 @@ export const NPCS = {
             then: ['The Putnams call it charity that they took me. I call it a place to sleep and work enough to earn it. Both are true.'],
             else: [],
           },
-          'I do not sleep well. That is the part they complain of.',
+          'I don\'t sleep well. That\'s the part they complain about.',
           { say: 'She looks north, past the trees, for slightly too long.', who: null },
           'When those girls scream that they see something in the room, this village thinks it is hearing about the Devil.',
           'I have been in a room where the thing you are afraid of is actually outside the door. It does not sound different from the inside.',
@@ -452,7 +550,7 @@ export const NPCS = {
           'We took this farm on a mortgage. Three hundred acres. We are paying it still and we will be paying it when I am gone.',
           { learn: ['fact.nurseland'] },
           { say: 'She says it with plain pride, and no apology.', who: null },
-          'I am a covenanted member of the church in Salem Town. I walk in when I am able. I am not always able now.',
+          'I am a full member of the church in Salem Town — I took the covenant, which not everybody here has. I walk in when I am able. I am not always able now.',
         ],
       },
       {
@@ -487,7 +585,7 @@ export const NPCS = {
           'It is nothing. It is what neighbours do.',
           { say: 'She says the next part gently, and it is the most frightening thing anyone says to you in this village.', who: null },
           'You cannot live five miles from a family for forty years and not have something between you.',
-          'Everyone here has something between them and somebody. It has never signified.',
+          'Everyone here has something between them and somebody. It has never once come to anything.',
         ],
       },
       {
@@ -497,7 +595,7 @@ export const NPCS = {
           'Ah. You have looked at the chart.',
           'They seat us by what we are worth. Rates paid, land held, age, standing. The committee sits and decides it and then it is nailed up where everyone can read it.',
           { learn: ['fact.factions'] },
-          'And every Sabbath, twice, the whole village sits down in the exact order of who matters.',
+          'And twice every Sunday, the whole village sits down in the exact order of who matters.',
           { say: 'She almost laughs.', who: null },
           'I have been moved forward once in my life and back once. I remember both.',
           'You may think that is a small vanity in an old woman. Go and stand in that room and look at who is in the front and who is at the back, and then tell me it is small.',
@@ -527,7 +625,7 @@ export const NPCS = {
         then: [
           'Sit where you like. It is early yet.',
           { say: 'A heavy man of about sixty, wiping something that is already clean.', who: null },
-          'I keep the ordinary and I am a deacon of the church, which means I hear everything twice — once sober and once not.',
+          'I keep the ordinary — that\'s what we call a tavern — and I\'m a deacon of the church. Which means I hear everything twice. Once sober and once not.',
         ],
         else: ['Back for more, are you.'],
       },
@@ -557,7 +655,7 @@ export const NPCS = {
           'He was called here in eighty-nine and the terms were agreed — salary, the parsonage, his firewood found for him.',
           { learn: ['fact.salary'] },
           'And then in October the village elected a new committee, and every man on it is one of those that never wanted him.',
-          'They have not collected his rate since. Nor sent his wood.',
+          'They have not collected the tax that pays him since. Nor sent his wood.',
           {
             if: { knows: ['clue.woodpile'] },
             then: ['You have seen his woodpile, I dare say. Then you have seen the argument.'],

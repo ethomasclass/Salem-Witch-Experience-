@@ -12,6 +12,8 @@ import {
   buildHouse, buildMeetinghouse, buildPine, buildBareTree, buildFence,
   buildWoodpile, buildMarker, buildWell, buildSeatingChart, buildHearth,
   buildTable, buildPew, buildAccountBook,
+  buildMemBench, buildLowWall, buildLocust, buildSignboard, buildBin,
+  buildShopfront,
 } from './art-props.js';
 import { SPR_W, SPR_H, DIR } from './art-actors.js';
 import { P } from '../palette.js';
@@ -32,6 +34,11 @@ export const GROUND = {
   '#': 'wall',
   'H': 'hearthstone',
   'x': 'void',
+  // Present day.
+  'L': 'lawn',
+  'G': 'paving',
+  'B': 'brick',
+  'A': 'asphalt',
 };
 
 const SOLID_GROUND = new Set(['water', 'void', 'wall']);
@@ -58,6 +65,14 @@ export const PROPS = {
   table:        { w: 2, h: 1, build: () => buildTable() },
   pew:          { w: 1, h: 1, build: () => buildPew() },
   accountbook:  { w: 1, h: 1, build: () => buildAccountBook(), passable: true },
+
+  // Present day.
+  membench:     { w: 2, h: 1, build: () => buildMemBench() },
+  lowwall:      { w: 1, h: 1, build: () => buildLowWall() },
+  locust:       { w: 3, h: 4, build: () => buildLocust(), solidRows: 1 },
+  signboard:    { w: 2, h: 2, build: () => buildSignboard(), solidRows: 1 },
+  bin:          { w: 1, h: 1, build: () => buildBin() },
+  shopfront:    { w: 6, h: 5, build: (o) => buildShopfront(o.w || 6, o.h || 5), sized: true },
 };
 
 let TILES = null;
@@ -159,6 +174,7 @@ export function buildMap(def) {
 
   return {
     id: def.id, name: def.name, indoor: !!def.indoor,
+    era: def.era || '1692',
     w, h, terrain, solid, props, warps, interact, triggers,
     npcs: [], def,
   };
@@ -232,7 +248,7 @@ export function renderMap(g, map, cam, actors) {
 
   // --- ground ---------------------------------------------------------
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.fillStyle = map.indoor ? '#0d0e11' : '#20232a';
+  g.fillStyle = map.indoor ? '#0d0e11' : (map.era === 'present' ? '#2b3038' : '#20232a');
   g.fillRect(0, 0, VIEW_W, VIEW_H);
   if (z !== 1) g.setTransform(z, 0, 0, z, 0, 0);
 
@@ -288,5 +304,14 @@ export function renderMap(g, map, cam, actors) {
     grd.addColorStop(1, 'rgba(8,8,12,0.5)');
     g.fillStyle = grd;
     g.fillRect(0, 0, VIEW_W, VIEW_H);
+  } else if (map.era === 'present') {
+    // A warm lift over the present-day maps. The terrain and props already
+    // do most of the work of separating the eras; this is the last few
+    // percent, so a student registers the century before reading a word.
+    g.save();
+    g.globalCompositeOperation = 'soft-light';
+    g.fillStyle = 'rgba(255, 196, 122, 0.30)';
+    g.fillRect(0, 0, VIEW_W, VIEW_H);
+    g.restore();
   }
 }
