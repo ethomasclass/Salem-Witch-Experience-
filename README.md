@@ -7,6 +7,10 @@ and travel forward occasionally to ask historians what you just saw.
 You cannot change anything. You walk around, talk to people, notice things,
 and go home.
 
+**[`docs/WALKTHROUGH.md`](docs/WALKTHROUGH.md)** is the teacher's route through
+the whole game — every goal in order, where each item is, and what to do when
+a class gets stuck.
+
 The design is in [`docs/DESIGN.md`](docs/DESIGN.md); the chapter-by-chapter
 plan it was built from is in [`docs/OUTLINE.md`](docs/OUTLINE.md).
 
@@ -119,9 +123,14 @@ Any static host works for a shared link. GitHub Pages is the obvious one.
 | | |
 |---|---|
 | Move | Arrow keys or WASD |
-| Talk / examine / advance | Z, Space or Enter |
-| Back out of a conversation | X or Esc |
-| Notebook | N |
+| Talk, examine, advance, copy a document | Z, Space or Enter |
+| Close a reader, back out of a conversation | X or Esc |
+| Notebook | N — then ← → to switch tabs |
+
+**Two systems worth telling students apart.** *Examining* a thing you can see
+(a stone, a woodpile, a chart) records it straight into the notebook — one
+press of Z and it is done. *Documents* are different: Z opens a full-screen
+reader, and a second Z copies it down. The notebook has a tab for each.
 
 On a touchscreen Chromebook or tablet, on-screen controls appear
 automatically.
