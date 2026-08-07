@@ -618,6 +618,70 @@ export function drawPrompt(g, s, sx, sy, verb) {
   g.fillText(label, x + w / 2, y + h / 2);
 }
 
+/**
+ * The wayfinder: a small chevron at the edge of the screen pointing toward
+ * whatever the current goal is.
+ *
+ * Deliberately not a minimap. The whole village is about six screenfuls, and
+ * a persistent map in the corner makes players watch the corner instead of
+ * the village — which would be fatal in a game whose entire subject is
+ * noticing what is around you. This orients without routing: it tells you
+ * which way, never how to get there, and it vanishes the moment the target
+ * is on screen.
+ *
+ * @param a       angle from the screen centre toward the target, radians
+ * @param tiles   distance in tiles, or null when the target is on another map
+ */
+export function drawWayfinder(g, view, s, a, tiles) {
+  const cx = view.x + view.w / 2, cy = view.y + view.h / 2;
+  const pad = 22 * s;
+  const hw = view.w / 2 - pad, hh = view.h / 2 - pad;
+
+  // Where a ray from the centre leaves the viewport box.
+  const dx = Math.cos(a), dy = Math.sin(a);
+  const t = Math.min(
+    Math.abs(dx) < 1e-6 ? Infinity : hw / Math.abs(dx),
+    Math.abs(dy) < 1e-6 ? Infinity : hh / Math.abs(dy),
+  );
+  const x = cx + dx * t, y = cy + dy * t;
+
+  g.save();
+  g.translate(x, y);
+  g.rotate(a);
+  // Chevron, pointing along +x before rotation.
+  g.beginPath();
+  g.moveTo(9 * s, 0);
+  g.lineTo(-4 * s, -6 * s);
+  g.lineTo(-1 * s, 0);
+  g.lineTo(-4 * s, 6 * s);
+  g.closePath();
+  g.fillStyle = 'rgba(14,16,20,0.55)';
+  g.fill();
+  g.fillStyle = '#e8c46a';
+  g.beginPath();
+  g.moveTo(7 * s, 0);
+  g.lineTo(-3 * s, -4.5 * s);
+  g.lineTo(-0.5 * s, 0);
+  g.lineTo(-3 * s, 4.5 * s);
+  g.closePath();
+  g.fill();
+  g.restore();
+
+  if (tiles != null) {
+    g.font = `700 ${6.5 * s}px system-ui, -apple-system, sans-serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    const label = `${tiles}`;
+    const lw = g.measureText(label).width + 8 * s;
+    // Nudge the label back toward the centre so it never clips the edge.
+    const lx = x - dx * 13 * s, ly = y - dy * 13 * s;
+    g.fillStyle = 'rgba(14,16,20,0.72)';
+    g.fillRect(lx - lw / 2, ly - 6 * s, lw, 12 * s);
+    g.fillStyle = '#e8c46a';
+    g.fillText(label, lx, ly);
+  }
+}
+
 /** Title screen. */
 export function drawTitle(g, view, s, hasSave, index) {
   g.fillStyle = '#14161a';

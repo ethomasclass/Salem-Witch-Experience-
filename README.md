@@ -53,8 +53,12 @@ September 1692, and back to the memorial.
   needs — what happened, how the court worked, and the four things historians
   still argue about. The last one is the only place the game asks its question
   out loud.
-- **A goal tracker** in the corner, one step at a time, with the standing
-  question underneath it once the memorial has raised it.
+- **A goal tracker** in the corner, one step at a time with a progress count,
+  and the standing question underneath once the memorial has raised it.
+- **An edge chevron** pointing toward the current goal, which vanishes as soon
+  as the target is on screen. Deliberately not a minimap — a map in the corner
+  makes players watch the corner instead of the village.
+- **An interaction prompt** over the player naming the verb: talk, look, read.
 - **Sound**, synthesised at runtime — footsteps that change with the ground,
   per-character dialogue blips, wind and crows in 1692, traffic in the
   present. One mute button, and the setting is remembered.

@@ -13,7 +13,7 @@ import { TS } from './engine/art-ground.js';
 import { buildActor, buildPortrait, PLAYER_SPEC, SPR_H } from './engine/art-actors.js';
 import {
   dialogueLayout, drawDialogue, drawChoices, drawNotebook, drawTitle, drawToast,
-  drawObjective, drawReader, drawDocTab, drawNotebookTabs, drawAnswer, drawPrompt,
+  drawObjective, drawReader, drawDocTab, drawNotebookTabs, drawAnswer, drawPrompt, drawWayfinder,
 } from './engine/ui.js';
 import { Audio } from './engine/audio.js';
 import { currentStep, progress, STANDING, chapterComplete, remainingIn } from './content/objectives.js';
@@ -275,6 +275,40 @@ class Game {
   }
 
   /* ---------------- interaction ---------------- */
+
+  /**
+   * Where on the CURRENT map the player should head for, to reach the goal.
+   *
+   * If the goal is on this map, that is the answer. If it is somewhere else,
+   * point at the door that leads there — searching one hop further out, so
+   * "the jail" resolves to the road exit while you are still in the village.
+   * Returns null when there is nothing useful to point at.
+   */
+  goalTile() {
+    const step = currentStep(this.state);
+    if (!step || !step.where) return null;
+    const w = typeof step.where === 'function' ? step.where(this.state) : step.where;
+    if (!w) return null;
+
+    const map = this.mapFor(this.player.map);
+    if (w.map === map.id) return { x: w.x, y: w.y, here: true };
+
+    // A door on this map that leads straight there.
+    for (const warp of map.warps.values()) {
+      if (warp.to === w.map) return { x: warp.x, y: warp.y, here: false };
+    }
+    // One hop: a door leading to a map that has a door leading there.
+    for (const warp of map.warps.values()) {
+      let next;
+      try { next = this.mapFor(warp.to, warp.setChapter || this.state.chapter); } catch { continue; }
+      for (const w2 of next.warps.values()) {
+        if (w2.to === w.map) return { x: warp.x, y: warp.y, here: false };
+      }
+    }
+    // Otherwise just head for the way out.
+    const out = [...map.warps.values()][0];
+    return out ? { x: out.x, y: out.y, here: false } : null;
+  }
 
   /** The verb for whatever the player is facing, or null. Drives the prompt
    *  that floats over their head — the single most effective fix found in
@@ -618,6 +652,27 @@ class Game {
     g.fillRect(v.x + 8 * s, v.y + 8 * s, lw, 18 * s);
     g.fillStyle = '#d8d4c8';
     g.fillText(label, v.x + 16 * s, v.y + 13 * s);
+
+    // Wayfinder: only while walking, and only when the target is off screen.
+    // If you can see the place, you do not need an arrow pointing at it.
+    if (this.mode === 'play') {
+      const t = this.goalTile();
+      if (t) {
+        const z = map.indoor ? 2 : 1;
+        const tx = (t.x * TS + TS / 2 - cam.x) * z;
+        const ty = (t.y * TS + TS / 2 - cam.y) * z;
+        const onScreen = tx >= 0 && ty >= 0 && tx <= VIEW_W && ty <= VIEW_H;
+        if (!onScreen) {
+          const px0 = (Math.round(this.player.px) + TS / 2 - cam.x) * z;
+          const py0 = (Math.round(this.player.py) + TS / 2 - cam.y) * z;
+          const a = Math.atan2(ty - py0, tx - px0);
+          const dist = t.here
+            ? Math.round(Math.hypot(t.x - this.player.tx, t.y - this.player.ty))
+            : null;
+          drawWayfinder(g, v, s, a, dist);
+        }
+      }
+    }
 
     // Interaction prompt, pinned over the player.
     if (this.mode === 'play') {

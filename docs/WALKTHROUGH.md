@@ -51,6 +51,20 @@ the game telling you to go and look at something first.
 That last row is the only genuinely obscure link in the game — the stone is
 at the top of the map and the paper it unlocks is in a house at the bottom.
 
+### The arrow at the edge of the screen
+
+A small yellow chevron appears at the screen edge pointing toward whatever
+the current goal is, with the distance in tiles. It **disappears the moment
+the target is on screen** — if you can see the place, you do not need an
+arrow.
+
+If the goal is inside a building, it points at that building's door. If it is
+further away than that — the jail, from the village — it points at the road
+out.
+
+It is deliberately not a minimap. A map in the corner makes players watch the
+corner instead of the village, and noticing the village is the entire point.
+
 ### The goal box counts within a goal
 
 `GOAL 2/6 · 2 of 4` means: second of six goals in this chapter, and two of the

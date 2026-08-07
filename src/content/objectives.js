@@ -20,102 +20,170 @@ const LAW_SET    = ['law.nocounsel', 'law.charter', 'law.confession'];
 const SEPT_DOCS  = ['eastyPetition', 'coreyRecord', 'deathWarrantReturn'];
 const RECK_DOCS  = ['annApology', 'sewallApology', 'johnsonAct'];
 
+
+/* ---------------------------------------------------------------------- *
+ * Where a goal is
+ *
+ * Each step says where in the world it points, which drives the small
+ * chevron at the screen edge. Deliberately NOT a minimap: the whole village
+ * is about six screenfuls, and a map in the corner makes players watch the
+ * corner instead of the village — and this game is entirely about noticing
+ * the village.
+ *
+ * A multi-part goal returns the FIRST thing still outstanding, so the arrow
+ * points at the next unfinished piece rather than at an average of four
+ * places.
+ * ---------------------------------------------------------------------- */
+
+const firstMissing = (s, list, has) => list.find((e) => !has(s, e)) || null;
+const byFlag = (s, e) => s.knows(e.flag);
+const byDoc  = (s, e) => s.hasDoc(e.doc);
+const byNpc  = (s, e) => s.hasSpokenTo(e.npc);
+const at = (map, x, y) => () => ({ map, x, y });
+
+const PANEL_WHERE = [
+  { flag: 'present.happened', map: 'memorial', x: 6, y: 22 },
+  { flag: 'present.court',    map: 'memorial', x: 10, y: 22 },
+  { flag: 'present.argument', map: 'memorial', x: 17, y: 22 },
+];
+const CLUE_WHERE = [
+  { flag: 'clue.woodpile', map: 'village', x: 14, y: 27 },
+  { flag: 'clue.seating',  map: 'meetinghouse', x: 5, y: 1 },
+  { flag: 'clue.accounts', map: 'tavern', x: 2, y: 3 },
+  { flag: 'clue.marker',   map: 'village', x: 15, y: 4 },
+];
+const MARCH_CAST_WHERE = [
+  { npc: 'nurse',     map: 'nursehouse', x: 5, y: 3 },
+  { npc: 'tituba',    map: 'parsonage', x: 3, y: 3 },
+  { npc: 'parris',    map: 'parsonage', x: 8, y: 4 },
+  { npc: 'ingersoll', map: 'tavern', x: 6, y: 4 },
+  { npc: 'annjr',     map: 'putnamhouse', x: 3, y: 3 },
+  { npc: 'mercy',     map: 'village', x: 29, y: 23 },
+];
+const MARCH_DOC_WHERE = [
+  { doc: 'parrisAgreement',   map: 'parsonage', x: 2, y: 5 },
+  { doc: 'seatingList',       map: 'meetinghouse', x: 7, y: 1 },
+  { doc: 'accountBookPage',   map: 'tavern', x: 2, y: 6 },
+  { doc: 'topsfieldPetition', map: 'putnamhouse', x: 2, y: 4 },
+];
+const JUNE_CAST_WHERE = [
+  { npc: 'marywarren', map: 'tavern', x: 8, y: 6 },
+  { npc: 'annjr',      map: 'putnamhouse', x: 3, y: 3 },
+  { npc: 'mercy',      map: 'village', x: 29, y: 23 },
+];
+const JUNE_DOC_WHERE = [
+  { doc: 'nursePetition',    map: 'nursehouse', x: 5, y: 4 },
+  { doc: 'nurseWarrant',     map: 'tavern', x: 3, y: 6 },
+  { doc: 'putnamDeposition', map: 'meetinghouse', x: 5, y: 3 },
+  { doc: 'jailBill',         map: 'jail', x: 9, y: 6 },
+];
+const SEPT_DOC_WHERE = [
+  { doc: 'coreyRecord',        map: 'meetinghouse', x: 5, y: 3 },
+  { doc: 'deathWarrantReturn', map: 'meetinghouse', x: 8, y: 3 },
+  { doc: 'eastyPetition',      map: 'meetinghouse', x: 10, y: 3 },
+];
+const RECK_DOC_WHERE = [
+  { doc: 'annApology',    map: 'memorial', x: 9, y: 18 },
+  { doc: 'sewallApology', map: 'memorial', x: 11, y: 18 },
+  { doc: 'johnsonAct',    map: 'memorial', x: 13, y: 18 },
+];
+
 export const STEPS_BY_CHAPTER = {
 
   memorial: [
-    { id: 'enter', text: 'Walk in through the gap in the wall', done: (s) => s.knows('present.memorial') },
-    { id: 'threshold', text: 'Read the stones you walked in over', done: (s) => s.knows('present.threshold') },
-    { id: 'panels', text: 'Read the three panels on the pavement outside the wall',
+    { id: 'enter', where: at('memorial', 13, 21), text: 'Walk in through the gap in the wall', done: (s) => s.knows('present.memorial') },
+    { id: 'threshold', where: at('memorial', 13, 21), text: 'Read the stones you walked in over', done: (s) => s.knows('present.threshold') },
+    { id: 'panels', where: (s) => firstMissing(s, PANEL_WHERE, byFlag), text: 'Read the three panels on the pavement outside the wall',
       done: (s) => s.knows('present.happened') && s.knows('present.court') && s.knows('present.argument'),
       count: (s) => [['present.happened', 'present.court', 'present.argument']
         .filter((f) => s.knows(f)).length, 3] },
-    { id: 'nurse', text: 'Find the bench for Rebecca Nurse, beside the far gap',
+    { id: 'nurse', where: at('memorial', 15, 5), text: 'Find the bench for Rebecca Nurse, beside the far gap',
       done: (s) => s.knows('present.nurse') },
-    { id: 'nora', text: 'Talk to the girl sitting on the wall', done: (s) => s.hasSpokenTo('nora') },
-    { id: 'gap', text: 'Go through the gap in the far wall', done: (s) => s.visited.has('road') },
+    { id: 'nora', where: at('memorial', 18, 19), text: 'Talk to the girl sitting on the wall', done: (s) => s.hasSpokenTo('nora') },
+    { id: 'gap', where: at('memorial', 13, 4), text: 'Go through the gap in the far wall', done: (s) => s.visited.has('road') },
   ],
 
   march: [
-    { id: 'walk', text: 'Walk north up the road to Salem Village', done: (s) => s.visited.has('village') },
-    { id: 'meetnurse', text: 'Find Rebecca Nurse. Her farm is west, past the meetinghouse',
+    { id: 'walk', where: at('village', 22, 20), text: 'Walk north up the road to Salem Village', done: (s) => s.visited.has('village') },
+    { id: 'meetnurse', where: at('nursehouse', 5, 3), text: 'Find Rebecca Nurse. Her farm is west, past the meetinghouse',
       done: (s) => s.hasSpokenTo('nurse') },
     // Named, not hinted. A student who cannot find the boundary stone is not
     // learning anything from being kept in the dark about it.
-    { id: 'clues', text: 'Look at four things: the woodpile by the parsonage, the seating chart inside the meetinghouse, the account book in the tavern, and a stone in the north woods',
+    { id: 'clues', where: (s) => firstMissing(s, CLUE_WHERE, byFlag), text: 'Look at four things: the woodpile by the parsonage, the seating chart inside the meetinghouse, the account book in the tavern, and a stone in the north woods',
       done: (s) => CLUE_SET.every((f) => s.knows(f)),
       count: (s) => [CLUE_SET.filter((f) => s.knows(f)).length, CLUE_SET.length] },
-    { id: 'people', text: 'Talk to everyone who lives here',
+    { id: 'people', where: (s) => firstMissing(s, MARCH_CAST_WHERE, byNpc), text: 'Talk to everyone who lives here',
       done: (s) => MARCH_CAST.every((id) => s.hasSpokenTo(id)),
       count: (s) => [MARCH_CAST.filter((id) => s.hasSpokenTo(id)).length, MARCH_CAST.length] },
-    { id: 'papers', text: 'Four papers are now readable, indoors on tables. Stand at one and press Z twice',
+    { id: 'papers', where: (s) => firstMissing(s, MARCH_DOC_WHERE, byDoc), text: 'Four papers are now readable, indoors on tables. Stand at one and press Z twice',
       done: (s) => MARCH_DOCS.every((d) => s.hasDoc(d)),
       count: (s) => [MARCH_DOCS.filter((d) => s.hasDoc(d)).length, MARCH_DOCS.length] },
-    { id: 'leave', text: 'Behind the parsonage the ground dips. Walk onto it',
+    { id: 'leave', where: at('village', 11, 22), text: 'Behind the parsonage the ground dips. Walk onto it',
       done: (s) => s.visited.has('dig') },
   ],
 
   dig: [
-    { id: 'look', text: 'You are standing in the cellar. Press Z to look at it',
+    { id: 'look', where: at('dig', 11, 9), text: 'You are standing in the cellar. Press Z to look at it',
       done: (s) => s.knows('dig.stood') },
-    { id: 'ask', text: 'Ask Dr. Reyes how small the house was, and what it was like to live in',
+    { id: 'ask', where: at('dig', 13, 9), text: 'Ask Dr. Reyes how small the house was, and what it was like to live in',
       done: (s) => s.knows('dig.small') && s.knows('dig.noprivacy'),
       count: (s) => [['dig.small', 'dig.noprivacy'].filter((f) => s.knows(f)).length, 2] },
-    { id: 'back', text: 'Walk south, out of the cellar and down to the path',
+    { id: 'back', where: at('dig', 11, 18), text: 'Walk south, out of the cellar and down to the path',
       done: (s) => s.knows('june.arrived') },
   ],
 
   june: [
-    { id: 'nursegone', text: 'Rebecca Nurse is not at home. Her husband is in the dooryard, west — ask him',
+    { id: 'nursegone', where: at('village', 7, 16), text: 'Rebecca Nurse is not at home. Her husband is in the dooryard, west — ask him',
       done: (s) => s.knows('june.nursejailed') },
-    { id: 'town', text: 'Walk south down the road. The jail is on the left, before the town',
+    { id: 'town', where: at('jail', 6, 7), text: 'Walk south down the road. The jail is on the left, before the town',
       done: (s) => s.visited.has('jail') },
-    { id: 'sit', text: 'Stand below the bars and talk to her through them',
+    { id: 'sit', where: at('jail', 4, 4), text: 'Stand below the bars and talk to her through them',
       done: (s) => s.hasSpokenTo('nurseJail') },
-    { id: 'tituba', text: 'Tituba is in the same cellar, further along the bars',
+    { id: 'tituba', where: at('jail', 9, 4), text: 'Tituba is in the same cellar, further along the bars',
       done: (s) => s.hasSpokenTo('titubaJail') },
-    { id: 'accusers', text: 'Talk to the accusers: Mary Warren in the tavern, Ann Putnam indoors, Mercy Lewis in the road',
+    { id: 'accusers', where: (s) => firstMissing(s, JUNE_CAST_WHERE, byNpc), text: 'Talk to the accusers: Mary Warren in the tavern, Ann Putnam indoors, Mercy Lewis in the road',
       done: (s) => JUNE_CAST.every((id) => s.hasSpokenTo(id)),
       count: (s) => [JUNE_CAST.filter((id) => s.hasSpokenTo(id)).length, JUNE_CAST.length] },
-    { id: 'papers', text: 'Four papers: the Nurse house, the tavern, the meetinghouse, and the jail',
+    { id: 'papers', where: (s) => firstMissing(s, JUNE_DOC_WHERE, byDoc), text: 'Four papers: the Nurse house, the tavern, the meetinghouse, and the jail',
       done: (s) => JUNE_DOCS.every((d) => s.hasDoc(d)),
       count: (s) => [JUNE_DOCS.filter((d) => s.hasDoc(d)).length, JUNE_DOCS.length] },
-    { id: 'leave', text: 'Walk round to the north side of the meetinghouse',
+    { id: 'leave', where: at('village', 22, 9), text: 'Walk round to the north side of the meetinghouse',
       done: (s) => s.visited.has('archive') },
   ],
 
   archive: [
-    { id: 'spectral', text: 'Ask Dr. Whitfield how the court could accept that evidence',
+    { id: 'spectral', where: at('archive', 11, 5), text: 'Ask Dr. Whitfield how the court could accept that evidence',
       done: (s) => s.knows('law.spectral') },
-    { id: 'rest', text: 'Ask about lawyers, about the court\'s authority, and about why anyone confessed',
+    { id: 'rest', where: at('archive', 11, 5), text: 'Ask about lawyers, about the court\'s authority, and about why anyone confessed',
       done: (s) => LAW_SET.every((f) => s.knows(f)),
       count: (s) => [LAW_SET.filter((f) => s.knows(f)).length, LAW_SET.length] },
-    { id: 'ergot', text: 'Ask her whether it was ergot poisoning', done: (s) => s.knows('law.ergot_rebut') },
-    { id: 'back', text: 'Leave by the door at the bottom of the room',
+    { id: 'ergot', where: at('archive', 11, 5), text: 'Ask her whether it was ergot poisoning', done: (s) => s.knows('law.ergot_rebut') },
+    { id: 'back', where: at('archive', 8, 12), text: 'Leave by the door at the bottom of the room',
       done: (s) => s.knows('sept.arrived') },
   ],
 
   september: [
-    { id: 'find', text: 'Almost nobody will talk to you now. One man is mending a fence, east',
+    { id: 'find', where: at('village', 27, 24), text: 'Almost nobody will talk to you now. One man is mending a fence, east',
       done: (s) => s.hasSpokenTo('neighbour') },
-    { id: 'corey', text: 'Ask him about Giles Corey, and where the dead are buried',
+    { id: 'corey', where: at('village', 27, 24), text: 'Ask him about Giles Corey, and where the dead are buried',
       done: (s) => s.knows('sept.corey') && s.knows('sept.noburial'),
       count: (s) => [['sept.corey', 'sept.noburial'].filter((f) => s.knows(f)).length, 2] },
-    { id: 'putnam', text: 'Go inside the Putnam house, south-east', done: (s) => s.knows('sept.noticed') },
-    { id: 'papers', text: 'Three papers on the court table inside the meetinghouse',
+    { id: 'putnam', where: at('putnamhouse', 3, 3), text: 'Go inside the Putnam house, south-east', done: (s) => s.knows('sept.noticed') },
+    { id: 'papers', where: (s) => firstMissing(s, SEPT_DOC_WHERE, byDoc), text: 'Three papers on the court table inside the meetinghouse',
       done: (s) => SEPT_DOCS.every((d) => s.hasDoc(d)),
       count: (s) => [SEPT_DOCS.filter((d) => s.hasDoc(d)).length, SEPT_DOCS.length] },
-    { id: 'leave', text: 'Walk round to the north side of the meetinghouse',
+    { id: 'leave', where: at('village', 22, 9), text: 'Walk round to the north side of the meetinghouse',
       done: (s) => s.visited.has('memorial') && s.chapter === 'reckoning' },
   ],
 
   reckoning: [
-    { id: 'descendant', text: 'A woman is sitting on one of the benches. Talk to her',
+    { id: 'descendant', where: at('memorial', 8, 12), text: 'A woman is sitting on one of the benches. Talk to her',
       done: (s) => s.hasSpokenTo('descendant') },
-    { id: 'ann', text: 'Ask her about Ann Putnam', done: (s) => s.knows('reck.annapology') },
-    { id: 'papers', text: 'Three last papers, on the grass in the middle',
+    { id: 'ann', where: at('memorial', 8, 12), text: 'Ask her about Ann Putnam', done: (s) => s.knows('reck.annapology') },
+    { id: 'papers', where: (s) => firstMissing(s, RECK_DOC_WHERE, byDoc), text: 'Three last papers, on the grass in the middle',
       done: (s) => RECK_DOCS.every((d) => s.hasDoc(d)),
       count: (s) => [RECK_DOCS.filter((d) => s.hasDoc(d)).length, RECK_DOCS.length] },
-    { id: 'answer', text: 'Say what you think caused it', done: (s) => !!s.answer },
+    { id: 'answer', where: null, text: 'Say what you think caused it', done: (s) => !!s.answer },
   ],
 };
 
