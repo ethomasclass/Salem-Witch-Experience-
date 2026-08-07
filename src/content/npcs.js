@@ -694,6 +694,104 @@ export const NPCS = {
     ],
     farewell: ['Mind the step on your way out.'],
   },
+
+  /* -------------------------------------------------------------------- *
+   * Ambient villagers
+   *
+   * No topic trees — they say their piece and go back to work. Their job is
+   * to make the village feel inhabited, and to let the player overhear the
+   * ordinary version of every grievance the named cast will state outright.
+   * A village of six hundred people should not contain six people.
+   * -------------------------------------------------------------------- */
+
+  swineboy: {
+    id: 'swineboy',
+    name: 'A boy with the swine',
+    spec: {
+      flesh: FLESH.fair, hair: HAIR.brown, child: true,
+      coat: CLOTH.russet, under: CLOTH.undyed,
+    },
+    greet: [
+      { say: 'A boy of about ten, trying to turn three pigs off the road with a stick. He is losing.', who: null },
+      'Get on! Get ON —',
+      { say: 'One of them goes straight past him into the field.', who: null },
+      'They get into Goodman Nurse\'s rye and then it is my father who hears about it.',
+      'Every year. Every single year.',
+    ],
+  },
+
+  goodwife: {
+    id: 'goodwife',
+    name: 'A woman at the well',
+    spec: {
+      flesh: FLESH.ruddy, hair: HAIR.grey,
+      coat: CLOTH.madder, skirt: CLOTH.madder,
+      apron: LINEN, coif: LINEN,
+    },
+    greet: [
+      { say: 'She is drawing water and does not hurry over it. This is where you hear things.', who: null },
+      'You will be here about the girls.',
+      { say: 'She does not wait for you to answer.', who: null },
+      'Everyone is here about the girls. There were two carts through this morning from Beverly.',
+      'I have lived in this village forty years and nobody came to look at us before.',
+      { learn: 'fact.strangers' },
+    ],
+  },
+
+  woodman: {
+    id: 'woodman',
+    name: 'A man splitting wood',
+    spec: {
+      flesh: FLESH.olive, hair: HAIR.dark,
+      coat: CLOTH.saddGreen, under: CLOTH.russet,
+    },
+    greet: [
+      { say: 'He sets the axe down but keeps hold of it.', who: null },
+      'Mind yourself, there is a wedge in this one.',
+      {
+        if: { knows: ['clue.woodpile'] },
+        then: [
+          { say: 'There is a great deal of wood here. Far more than the minister has.', who: null },
+          'You have been up at the parsonage, then.',
+          { say: 'He gets back to it.', who: null },
+          'I cut what my family burns. I am not obliged to cut what his does. That was the village\'s bargain, not mine.',
+          'Take it up with the committee. Everyone else does.',
+        ],
+        else: [
+          'A cord and a half so far this week and it is not near enough.',
+          'March is the month that finds out who laid in enough in October.',
+        ],
+      },
+    ],
+  },
+
+  watchman: {
+    id: 'watchman',
+    name: 'A man on watch',
+    spec: {
+      flesh: FLESH.fair, hair: HAIR.auburn,
+      coat: CLOTH.slate, collar: LINEN, hat: '#43403c',
+    },
+    greet: [
+      { say: 'He is standing where he can see the road, with a musket propped beside him.', who: null },
+      'Village watch. You will have come up the Salem road.',
+      {
+        if: { knows: ['fact.mercymaine'] },
+        then: [
+          'Then you know why we keep one.',
+          { say: 'He glances north, the way Mercy Lewis did.', who: null },
+          'The war is up the eastward, not here. But there are families in this village who came down from Casco and Falmouth with nothing, and they do not think it is far enough away.',
+          'We have had the watch set every night since the autumn. Some nights I think it is for the Indians.',
+          'Some nights I think it is so the men have somewhere to be.',
+        ],
+        else: [
+          'We keep a watch through the night, and have since the autumn.',
+          'There is fighting up the eastward — the Maine country. It has not come near us. That is not the same as nobody being afraid of it.',
+          { learn: 'fact.factions' },
+        ],
+      },
+    ],
+  },
 };
 
 /** Portrait moods, so a character can visibly harden between chapters. */

@@ -10,6 +10,9 @@
 export const KNOWLEDGE = {
   // --- present day -------------------------------------------------------
   'present.memorial':  'The Salem Witch Trials Memorial has twenty benches — one for each person executed in 1692.',
+  'present.happened':  'Between January and October 1692, more than 150 people were arrested for witchcraft in Essex County. Nineteen were hanged, one was pressed to death, and at least five died in jail. It was over in under a year.',
+  'present.court':     'The Court of Oyer and Terminer accepted spectral evidence — testimony that the accused\'s spirit had appeared to a witness, which nobody else could see and nobody could disprove. The accused had no lawyers. Nobody who confessed was executed; everyone hanged had insisted they were innocent.',
+  'present.argument':  'Historians argue about four causes: land and money, the frontier war, who the accused women were, and the law itself. All four have evidence. None explains everything alone.',
   'present.threshold': 'The victims\' own words are carved into the stones at the entrance, and every one of them is cut off mid-sentence by the wall. That was a design decision.',
   'present.nurse':     'One of the benches reads REBECCA NURSE · HANGED · JULY 19, 1692.',
   'present.jaildeaths':'Five more people died in jail waiting for trial. They do not have benches.',

@@ -7,13 +7,16 @@ import { Input } from './engine/input.js';
 import { DialogueRunner, buildTopicMenu } from './engine/dialogue.js';
 import {
   buildMap, renderMap, computeCamera, isSolid, warpAt, interactAt, triggerAt,
-  DIR_VEC, DIR_INDEX, VIEW_W, VIEW_H, initArt,
+  terrainAt, DIR_VEC, DIR_INDEX, VIEW_W, VIEW_H, initArt,
 } from './engine/world.js';
 import { TS } from './engine/art-ground.js';
 import { buildActor, buildPortrait, PLAYER_SPEC, SPR_H } from './engine/art-actors.js';
 import {
   dialogueLayout, drawDialogue, drawChoices, drawNotebook, drawTitle, drawToast,
+  drawObjective,
 } from './engine/ui.js';
+import { Audio } from './engine/audio.js';
+import { currentStep, progress, STANDING } from './content/objectives.js';
 import { MAPS } from './content/maps.js';
 import { NPCS } from './content/npcs.js';
 import { CLUES, benchScript } from './content/clues.js';
@@ -36,6 +39,7 @@ class Game {
     this.bg.imageSmoothingEnabled = false;
 
     this.input = new Input();
+    this.audio = new Audio();
     this.state = new GameState();
     this.runner = new DialogueRunner(this.state);
 
@@ -46,6 +50,8 @@ class Game {
     this.toast = { text: '', t: 0 };
     this.notebookScroll = 0;
     this.convNpc = null;
+    this.objFlash = 0;
+    this.lastStepId = null;
 
     initArt();
     this.playerFrames = buildActor(PLAYER_SPEC);
@@ -67,6 +73,12 @@ class Game {
   }
 
   /* ---------------- setup ---------------- */
+
+  /** Ambience is chosen by era and by whether you are under a roof. */
+  syncAmbience() {
+    const m = this.mapFor(this.player.map);
+    this.audio.setAmbience(m.indoor ? 'indoor' : (m.era === 'present' ? 'present' : '1692'));
+  }
 
   mapFor(id) {
     if (!this.maps[id]) {
@@ -138,6 +150,8 @@ class Game {
     }
     this.mode = 'play';
     this.state.visited.add(this.player.map);
+    this.lastStepId = (currentStep(this.state) || {}).id || null;
+    this.syncAmbience();
     this.openingBeat();
   }
 
@@ -181,6 +195,10 @@ class Game {
     this.choiceIndex = 0;
     this.runner.start(npc.def.greet || [], speaker, () => {
       this.state.markSpoke(npc.id);
+      // Ambient villagers have no topics — they say their piece and go back
+      // to work. Showing them a menu with one "say nothing more" option in
+      // it would be worse than showing them nothing.
+      if (!npc.def.topics || !npc.def.topics.length) { this.endConversation(); return; }
       this.openTopics();
     });
     this.syncDialogue();
@@ -217,10 +235,15 @@ class Game {
     if (cur.type === 'choice') { this.dlg = null; this.choiceIndex = 0; return; }
 
     const portrait = cur.speaker ? this.portraitFor(cur.speaker.id) : null;
+    // Stable per-speaker pitch, derived from the id so it never drifts.
+    const id = cur.speaker ? cur.speaker.id : '';
+    let hsum = 0; for (let i = 0; i < id.length; i++) hsum = (hsum * 31 + id.charCodeAt(i)) >>> 0;
+    const pitch = id ? 0.8 + ((hsum % 70) / 100) : 0.62;
     const L = dialogueLayout(this.g, this.view, this.scale, cur.text, !!portrait);
     this.dlg = {
       who: cur.who || '',
       portrait,
+      pitch,
       layout: L,
       pages: L.pages,
       page: 0,
@@ -273,7 +296,18 @@ class Game {
     });
   }
 
-  showToast(text) { this.toast = { text, t: 2.6 }; }
+  showToast(text) { this.toast = { text, t: 2.6 }; this.audio.noted(); }
+
+  /** Watch for a completed objective so it can be announced once. */
+  checkObjective() {
+    const step = currentStep(this.state);
+    const id = step ? step.id : '__done__';
+    if (this.lastStepId !== null && id !== this.lastStepId) {
+      this.objFlash = 1.1;
+      this.audio.objective();
+    }
+    this.lastStepId = id;
+  }
 
   /* ---------------- movement ---------------- */
 
@@ -297,6 +331,7 @@ class Game {
     p.steps += 1;
     p.animFrame = [0, 1, 0, 2][p.steps % 4];
     const map = this.mapFor(p.map);
+    this.audio.step(terrainAt(map, p.tx, p.ty));
 
     const w = warpAt(map, p.tx, p.ty);
     if (w) { this.doWarp(w); return; }
@@ -323,6 +358,8 @@ class Game {
     p.dirIndex = DIR_INDEX[p.dir];
     this.mapFor(w.to);
     this.fade = 0.28;
+    this.syncAmbience();
+    if (w.script === 'arrive1692') this.audio.timeShift(); else this.audio.door();
     this.save();
 
     // A warp can carry its own arrival beat. Only one does: the gap in the
@@ -344,13 +381,20 @@ class Game {
     const inp = this.input;
 
     if (this.toast.t > 0) this.toast.t -= dt;
+    if (this.objFlash > 0) this.objFlash = Math.max(0, this.objFlash - dt);
     if (this.fade > 0) this.fade = Math.max(0, this.fade - dt);
+
+    // Browsers require a gesture before audio; this is the first one.
+    if (inp.justPressed('confirm') || inp.direction()) this.audio.unlock();
+    if (this.mode !== 'title') this.checkObjective();
 
     if (this.mode === 'title') {
       const items = this.saved ? 2 : 1;
-      if (inp.justPressed('up')) this.titleIndex = (this.titleIndex + items - 1) % items;
-      if (inp.justPressed('down')) this.titleIndex = (this.titleIndex + 1) % items;
+      if (inp.justPressed('up')) { this.titleIndex = (this.titleIndex + items - 1) % items; this.audio.menuMove(); }
+      if (inp.justPressed('down')) { this.titleIndex = (this.titleIndex + 1) % items; this.audio.menuMove(); }
       if (inp.justPressed('confirm')) {
+        this.audio.unlock();
+        this.audio.menuPick();
         this.begin(!this.saved ? true : this.titleIndex === 1);
       }
       return;
@@ -369,9 +413,10 @@ class Game {
       const cur = this.runner.current;
       if (cur && cur.type === 'choice') {
         const n = cur.options.length;
-        if (inp.justPressed('up')) this.choiceIndex = (this.choiceIndex + n - 1) % n;
-        if (inp.justPressed('down')) this.choiceIndex = (this.choiceIndex + 1) % n;
+        if (inp.justPressed('up')) { this.choiceIndex = (this.choiceIndex + n - 1) % n; this.audio.menuMove(); }
+        if (inp.justPressed('down')) { this.choiceIndex = (this.choiceIndex + 1) % n; this.audio.menuMove(); }
         if (inp.justPressed('confirm')) {
+          this.audio.menuPick();
           this.runner.choose(this.choiceIndex);
           this.syncDialogue();
         } else if (inp.justPressed('cancel')) {
@@ -383,7 +428,14 @@ class Game {
         return;
       }
       if (this.dlg) {
-        if (this.dlg.revealed < this.dlg.total) this.dlg.revealed += REVEAL_CPS * dt;
+        if (this.dlg.revealed < this.dlg.total) {
+          const before = Math.floor(this.dlg.revealed);
+          this.dlg.revealed += REVEAL_CPS * dt;
+          // A blip every few characters, pitched per speaker so the cast
+          // sound different from each other and from narration.
+          const after = Math.floor(this.dlg.revealed);
+          if (Math.floor(after / 3) !== Math.floor(before / 3)) this.audio.blip(this.dlg.pitch);
+        }
         if (inp.justPressed('confirm')) this.advanceDialogue();
       }
       return;
@@ -447,6 +499,16 @@ class Game {
     g.fillRect(v.x + 8 * s, v.y + 8 * s, lw, 18 * s);
     g.fillStyle = '#d8d4c8';
     g.fillText(label, v.x + 16 * s, v.y + 13 * s);
+
+    // Objective HUD, above everything except the notebook.
+    if (this.mode !== 'notebook') {
+      drawObjective(g, v, s, {
+        step: currentStep(this.state),
+        standing: STANDING.active(this.state) ? STANDING.text : null,
+        progress: progress(this.state),
+        flash: this.objFlash,
+      });
+    }
 
     const cur = this.runner.current;
     if (this.mode === 'dialogue' && cur) {
@@ -533,6 +595,18 @@ document.getElementById('copy')?.addEventListener('click', async (e) => {
     e.target.textContent = 'Select and copy';
   }
   setTimeout(() => { e.target.textContent = 'Copy my notes'; }, 2500);
+});
+
+const soundBtn = document.getElementById('sound');
+function paintSoundBtn() {
+  if (soundBtn) soundBtn.textContent = game.audio.muted ? 'Sound: off' : 'Sound: on';
+}
+paintSoundBtn();
+soundBtn?.addEventListener('click', () => {
+  game.audio.unlock();
+  game.audio.toggleMute();
+  paintSoundBtn();
+  canvas.focus();
 });
 
 document.getElementById('reset')?.addEventListener('click', () => {

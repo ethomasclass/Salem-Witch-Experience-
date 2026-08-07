@@ -124,14 +124,14 @@ export const VILLAGE = {
     { kind: 'meetinghouse', x: 18, y: 10, w: 9, h: 6, doorCol: 4 },
 
     // --- the parsonage. Note how small the woodpile is beside it. ------
-    { kind: 'house', x: 8, y: 24, w: 6, h: 5, doorCol: 2, windows: [1, 4], chimney: 'center' },
+    { kind: 'house', x: 8, y: 24, w: 6, h: 5, doorCol: 2, windows: [1, 4], chimney: 'center', leanTo: 'right' },
     { kind: 'woodpile', x: 14, y: 27 },
 
     // --- Ingersoll's ordinary (the tavern) -----------------------------
-    { kind: 'house', x: 30, y: 12, w: 7, h: 5, doorCol: 3, windows: [1, 5], chimney: 'left' },
+    { kind: 'house', x: 30, y: 12, w: 7, h: 5, doorCol: 3, windows: [1, 5], chimney: 'left', roofFrac: 0.46 },
 
     // --- the Nurse homestead, west ------------------------------------
-    { kind: 'house', x: 4, y: 9, w: 6, h: 5, doorCol: 3, windows: [1, 4], chimney: 'right' },
+    { kind: 'house', x: 4, y: 9, w: 6, h: 5, doorCol: 3, windows: [1, 4], chimney: 'right', leanTo: 'left' },
     { kind: 'fence', x: 4, y: 15 }, { kind: 'fence', x: 5, y: 15 },
     { kind: 'fence', x: 6, y: 15 }, { kind: 'fence', x: 8, y: 15 },
     { kind: 'fence', x: 9, y: 15 }, { kind: 'fence', x: 10, y: 15 },
@@ -143,6 +143,38 @@ export const VILLAGE = {
     { kind: 'fence', x: 35, y: 31 }, { kind: 'fence', x: 36, y: 31 },
 
     { kind: 'well', x: 25, y: 22 },
+    { kind: 'cart', x: 28, y: 18 },
+
+    // --- the working farm ----------------------------------------------
+    // Salem Village was a farming community, not a street of houses. On
+    // most properties the biggest building was the barn.
+    { kind: 'barn', x: 37, y: 23, w: 8, h: 6 },
+    { kind: 'hayrick', x: 28, y: 26 },
+    { kind: 'hayrick', x: 2, y: 21 },
+
+    // Dry-laid field walls: every stone in them was pulled out of the field
+    // by hand, which is why boundaries mattered enough to kill over.
+    ...Array.from({ length: 9 }, (_, i) => ({ kind: 'stonewall', x: 16 + i, y: 24 })),
+    ...Array.from({ length: 6 }, (_, i) => ({ kind: 'stonewall', x: 16, y: 25 + i })),
+    ...Array.from({ length: 7 }, (_, i) => ({ kind: 'stonewall', x: 1 + i, y: 17 })),
+    ...Array.from({ length: 8 }, (_, i) => ({ kind: 'stonewall', x: 36 + i, y: 9 })),
+
+    // Orchard — mostly for cider, which is what a family actually drank.
+    ...[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => ({
+      kind: 'appletree', x: 2 + c * 3, y: 26 + r * 3,
+    }))),
+
+    // Livestock. The swine are on the road on purpose: free-ranging pigs
+    // trespassing into a neighbour's field was one of the commonest causes
+    // of ill-feeling in a New England village, and Rebecca Nurse mentions
+    // exactly that quarrel with the Putnams.
+    { kind: 'pig', x: 26, y: 18 }, { kind: 'pig', x: 27, y: 19 },
+    { kind: 'pig', x: 25, y: 19 },
+    { kind: 'cow', x: 39, y: 14 }, { kind: 'cow', x: 41, y: 17 },
+    { kind: 'sheep', x: 19, y: 27 }, { kind: 'sheep', x: 21, y: 28 },
+    { kind: 'sheep', x: 20, y: 30 },
+    { kind: 'chicken', x: 12, y: 30 }, { kind: 'chicken', x: 14, y: 31 },
+    { kind: 'chicken', x: 11, y: 32 },
 
     // --- the disputed boundary, north in the woods ---------------------
     { kind: 'marker', x: 15, y: 4 },
@@ -159,6 +191,8 @@ export const VILLAGE = {
     ...treeLine('pine', 42, 44, 24, 3),
     ...treeLine('pine', 0, 18, 35, 3),
     ...treeLine('pine', 26, 44, 35, 3),
+    { kind: 'house', x: 2, y: 30, w: 5, h: 5, doorCol: 2, windows: [0, 3], chimney: 'center' },
+    { kind: 'house', x: 38, y: 3, w: 6, h: 5, doorCol: 3, windows: [1, 4], chimney: 'left', leanTo: 'right' },
     { kind: 'baretree', x: 12, y: 17 },
     { kind: 'baretree', x: 27, y: 30 },
     { kind: 'baretree', x: 16, y: 30 },
@@ -183,6 +217,10 @@ export const VILLAGE = {
   ],
   npcs: [
     { id: 'mercy', x: 29, y: 23, dir: 'down' },
+    { id: 'swineboy', x: 26, y: 20, dir: 'up' },
+    { id: 'goodwife', x: 24, y: 21, dir: 'right' },
+    { id: 'woodman', x: 6, y: 22, dir: 'down' },
+    { id: 'watchman', x: 29, y: 15, dir: 'down' },
   ],
 };
 
@@ -431,6 +469,10 @@ export const MEMORIAL = {
     { kind: 'locust', x: 1, y: 15 },
     { kind: 'locust', x: 24, y: 8 },
 
+    // The three interpretive panels: the baseline a student needs before
+    // 1692, where nobody can explain what is coming because nobody knows.
+    { kind: 'signboard', x: 6, y: 22 },
+    { kind: 'signboard', x: 10, y: 22 },
     { kind: 'signboard', x: 17, y: 22 },
     { kind: 'bin', x: 3, y: 23 },
 
@@ -448,7 +490,9 @@ export const MEMORIAL = {
   ],
   interact: [
     { id: 'threshold', x: 13, y: 21, w: 2, h: 1 },
-    { id: 'memorialSign', x: 17, y: 22, w: 2, h: 2 },
+    { id: 'panelHappened', x: 6, y: 22, w: 2, h: 2 },
+    { id: 'panelCourt', x: 10, y: 22, w: 2, h: 2 },
+    { id: 'panelArgument', x: 17, y: 22, w: 2, h: 2 },
     { id: 'shopWindow', x: 8, y: 29, w: 7, h: 1 },
     // Each bench carries its own inscription.
     ...BENCH_SLOTS.map((b, i) => ({

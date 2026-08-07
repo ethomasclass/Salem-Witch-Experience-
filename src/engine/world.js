@@ -13,7 +13,8 @@ import {
   buildWoodpile, buildMarker, buildWell, buildSeatingChart, buildHearth,
   buildTable, buildPew, buildAccountBook,
   buildMemBench, buildLowWall, buildLocust, buildSignboard, buildBin,
-  buildShopfront,
+  buildShopfront, buildBarn, buildStoneWall, buildHayrick, buildCart,
+  buildAppleTree, buildPig, buildCow, buildSheep, buildChicken,
 } from './art-props.js';
 import { SPR_W, SPR_H, DIR } from './art-actors.js';
 import { P } from '../palette.js';
@@ -66,6 +67,17 @@ export const PROPS = {
   pew:          { w: 1, h: 1, build: () => buildPew() },
   accountbook:  { w: 1, h: 1, build: () => buildAccountBook(), passable: true },
 
+  // A working farm village, not a street of houses.
+  barn:         { w: 8, h: 6, build: (o) => buildBarn(o.w || 8, o.h || 6), sized: true },
+  stonewall:    { w: 1, h: 1, build: () => buildStoneWall() },
+  hayrick:      { w: 2, h: 2, build: () => buildHayrick(), solidRows: 1 },
+  cart:         { w: 2, h: 1, build: () => buildCart() },
+  appletree:    { w: 2, h: 3, build: () => buildAppleTree(), solidRows: 1 },
+  pig:          { w: 1, h: 1, build: () => buildPig() },
+  cow:          { w: 2, h: 1, build: () => buildCow() },
+  sheep:        { w: 1, h: 1, build: () => buildSheep() },
+  chicken:      { w: 1, h: 1, build: () => buildChicken(), passable: true },
+
   // Present day.
   membench:     { w: 2, h: 1, build: () => buildMemBench() },
   lowwall:      { w: 1, h: 1, build: () => buildLowWall() },
@@ -86,7 +98,7 @@ function propImage(prop) {
   const def = PROPS[prop.kind];
   // Sized props (houses) need one image per distinct configuration.
   const key = def.sized
-    ? `${prop.kind}:${prop.w}x${prop.h}:${prop.doorCol}:${(prop.windows || []).join(',')}:${prop.chimney}`
+    ? `${prop.kind}:${prop.w}x${prop.h}:${prop.doorCol}:${(prop.windows || []).join(',')}:${prop.chimney}:${prop.leanTo}:${prop.roofFrac}`
     : prop.kind;
   let img = PROP_CACHE.get(key);
   if (!img) { img = def.build(prop); PROP_CACHE.set(key, img); }

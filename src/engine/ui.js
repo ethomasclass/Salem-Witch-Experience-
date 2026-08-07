@@ -296,6 +296,67 @@ export function drawNotebook(g, view, s, entries, scroll, sourceName) {
   return maxScroll;
 }
 
+/**
+ * The objective HUD.
+ *
+ * One line, top-right, in the yellow every game has used for "here is what
+ * to do next" since the nineties — because that convention is doing real
+ * work for a student who has never played anything like this. Below it, once
+ * the memorial has raised it, the standing question in a quieter colour.
+ *
+ * Deliberately not a quest log: one step at a time, no checklist, nothing
+ * that looks like a worksheet.
+ */
+export function drawObjective(g, view, s, { step, standing, progress, flash }) {
+  const pad = 8 * s;
+  const right = view.x + view.w - pad;
+  // Hard cap, so a long goal wraps instead of spanning the whole screen and
+  // colliding with the place-name label in the opposite corner.
+  const maxW = Math.min(118 * s, view.w * 0.34);
+  let y = view.y + pad;
+
+  g.textAlign = 'right';
+  g.textBaseline = 'top';
+
+  if (step) {
+    const bodyFont = `600 ${7 * s}px system-ui, -apple-system, sans-serif`;
+    g.font = bodyFont;
+    const lines = wrapText(g, step.text, maxW);
+    let textW = 0;
+    for (const l of lines) textW = Math.max(textW, g.measureText(l).width);
+
+    const lineH = 9.5 * s;
+    const boxW = textW + 16 * s;
+    const boxH = 13 * s + lines.length * lineH;
+
+    g.fillStyle = 'rgba(14,16,20,0.72)';
+    g.fillRect(right - boxW, y, boxW, boxH);
+    g.fillStyle = flash > 0 ? '#f6e8b8' : '#e8c46a';
+    g.fillRect(right - boxW, y, 2 * s, boxH);
+
+    g.font = `700 ${5.5 * s}px system-ui, -apple-system, sans-serif`;
+    g.fillStyle = '#8d939b';
+    g.fillText(`GOAL  ${progress.done}/${progress.total}`, right - 8 * s, y + 4 * s);
+
+    g.font = bodyFont;
+    // A brief pale flash when a goal completes, then back to steady yellow.
+    g.fillStyle = flash > 0 ? '#fff6d8' : '#e8c46a';
+    let ly = y + 12 * s;
+    for (const l of lines) { g.fillText(l, right - 8 * s, ly); ly += lineH; }
+    y += boxH + 4 * s;
+  }
+
+  if (standing) {
+    g.font = `italic ${7.5 * s}px Georgia, Palatino, serif`;
+    const w = g.measureText(standing).width + 14 * s;
+    const h = 13 * s;
+    g.fillStyle = 'rgba(14,16,20,0.58)';
+    g.fillRect(right - w, y, w, h);
+    g.fillStyle = '#b9a06a';
+    g.fillText(standing, right - 8 * s, y + 3 * s);
+  }
+}
+
 /** Title screen. */
 export function drawTitle(g, view, s, hasSave, index) {
   g.fillStyle = '#14161a';

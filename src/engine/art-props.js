@@ -173,10 +173,189 @@ export function buildHouse(wT, hT, opts = {}) {
   speckle(g, 0, H - foundH, W, foundH, P.stoneHi, 0.14, 67);
   hline(g, 0, H - foundH, W, P.outline);
 
+  // --- lean-to ----------------------------------------------------------
+  // The visible half of a saltbox. A family that needed another room added
+  // one against the end wall under a single long slope, and the result is
+  // the silhouette everyone pictures when they picture a colonial house.
+  if (opts.leanTo) {
+    const lw = Math.round(W * 0.30);
+    const lx = opts.leanTo === 'left' ? -overhang : W - lw + overhang;
+    const lRoofTop = roofH - 8;
+    const lRoofH = 12;
+    rect(g, lx, lRoofTop, lw, lRoofH, P.roofLo);
+    for (let yy = lRoofTop; yy < lRoofTop + lRoofH; yy += 4) hline(g, lx, yy + 3, lw, P.roofDeep);
+    hline(g, lx, lRoofTop, lw, P.outline);
+    rect(g, lx, lRoofTop + lRoofH - 2, lw, 2, P.roofHi);
+    hline(g, lx, lRoofTop + lRoofH, lw, P.outline);
+    const lwx = opts.leanTo === 'left' ? 0 : W - lw + overhang;
+    const lwWidth = lw - overhang;
+    rect(g, lwx, lRoofTop + lRoofH + 1, lwWidth, H - foundH - lRoofTop - lRoofH - 1, P.wall);
+    for (let yy = lRoofTop + lRoofH + 3; yy < H - foundH; yy += 4) {
+      hline(g, lwx, yy, lwWidth, P.wallLo);
+      hline(g, lwx, yy + 1, lwWidth, P.wallHi);
+    }
+    if (opts.leanTo === 'left') vline(g, 0, lRoofTop + lRoofH, H - foundH - lRoofTop - lRoofH, P.outline);
+    else vline(g, W - 1, lRoofTop + lRoofH, H - foundH - lRoofTop - lRoofH, P.outline);
+  }
+
   // --- ground shadow ----------------------------------------------------
   g.fillStyle = P.shadow;
   g.fillRect(2, H, W - 4, 4);
 
+  return s;
+}
+
+/**
+ * An English barn. Bigger than any house in the village, no chimney, and a
+ * pair of great doors in the long side — which is what a barn IS in New
+ * England in 1692: a threshing floor with bays either side.
+ *
+ * Worth building because it corrects the picture. Salem Village was a
+ * farming community, not a town: the largest building on most properties
+ * was the one the animals and the harvest lived in.
+ */
+export function buildBarn(wT = 8, hT = 6) {
+  const W = wT * TS, H = hT * TS;
+  const s = surface(W, H + 6);
+  const g = s.g;
+  const foundH = 4;
+  const roofH = Math.round(H * 0.5);
+  const wallH = H - roofH - foundH;
+  const overhang = 3;
+
+  // Roof — steeper and plainer than a house, no chimney.
+  const rx = -overhang, rw = W + overhang * 2;
+  const topInset = Math.round(roofH * 0.30);
+  shingles(g, rx, 4, rw, roofH - 4, topInset);
+  const ridgeW = rw - topInset * 2;
+  rect(g, rx + topInset, 2, ridgeW, 3, P.roofHi);
+  hline(g, rx + topInset, 2, ridgeW, P.outline);
+  line(g, rx + topInset, 3, rx, roofH, P.outline);
+  line(g, rx + rw - topInset - 1, 3, rx + rw - 1, roofH, P.outline);
+  rect(g, rx, roofH - 3, rw, 3, P.roofHi);
+  hline(g, rx, roofH, rw, P.outline);
+  rect(g, 0, roofH + 1, W, 3, P.wallDeep);
+
+  // Wall: vertical board-and-batten, not clapboard. Different texture from
+  // every house, so the barn reads as a barn at a glance.
+  const wy = roofH + 4;
+  rect(g, 0, wy, W, wallH, P.wallLo);
+  for (let x = 0; x < W; x += 6) {
+    vline(g, x, wy, wallH, P.wallDeep);
+    vline(g, x + 1, wy, wallH, P.wall);
+  }
+  speckle(g, 0, wy, W, wallH, P.wallDeep, 0.05, 501);
+  vline(g, 0, wy, wallH, P.outline);
+  vline(g, W - 1, wy, wallH, P.outline);
+
+  // The great doors, centred, tall enough for a loaded cart.
+  const dW = 30, dH = wallH - 3;
+  const dX = Math.round(W / 2 - dW / 2), dY = H - foundH - dH;
+  rect(g, dX - 1, dY - 1, dW + 2, dH + 1, P.wallDeep);
+  rect(g, dX, dY, dW, dH, P.doorLo);
+  for (let i = 4; i < dW; i += 5) vline(g, dX + i, dY + 1, dH - 1, P.door);
+  hline(g, dX, dY + 4, dW, P.doorHi);
+  hline(g, dX, dY + dH - 7, dW, P.doorHi);
+  vline(g, dX + dW / 2, dY, dH, P.wallDeep);      // the split between leaves
+  // Strap hinges.
+  hline(g, dX + 1, dY + 5, 7, '#2f2a24');
+  hline(g, dX + dW - 8, dY + 5, 7, '#2f2a24');
+
+  // A pitching hole up in the gable for hay.
+  const hx = Math.round(W / 2 - 5);
+  rect(g, hx, roofH - 16, 10, 9, P.ink);
+  stroke(g, hx - 1, roofH - 17, 12, 11, P.outline);
+
+  rect(g, 0, H - foundH, W, foundH, P.stone);
+  speckle(g, 0, H - foundH, W, foundH, P.stoneLo, 0.34, 503);
+  hline(g, 0, H - foundH, W, P.outline);
+  g.fillStyle = P.shadow;
+  g.fillRect(2, H, W - 4, 4);
+  return s;
+}
+
+/**
+ * A dry-laid field wall. Cleared stone, stacked without mortar — the single
+ * most characteristic object in the New England landscape, and the physical
+ * record of every rock a family pulled out of a field by hand.
+ */
+export function buildStoneWall() {
+  const s = surface(TS, TS + 3);
+  const g = s.g;
+  rect(g, 0, 12, TS, 3, 'rgba(20,22,26,0.35)');
+  // Two courses of irregular stone.
+  const stones = [[0, 5, 6, 5], [6, 4, 5, 6], [11, 5, 5, 5],
+                  [0, 9, 5, 5], [5, 10, 6, 4], [11, 9, 5, 5]];
+  for (const [x, y, w, h] of stones) {
+    ellipse(g, x + w / 2, y + h / 2, w / 2 + 0.5, h / 2 + 0.5, P.outline);
+    ellipse(g, x + w / 2, y + h / 2, w / 2, h / 2, P.stone);
+    ellipse(g, x + w / 2 - 1, y + h / 2 - 1, w / 3, h / 3, P.stoneHi);
+  }
+  speckle(g, 0, 4, TS, 11, P.stoneLo, 0.14, 511);
+  return s;
+}
+
+/** A hay rick — cut hay stacked around a pole and thatched over. */
+export function buildHayrick() {
+  const W = 2 * TS, H = 2 * TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+  const cx = W / 2;
+  ellipse(g, cx, H - 6, 14, 9, P.outline);
+  ellipse(g, cx, H - 6, 13, 8, '#8a7647');
+  // Conical top.
+  for (let i = 0; i < 18; i++) {
+    const w = Math.round(13 * (1 - i / 20));
+    rect(g, cx - w, H - 12 - i, w * 2, 1, i % 4 === 0 ? '#9c8752' : '#8a7647');
+  }
+  speckle(g, cx - 13, H - 30, 26, 26, '#6f5f3a', 0.16, 521);
+  speckle(g, cx - 13, H - 30, 26, 26, '#a8935c', 0.10, 523);
+  vline(g, cx, H - 34, 6, P.bark);                 // the pole
+  ellipse(g, cx, H + 1, 13, 3, P.shadow);
+  return s;
+}
+
+/** A two-wheeled farm cart, tipped down on its shafts. */
+export function buildCart() {
+  const W = 2 * TS, H = TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+  rect(g, 3, 4, W - 8, 7, P.barkHi);
+  stroke(g, 3, 4, W - 8, 7, P.outline);
+  for (let x = 6; x < W - 6; x += 4) vline(g, x, 5, 5, P.bark);
+  // Shafts.
+  rect(g, W - 6, 8, 6, 2, P.bark);
+  // Wheel.
+  ellipse(g, 8, 12, 5, 5, P.outline);
+  ellipse(g, 8, 12, 4, 4, P.barkHi);
+  ellipse(g, 8, 12, 2, 2, P.bark);
+  ellipse(g, W / 2, H + 1, 12, 2, P.shadow);
+  return s;
+}
+
+/** Apple tree, bare. Orchards were everywhere — mostly for cider, which is
+ *  what a New England family actually drank. */
+export function buildAppleTree() {
+  const W = 2 * TS, H = 3 * TS;
+  const s = surface(W, H + 4);
+  const g = s.g;
+  const cx = W / 2, base = H;
+  for (let i = 0; i < 16; i++) {
+    const y = base - 1 - i, hw = Math.max(2, 4 - Math.floor(i / 6));
+    rect(g, cx - hw, y, hw * 2, 1, P.bark);
+    px(g, cx - hw, y, P.outline);
+    px(g, cx + hw - 1, y, P.barkHi);
+  }
+  const fork = base - 16;
+  const limbs = [[cx, fork + 2, cx - 11, fork - 11], [cx, fork + 2, cx + 10, fork - 12],
+                 [cx, fork, cx - 4, fork - 17], [cx, fork, cx + 5, fork - 16]];
+  for (const [x0, y0, x1, y1] of limbs) {
+    line(g, x0, y0, x1, y1, P.bark);
+    line(g, x0 + 1, y0, x1 + 1, y1, P.barkLo);
+    line(g, x1, y1, x1 + (x1 > x0 ? 4 : -4), y1 - 6, P.bark);
+  }
+  speckle(g, 3, fork - 20, W - 6, 22, P.barkLo, 0.07, 531);
+  ellipse(g, cx, base + 1, 9, 3, P.shadow);
   return s;
 }
 
@@ -618,6 +797,95 @@ export function buildShopfront(wT = 6, hT = 5) {
   hline(g, 0, H - foundH, W, P.outline);
   g.fillStyle = P.shadow;
   g.fillRect(2, H, W - 4, 4);
+  return s;
+}
+
+/* ---------------------------------------------------------------------- *
+ * Livestock
+ *
+ * Not decoration. Free-ranging swine trespassing into a neighbour's field
+ * was one of the most common causes of ill-feeling in a New England village,
+ * and Rebecca Nurse mentions exactly that quarrel with the Putnams. Putting
+ * the pigs on screen makes her line land.
+ * ---------------------------------------------------------------------- */
+
+function quadruped(g, x, y, w, h, body, dark, light) {
+  ellipse(g, x + w / 2, y + h / 2, w / 2 + 1, h / 2 + 1, P.outline);
+  ellipse(g, x + w / 2, y + h / 2, w / 2, h / 2, body);
+  ellipse(g, x + w / 2 - 2, y + h / 2 - 2, w / 3, h / 3, light);
+  ellipse(g, x + w / 2 + 2, y + h / 2 + 1, w / 4, h / 4, dark);
+  // Legs.
+  rect(g, x + 2, y + h - 1, 2, 3, dark);
+  rect(g, x + w - 4, y + h - 1, 2, 3, dark);
+}
+
+export function buildPig() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  quadruped(g, 1, 5, 12, 7, '#9a7d72', '#7a6058', '#b39a8e');
+  // Snout and ear.
+  rect(g, 0, 8, 3, 3, '#b39a8e');
+  px(g, 0, 9, P.outline); px(g, 1, 9, '#7a6058');
+  px(g, 4, 5, '#7a6058');
+  px(g, 9, 7, P.ink);            // eye
+  // Curl of tail.
+  px(g, 13, 7, '#7a6058'); px(g, 14, 6, '#7a6058');
+  ellipse(g, 7, TS, 6, 2, P.shadow);
+  return s;
+}
+
+export function buildCow() {
+  const W = 2 * TS, H = TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+  quadruped(g, 3, 3, 22, 9, '#7b6247', '#5d4936', '#94795b');
+  // Belted patch — most New England cattle were red devons and mongrels,
+  // so this is a plausible mixed beast rather than a Holstein.
+  ellipse(g, 14, 7, 5, 4, '#c9bda6');
+  // Head, low, grazing.
+  ellipse(g, 2, 10, 4, 3, P.outline);
+  ellipse(g, 2, 10, 3, 2, '#5d4936');
+  px(g, 1, 9, P.ink);
+  // Horns.
+  px(g, 2, 7, '#cfc6b0'); px(g, 4, 7, '#cfc6b0');
+  // Tail.
+  vline(g, 25, 5, 7, '#5d4936');
+  ellipse(g, W / 2, H + 1, 12, 2, P.shadow);
+  return s;
+}
+
+export function buildSheep() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  // Fleece: a lumpy cloud rather than a smooth body.
+  for (const [x, y, r] of [[5, 7, 4], [8, 6, 4], [11, 8, 3], [7, 9, 4]]) {
+    ellipse(g, x, y, r + 1, r + 1, P.outline);
+    ellipse(g, x, y, r, r, '#cfc9bb');
+  }
+  for (const [x, y, r] of [[5, 6, 2], [9, 5, 2]]) ellipse(g, x, y, r, r, '#e6e1d4');
+  ellipse(g, 2, 9, 3, 2, P.outline);
+  ellipse(g, 2, 9, 2, 2, '#4a4540');       // dark face
+  px(g, 1, 9, P.ink);
+  rect(g, 5, 12, 2, 3, '#4a4540');
+  rect(g, 10, 12, 2, 3, '#4a4540');
+  ellipse(g, 8, TS, 6, 2, P.shadow);
+  return s;
+}
+
+export function buildChicken() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  ellipse(g, 8, 10, 5, 4, P.outline);
+  ellipse(g, 8, 10, 4, 3, '#b8a48c');
+  ellipse(g, 7, 9, 2, 2, '#d3c3ad');
+  ellipse(g, 5, 6, 3, 3, P.outline);
+  ellipse(g, 5, 6, 2, 2, '#b8a48c');
+  px(g, 4, 6, P.ink);
+  px(g, 3, 7, '#c98a3e');                  // beak
+  px(g, 5, 3, '#8f3d2b'); px(g, 6, 4, '#8f3d2b');   // comb
+  rect(g, 7, 13, 1, 2, '#c98a3e');
+  rect(g, 9, 13, 1, 2, '#c98a3e');
+  ellipse(g, 8, TS, 4, 1, P.shadow);
   return s;
 }
 

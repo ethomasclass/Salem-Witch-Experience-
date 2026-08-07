@@ -60,6 +60,53 @@ export const PRESENT_CLUES = {
     { say: 'That is not damage. Somebody designed it that way.', who: null },
   ],
 
+  /* ------------------------------------------------------------------ *
+   * The three interpretive panels.
+   *
+   * A student may arrive knowing nothing about 1692 at all, and the game
+   * cannot rely on the village to teach the basics — inside 1692 nobody
+   * knows what is coming, so nobody can explain it. So the baseline goes
+   * here, on plaques, at a real memorial, where plaques belong.
+   *
+   * Panel three is where the game asks its question out loud. It is the
+   * only place it ever does.
+   * ------------------------------------------------------------------ */
+
+  panelHappened: [
+    { say: 'PANEL ONE — WHAT HAPPENED', who: null },
+    { say: 'In January 1692, two girls in the household of the Salem Village minister began having fits that no one could explain. A doctor examined them and suggested witchcraft.', who: null },
+    { say: 'By the end of February, three women had been arrested. One of them confessed, and named others.', who: null },
+    { say: 'Over the next eight months more than a hundred and fifty people were arrested across Essex County. Farmers, church members, a former minister, a four-year-old girl.', who: null },
+    { say: 'Nineteen were hanged. One man was crushed to death under stones. At least five more died in jail.', who: null },
+    { learn: 'present.happened', source: 'observed' },
+    { say: 'It was over in under a year. Nobody was executed after 22 September 1692. Within five years, people who had taken part were publicly apologising.', who: null },
+  ],
+
+  panelCourt: [
+    { say: 'PANEL TWO — THE COURT', who: null },
+    { say: 'The trials were held by a special court created by the governor in May 1692: the Court of Oyer and Terminer — "to hear and to determine."', who: null },
+    { say: 'It accepted spectral evidence. A witness could testify that the accused person\'s spirit had appeared and tormented them. Nobody else could see it. There was no way to disprove it.', who: null },
+    { say: 'The accused were not allowed lawyers.', who: null },
+    { learn: 'present.court', source: 'observed' },
+    { say: 'And confessing kept you alive. Not one person who confessed to witchcraft was executed.', who: null },
+    { say: 'Every single person hanged in 1692 had insisted they were innocent.', who: null },
+    { say: 'These were not people who did not know any better. They were people following rules — and the rules were the problem.', who: null },
+  ],
+
+  panelArgument: [
+    { say: 'PANEL THREE — WHY?', who: null },
+    { say: 'Historians have argued about this for three hundred years. Almost nobody thinks it was one thing.', who: null },
+    { say: 'Some point to LAND AND MONEY — a village split into two factions, feuding families, a disputed boundary, and a pattern in who accused whom.', who: null },
+    { say: 'Some point to WAR — a brutal frontier conflict to the north, and refugees from it living in the very households that did most of the accusing.', who: null },
+    { say: 'Some point to WHO WAS ACCUSED — mostly women, and often women who stood to inherit property, or who had already been difficult.', who: null },
+    { say: 'And some point to THE LAW ITSELF — spectral evidence, no defence counsel, a colony that had lost its charter, and a religion in which confessing was the only way to survive.', who: null },
+    { learn: 'present.argument', source: 'observed' },
+    { say: 'All four have real evidence behind them. None of them explains everything on its own.', who: null },
+    { say: 'This memorial does not tell you the answer. It is not settled.', who: null },
+    { say: 'So: what caused it?', who: null },
+    { say: 'Go and find out. Everything you notice goes in your notebook — press N to read it back.', who: null },
+  ],
+
   memorialSign: [
     { say: 'An interpretive sign, the kind every historic site has.', who: null },
     { say: 'Dedicated in 1992, three hundred years after the trials. Twenty benches for the twenty people executed.', who: null },

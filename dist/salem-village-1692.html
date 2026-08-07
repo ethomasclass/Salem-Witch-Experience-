@@ -180,6 +180,7 @@
 
 <div id="bar">
   <button id="copy" type="button">Copy my notes</button>
+  <button id="sound" type="button">Sound: on</button>
   <button id="reset" type="button">Start over</button>
   <span class="hint"><kbd>↑↓←→</kbd> or <kbd>WASD</kbd> move · <kbd>Z</kbd> talk and examine · <kbd>X</kbd> back · <kbd>N</kbd> notebook</span>
 </div>
@@ -892,10 +893,189 @@ function buildHouse(wT, hT, opts = {}) {
   speckle(g, 0, H - foundH, W, foundH, P.stoneHi, 0.14, 67);
   hline(g, 0, H - foundH, W, P.outline);
 
+  // --- lean-to ----------------------------------------------------------
+  // The visible half of a saltbox. A family that needed another room added
+  // one against the end wall under a single long slope, and the result is
+  // the silhouette everyone pictures when they picture a colonial house.
+  if (opts.leanTo) {
+    const lw = Math.round(W * 0.30);
+    const lx = opts.leanTo === 'left' ? -overhang : W - lw + overhang;
+    const lRoofTop = roofH - 8;
+    const lRoofH = 12;
+    rect(g, lx, lRoofTop, lw, lRoofH, P.roofLo);
+    for (let yy = lRoofTop; yy < lRoofTop + lRoofH; yy += 4) hline(g, lx, yy + 3, lw, P.roofDeep);
+    hline(g, lx, lRoofTop, lw, P.outline);
+    rect(g, lx, lRoofTop + lRoofH - 2, lw, 2, P.roofHi);
+    hline(g, lx, lRoofTop + lRoofH, lw, P.outline);
+    const lwx = opts.leanTo === 'left' ? 0 : W - lw + overhang;
+    const lwWidth = lw - overhang;
+    rect(g, lwx, lRoofTop + lRoofH + 1, lwWidth, H - foundH - lRoofTop - lRoofH - 1, P.wall);
+    for (let yy = lRoofTop + lRoofH + 3; yy < H - foundH; yy += 4) {
+      hline(g, lwx, yy, lwWidth, P.wallLo);
+      hline(g, lwx, yy + 1, lwWidth, P.wallHi);
+    }
+    if (opts.leanTo === 'left') vline(g, 0, lRoofTop + lRoofH, H - foundH - lRoofTop - lRoofH, P.outline);
+    else vline(g, W - 1, lRoofTop + lRoofH, H - foundH - lRoofTop - lRoofH, P.outline);
+  }
+
   // --- ground shadow ----------------------------------------------------
   g.fillStyle = P.shadow;
   g.fillRect(2, H, W - 4, 4);
 
+  return s;
+}
+
+/**
+ * An English barn. Bigger than any house in the village, no chimney, and a
+ * pair of great doors in the long side — which is what a barn IS in New
+ * England in 1692: a threshing floor with bays either side.
+ *
+ * Worth building because it corrects the picture. Salem Village was a
+ * farming community, not a town: the largest building on most properties
+ * was the one the animals and the harvest lived in.
+ */
+function buildBarn(wT = 8, hT = 6) {
+  const W = wT * TS, H = hT * TS;
+  const s = surface(W, H + 6);
+  const g = s.g;
+  const foundH = 4;
+  const roofH = Math.round(H * 0.5);
+  const wallH = H - roofH - foundH;
+  const overhang = 3;
+
+  // Roof — steeper and plainer than a house, no chimney.
+  const rx = -overhang, rw = W + overhang * 2;
+  const topInset = Math.round(roofH * 0.30);
+  shingles(g, rx, 4, rw, roofH - 4, topInset);
+  const ridgeW = rw - topInset * 2;
+  rect(g, rx + topInset, 2, ridgeW, 3, P.roofHi);
+  hline(g, rx + topInset, 2, ridgeW, P.outline);
+  line(g, rx + topInset, 3, rx, roofH, P.outline);
+  line(g, rx + rw - topInset - 1, 3, rx + rw - 1, roofH, P.outline);
+  rect(g, rx, roofH - 3, rw, 3, P.roofHi);
+  hline(g, rx, roofH, rw, P.outline);
+  rect(g, 0, roofH + 1, W, 3, P.wallDeep);
+
+  // Wall: vertical board-and-batten, not clapboard. Different texture from
+  // every house, so the barn reads as a barn at a glance.
+  const wy = roofH + 4;
+  rect(g, 0, wy, W, wallH, P.wallLo);
+  for (let x = 0; x < W; x += 6) {
+    vline(g, x, wy, wallH, P.wallDeep);
+    vline(g, x + 1, wy, wallH, P.wall);
+  }
+  speckle(g, 0, wy, W, wallH, P.wallDeep, 0.05, 501);
+  vline(g, 0, wy, wallH, P.outline);
+  vline(g, W - 1, wy, wallH, P.outline);
+
+  // The great doors, centred, tall enough for a loaded cart.
+  const dW = 30, dH = wallH - 3;
+  const dX = Math.round(W / 2 - dW / 2), dY = H - foundH - dH;
+  rect(g, dX - 1, dY - 1, dW + 2, dH + 1, P.wallDeep);
+  rect(g, dX, dY, dW, dH, P.doorLo);
+  for (let i = 4; i < dW; i += 5) vline(g, dX + i, dY + 1, dH - 1, P.door);
+  hline(g, dX, dY + 4, dW, P.doorHi);
+  hline(g, dX, dY + dH - 7, dW, P.doorHi);
+  vline(g, dX + dW / 2, dY, dH, P.wallDeep);      // the split between leaves
+  // Strap hinges.
+  hline(g, dX + 1, dY + 5, 7, '#2f2a24');
+  hline(g, dX + dW - 8, dY + 5, 7, '#2f2a24');
+
+  // A pitching hole up in the gable for hay.
+  const hx = Math.round(W / 2 - 5);
+  rect(g, hx, roofH - 16, 10, 9, P.ink);
+  stroke(g, hx - 1, roofH - 17, 12, 11, P.outline);
+
+  rect(g, 0, H - foundH, W, foundH, P.stone);
+  speckle(g, 0, H - foundH, W, foundH, P.stoneLo, 0.34, 503);
+  hline(g, 0, H - foundH, W, P.outline);
+  g.fillStyle = P.shadow;
+  g.fillRect(2, H, W - 4, 4);
+  return s;
+}
+
+/**
+ * A dry-laid field wall. Cleared stone, stacked without mortar — the single
+ * most characteristic object in the New England landscape, and the physical
+ * record of every rock a family pulled out of a field by hand.
+ */
+function buildStoneWall() {
+  const s = surface(TS, TS + 3);
+  const g = s.g;
+  rect(g, 0, 12, TS, 3, 'rgba(20,22,26,0.35)');
+  // Two courses of irregular stone.
+  const stones = [[0, 5, 6, 5], [6, 4, 5, 6], [11, 5, 5, 5],
+                  [0, 9, 5, 5], [5, 10, 6, 4], [11, 9, 5, 5]];
+  for (const [x, y, w, h] of stones) {
+    ellipse(g, x + w / 2, y + h / 2, w / 2 + 0.5, h / 2 + 0.5, P.outline);
+    ellipse(g, x + w / 2, y + h / 2, w / 2, h / 2, P.stone);
+    ellipse(g, x + w / 2 - 1, y + h / 2 - 1, w / 3, h / 3, P.stoneHi);
+  }
+  speckle(g, 0, 4, TS, 11, P.stoneLo, 0.14, 511);
+  return s;
+}
+
+/** A hay rick — cut hay stacked around a pole and thatched over. */
+function buildHayrick() {
+  const W = 2 * TS, H = 2 * TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+  const cx = W / 2;
+  ellipse(g, cx, H - 6, 14, 9, P.outline);
+  ellipse(g, cx, H - 6, 13, 8, '#8a7647');
+  // Conical top.
+  for (let i = 0; i < 18; i++) {
+    const w = Math.round(13 * (1 - i / 20));
+    rect(g, cx - w, H - 12 - i, w * 2, 1, i % 4 === 0 ? '#9c8752' : '#8a7647');
+  }
+  speckle(g, cx - 13, H - 30, 26, 26, '#6f5f3a', 0.16, 521);
+  speckle(g, cx - 13, H - 30, 26, 26, '#a8935c', 0.10, 523);
+  vline(g, cx, H - 34, 6, P.bark);                 // the pole
+  ellipse(g, cx, H + 1, 13, 3, P.shadow);
+  return s;
+}
+
+/** A two-wheeled farm cart, tipped down on its shafts. */
+function buildCart() {
+  const W = 2 * TS, H = TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+  rect(g, 3, 4, W - 8, 7, P.barkHi);
+  stroke(g, 3, 4, W - 8, 7, P.outline);
+  for (let x = 6; x < W - 6; x += 4) vline(g, x, 5, 5, P.bark);
+  // Shafts.
+  rect(g, W - 6, 8, 6, 2, P.bark);
+  // Wheel.
+  ellipse(g, 8, 12, 5, 5, P.outline);
+  ellipse(g, 8, 12, 4, 4, P.barkHi);
+  ellipse(g, 8, 12, 2, 2, P.bark);
+  ellipse(g, W / 2, H + 1, 12, 2, P.shadow);
+  return s;
+}
+
+/** Apple tree, bare. Orchards were everywhere — mostly for cider, which is
+ *  what a New England family actually drank. */
+function buildAppleTree() {
+  const W = 2 * TS, H = 3 * TS;
+  const s = surface(W, H + 4);
+  const g = s.g;
+  const cx = W / 2, base = H;
+  for (let i = 0; i < 16; i++) {
+    const y = base - 1 - i, hw = Math.max(2, 4 - Math.floor(i / 6));
+    rect(g, cx - hw, y, hw * 2, 1, P.bark);
+    px(g, cx - hw, y, P.outline);
+    px(g, cx + hw - 1, y, P.barkHi);
+  }
+  const fork = base - 16;
+  const limbs = [[cx, fork + 2, cx - 11, fork - 11], [cx, fork + 2, cx + 10, fork - 12],
+                 [cx, fork, cx - 4, fork - 17], [cx, fork, cx + 5, fork - 16]];
+  for (const [x0, y0, x1, y1] of limbs) {
+    line(g, x0, y0, x1, y1, P.bark);
+    line(g, x0 + 1, y0, x1 + 1, y1, P.barkLo);
+    line(g, x1, y1, x1 + (x1 > x0 ? 4 : -4), y1 - 6, P.bark);
+  }
+  speckle(g, 3, fork - 20, W - 6, 22, P.barkLo, 0.07, 531);
+  ellipse(g, cx, base + 1, 9, 3, P.shadow);
   return s;
 }
 
@@ -1337,6 +1517,91 @@ function buildShopfront(wT = 6, hT = 5) {
   hline(g, 0, H - foundH, W, P.outline);
   g.fillStyle = P.shadow;
   g.fillRect(2, H, W - 4, 4);
+  return s;
+}
+
+/* ---------------------------------------------------------------------- *
+ * Livestock
+ *
+ * Not decoration. Free-ranging swine trespassing into a neighbour's field
+ * was one of the most common causes of ill-feeling in a New England village,
+ * and Rebecca Nurse mentions exactly that quarrel with the Putnams. Putting
+ * the pigs on screen makes her line land.
+ * ---------------------------------------------------------------------- */
+
+function quadruped(g, x, y, w, h, body, dark, light) {
+  ellipse(g, x + w / 2, y + h / 2, w / 2 + 1, h / 2 + 1, P.outline);
+  ellipse(g, x + w / 2, y + h / 2, w / 2, h / 2, body);
+  ellipse(g, x + w / 2 - 2, y + h / 2 - 2, w / 3, h / 3, light);
+  ellipse(g, x + w / 2 + 2, y + h / 2 + 1, w / 4, h / 4, dark);
+  // Legs.
+  rect(g, x + 2, y + h - 1, 2, 3, dark);
+  rect(g, x + w - 4, y + h - 1, 2, 3, dark);
+}
+function buildPig() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  quadruped(g, 1, 5, 12, 7, '#9a7d72', '#7a6058', '#b39a8e');
+  // Snout and ear.
+  rect(g, 0, 8, 3, 3, '#b39a8e');
+  px(g, 0, 9, P.outline); px(g, 1, 9, '#7a6058');
+  px(g, 4, 5, '#7a6058');
+  px(g, 9, 7, P.ink);            // eye
+  // Curl of tail.
+  px(g, 13, 7, '#7a6058'); px(g, 14, 6, '#7a6058');
+  ellipse(g, 7, TS, 6, 2, P.shadow);
+  return s;
+}
+function buildCow() {
+  const W = 2 * TS, H = TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+  quadruped(g, 3, 3, 22, 9, '#7b6247', '#5d4936', '#94795b');
+  // Belted patch — most New England cattle were red devons and mongrels,
+  // so this is a plausible mixed beast rather than a Holstein.
+  ellipse(g, 14, 7, 5, 4, '#c9bda6');
+  // Head, low, grazing.
+  ellipse(g, 2, 10, 4, 3, P.outline);
+  ellipse(g, 2, 10, 3, 2, '#5d4936');
+  px(g, 1, 9, P.ink);
+  // Horns.
+  px(g, 2, 7, '#cfc6b0'); px(g, 4, 7, '#cfc6b0');
+  // Tail.
+  vline(g, 25, 5, 7, '#5d4936');
+  ellipse(g, W / 2, H + 1, 12, 2, P.shadow);
+  return s;
+}
+function buildSheep() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  // Fleece: a lumpy cloud rather than a smooth body.
+  for (const [x, y, r] of [[5, 7, 4], [8, 6, 4], [11, 8, 3], [7, 9, 4]]) {
+    ellipse(g, x, y, r + 1, r + 1, P.outline);
+    ellipse(g, x, y, r, r, '#cfc9bb');
+  }
+  for (const [x, y, r] of [[5, 6, 2], [9, 5, 2]]) ellipse(g, x, y, r, r, '#e6e1d4');
+  ellipse(g, 2, 9, 3, 2, P.outline);
+  ellipse(g, 2, 9, 2, 2, '#4a4540');       // dark face
+  px(g, 1, 9, P.ink);
+  rect(g, 5, 12, 2, 3, '#4a4540');
+  rect(g, 10, 12, 2, 3, '#4a4540');
+  ellipse(g, 8, TS, 6, 2, P.shadow);
+  return s;
+}
+function buildChicken() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  ellipse(g, 8, 10, 5, 4, P.outline);
+  ellipse(g, 8, 10, 4, 3, '#b8a48c');
+  ellipse(g, 7, 9, 2, 2, '#d3c3ad');
+  ellipse(g, 5, 6, 3, 3, P.outline);
+  ellipse(g, 5, 6, 2, 2, '#b8a48c');
+  px(g, 4, 6, P.ink);
+  px(g, 3, 7, '#c98a3e');                  // beak
+  px(g, 5, 3, '#8f3d2b'); px(g, 6, 4, '#8f3d2b');   // comb
+  rect(g, 7, 13, 1, 2, '#c98a3e');
+  rect(g, 9, 13, 1, 2, '#c98a3e');
+  ellipse(g, 8, TS, 4, 1, P.shadow);
   return s;
 }
 
@@ -2061,6 +2326,258 @@ class Input {
   }
 }
 
+/* ===== src/engine/audio.js ===== */
+// Sound, synthesised at runtime.
+//
+// No audio files. Everything here is generated with the Web Audio API, for
+// the same reason the art is drawn in code: the game has to survive being a
+// single HTML file on a filtered school network, and a blocked .mp3 is a
+// silent game with no error message.
+//
+// Two rules that matter in a classroom:
+//   - Nothing plays until the player presses a key. Browsers require a
+//     gesture before audio anyway, and a game that starts making noise in a
+//     room of thirty Chromebooks is a game a teacher turns off.
+//   - The mute state is remembered. One toggle, honoured forever.
+
+const MUTE_KEY = 'salem1692.muted';
+class Audio {
+  constructor() {
+    this.ctx = null;
+    this.master = null;
+    this.ambientGain = null;
+    this.ambient = null;        // { nodes: [], name }
+    this.muted = false;
+    try { this.muted = localStorage.getItem(MUTE_KEY) === '1'; } catch { /* private mode */ }
+    this.pendingAmbience = null;
+  }
+
+  /** Called from the first real input event. Safe to call repeatedly. */
+  unlock() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.ctx = new AC();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = this.muted ? 0 : 0.5;
+    this.master.connect(this.ctx.destination);
+    this.ambientGain = this.ctx.createGain();
+    this.ambientGain.gain.value = 0.35;
+    this.ambientGain.connect(this.master);
+    if (this.pendingAmbience) {
+      const a = this.pendingAmbience;
+      this.pendingAmbience = null;
+      this.setAmbience(a);
+    }
+  }
+
+  setMuted(m) {
+    this.muted = m;
+    try { localStorage.setItem(MUTE_KEY, m ? '1' : '0'); } catch { /* nothing to do */ }
+    if (this.master) {
+      this.master.gain.setTargetAtTime(m ? 0 : 0.5, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  toggleMute() { this.setMuted(!this.muted); return this.muted; }
+
+  /* ---- building blocks ------------------------------------------------ */
+
+  /** A short buffer of white noise, reused for every noise-based voice. */
+  noiseBuffer(seconds = 2) {
+    if (this._noise && this._noiseLen >= seconds) return this._noise;
+    const n = Math.floor(this.ctx.sampleRate * seconds);
+    const buf = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    this._noise = buf; this._noiseLen = seconds;
+    return buf;
+  }
+
+  /** One short tone. */
+  tone({ freq = 440, type = 'square', dur = 0.06, gain = 0.15, slide = 0, delay = 0 }) {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime + delay;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, freq + slide), t + dur);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.master);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+
+  /** A filtered burst of noise — footsteps, thumps, wind gusts. */
+  burst({ dur = 0.08, gain = 0.12, freq = 900, q = 1, type = 'bandpass', delay = 0 }) {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime + delay;
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer();
+    src.loop = true;
+    const f = this.ctx.createBiquadFilter();
+    f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(this.master);
+    src.start(t); src.stop(t + dur + 0.02);
+  }
+
+  /* ---- one-shots ------------------------------------------------------ */
+
+  step(terrain) {
+    // Different ground, different footstep. Small detail, but it is the
+    // sound the player hears more than any other.
+    const kinds = {
+      mud:    { freq: 420, dur: 0.07, gain: 0.055, q: 0.8 },
+      grass:  { freq: 1500, dur: 0.05, gain: 0.035, q: 0.7 },
+      lawn:   { freq: 1600, dur: 0.05, gain: 0.035, q: 0.7 },
+      snow:   { freq: 2400, dur: 0.06, gain: 0.04, q: 0.9 },
+      floor:  { freq: 260, dur: 0.06, gain: 0.06, q: 2.5 },
+      paving: { freq: 1100, dur: 0.04, gain: 0.05, q: 3 },
+      brick:  { freq: 950, dur: 0.04, gain: 0.05, q: 3 },
+      asphalt:{ freq: 700, dur: 0.05, gain: 0.045, q: 1.5 },
+    };
+    const k = kinds[terrain] || kinds.grass;
+    this.burst({ ...k, freq: k.freq * (0.9 + Math.random() * 0.2) });
+  }
+
+  /** The text-advance blip. Pitched per speaker so voices feel distinct. */
+  blip(pitch = 1) {
+    this.tone({ freq: 300 * pitch, type: 'square', dur: 0.028, gain: 0.045, slide: 40 });
+  }
+
+  menuMove() { this.tone({ freq: 520, type: 'triangle', dur: 0.05, gain: 0.07 }); }
+  menuPick() {
+    this.tone({ freq: 620, type: 'triangle', dur: 0.05, gain: 0.08 });
+    this.tone({ freq: 930, type: 'triangle', dur: 0.07, gain: 0.06, delay: 0.05 });
+  }
+
+  /** Something went into the notebook. */
+  noted() {
+    this.tone({ freq: 740, type: 'sine', dur: 0.10, gain: 0.09 });
+    this.tone({ freq: 1108, type: 'sine', dur: 0.14, gain: 0.07, delay: 0.08 });
+  }
+
+  /** An objective completed. Deliberately warmer than `noted`. */
+  objective() {
+    this.tone({ freq: 587, type: 'triangle', dur: 0.09, gain: 0.08 });
+    this.tone({ freq: 784, type: 'triangle', dur: 0.09, gain: 0.08, delay: 0.07 });
+    this.tone({ freq: 1175, type: 'triangle', dur: 0.20, gain: 0.07, delay: 0.14 });
+  }
+
+  door() { this.burst({ freq: 220, dur: 0.16, gain: 0.10, q: 1.2 }); }
+
+  /** Crossing three centuries. Low, wrong-footed, and over quickly. */
+  timeShift() {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(320, t);
+    o.frequency.exponentialRampToValueAtTime(46, t + 1.6);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.16, t + 0.12);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+    o.connect(g); g.connect(this.master);
+    o.start(t); o.stop(t + 1.8);
+    this.burst({ freq: 200, dur: 1.4, gain: 0.05, q: 0.6, type: 'lowpass' });
+  }
+
+  /* ---- ambience ------------------------------------------------------- */
+
+  /**
+   * A continuous bed per era. 1692 is wind and, occasionally, a crow. The
+   * present is traffic. The difference is doing the same job as the palette
+   * shift: you should know what century you are in with your eyes shut.
+   */
+  setAmbience(name) {
+    if (!this.ctx) { this.pendingAmbience = name; return; }
+    if (this.ambient && this.ambient.name === name) return;
+    this.stopAmbience();
+    if (!name) return;
+
+    const t = this.ctx.currentTime;
+    const nodes = [];
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer(4);
+    src.loop = true;
+
+    const filt = this.ctx.createBiquadFilter();
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+
+    if (name === 'present') {
+      // Distant traffic: low rumble, very little movement.
+      filt.type = 'lowpass'; filt.frequency.value = 260; filt.Q.value = 0.6;
+      g.gain.linearRampToValueAtTime(0.30, t + 1.5);
+    } else if (name === 'indoor') {
+      filt.type = 'lowpass'; filt.frequency.value = 150; filt.Q.value = 0.5;
+      g.gain.linearRampToValueAtTime(0.14, t + 1.2);
+    } else {
+      // Open ground in March: wind, with slow gusts.
+      filt.type = 'bandpass'; filt.frequency.value = 480; filt.Q.value = 0.5;
+      g.gain.linearRampToValueAtTime(0.22, t + 1.5);
+      const lfo = this.ctx.createOscillator();
+      const lfoGain = this.ctx.createGain();
+      lfo.frequency.value = 0.09;
+      lfoGain.gain.value = 260;
+      lfo.connect(lfoGain); lfoGain.connect(filt.frequency);
+      lfo.start(t); nodes.push(lfo, lfoGain);
+    }
+
+    src.connect(filt); filt.connect(g); g.connect(this.ambientGain);
+    src.start(t);
+    nodes.push(src, filt, g);
+    this.ambient = { name, nodes, gain: g };
+
+    // Occasional punctuation, so the bed does not become wallpaper.
+    clearInterval(this._punct);
+    if (name === '1692') {
+      this._punct = setInterval(() => {
+        if (!this.muted && Math.random() < 0.35) this.crow();
+      }, 9000);
+    } else if (name === 'present') {
+      this._punct = setInterval(() => {
+        if (!this.muted && Math.random() < 0.3) this.passingCar();
+      }, 11000);
+    }
+  }
+
+  crow() {
+    // Two harsh descending calls. Not a realistic corvid, but unmistakably
+    // a bird and unmistakably not friendly.
+    for (let i = 0; i < 2; i++) {
+      const d = i * 0.26;
+      this.tone({ freq: 720, type: 'sawtooth', dur: 0.15, gain: 0.035, slide: -300, delay: d });
+      this.burst({ freq: 1400, dur: 0.13, gain: 0.02, q: 1.6, delay: d });
+    }
+  }
+
+  passingCar() {
+    this.burst({ freq: 300, dur: 2.2, gain: 0.045, q: 0.5, type: 'lowpass' });
+  }
+
+  stopAmbience() {
+    clearInterval(this._punct);
+    if (!this.ambient) return;
+    const t = this.ctx.currentTime;
+    try {
+      this.ambient.gain.gain.cancelScheduledValues(t);
+      this.ambient.gain.gain.setTargetAtTime(0, t, 0.2);
+      for (const n of this.ambient.nodes) {
+        if (n.stop) { try { n.stop(t + 1.2); } catch { /* already stopped */ } }
+      }
+    } catch { /* context torn down */ }
+    this.ambient = null;
+  }
+}
+
 /* ===== src/content/knowledge.js ===== */
 // What a piece of knowledge is called when the player reads it back.
 //
@@ -2073,6 +2590,9 @@ class Input {
 const KNOWLEDGE = {
   // --- present day -------------------------------------------------------
   'present.memorial':  'The Salem Witch Trials Memorial has twenty benches — one for each person executed in 1692.',
+  'present.happened':  'Between January and October 1692, more than 150 people were arrested for witchcraft in Essex County. Nineteen were hanged, one was pressed to death, and at least five died in jail. It was over in under a year.',
+  'present.court':     'The Court of Oyer and Terminer accepted spectral evidence — testimony that the accused\'s spirit had appeared to a witness, which nobody else could see and nobody could disprove. The accused had no lawyers. Nobody who confessed was executed; everyone hanged had insisted they were innocent.',
+  'present.argument':  'Historians argue about four causes: land and money, the frontier war, who the accused women were, and the law itself. All four have evidence. None explains everything alone.',
   'present.threshold': 'The victims\' own words are carved into the stones at the entrance, and every one of them is cut off mid-sentence by the wall. That was a design decision.',
   'present.nurse':     'One of the benches reads REBECCA NURSE · HANGED · JULY 19, 1692.',
   'present.jaildeaths':'Five more people died in jail waiting for trial. They do not have benches.',
@@ -2125,6 +2645,97 @@ function notebookEntries(state) {
   return state.knowledgeLog()
     .filter((e) => KNOWLEDGE[e.flag])
     .map((e) => ({ text: KNOWLEDGE[e.flag], source: e.source, flag: e.flag }));
+}
+
+/* ===== src/content/objectives.js ===== */
+// Objectives.
+//
+// The design doc is firm that the game should never look like a worksheet,
+// so this is deliberately not a quest log. It is one line at a time, in the
+// corner, telling a student who has never played a game like this what to do
+// next — and nothing else.
+//
+// Two kinds:
+//
+//   step     the immediate next thing. Completing it reveals the next one.
+//   standing the question the whole game is about, always visible underneath
+//            once it has been raised. It never gets a checkmark, because the
+//            game does not grade the answer.
+//
+// Ordering matters: the first incomplete step is the one shown. Anything a
+// player can reach out of order still completes silently when they do it.
+const STEPS = [
+  {
+    id: 'enter',
+    text: 'Walk into the memorial',
+    done: (s) => s.knows('present.memorial'),
+  },
+  {
+    id: 'threshold',
+    text: 'Read the stones you walked in over',
+    done: (s) => s.knows('present.threshold'),
+  },
+  {
+    id: 'panels',
+    text: 'Read the three panels by the wall',
+    done: (s) => s.knows('present.happened') && s.knows('present.court') && s.knows('present.argument'),
+  },
+  {
+    id: 'nurse',
+    text: 'Find the bench for Rebecca Nurse',
+    done: (s) => s.knows('present.nurse'),
+  },
+  {
+    id: 'nora',
+    text: 'Talk to the girl on the wall',
+    done: (s) => s.hasSpokenTo('nora'),
+  },
+  {
+    id: 'gap',
+    text: 'Go through the gap in the far wall',
+    done: (s) => s.visited.has('road'),
+  },
+  {
+    id: 'walk',
+    text: 'Walk north to Salem Village',
+    done: (s) => s.visited.has('village'),
+  },
+  {
+    id: 'meetnurse',
+    text: 'Find Rebecca Nurse — she lives west of the meetinghouse',
+    done: (s) => s.hasSpokenTo('nurse'),
+  },
+  {
+    id: 'clues',
+    text: 'Look around the village. Four things here are worth examining',
+    done: (s) => ['clue.woodpile', 'clue.seating', 'clue.marker', 'clue.accounts']
+      .filter((f) => s.knows(f)).length >= 4,
+  },
+  {
+    id: 'people',
+    text: 'Talk to everyone in the village',
+    done: (s) => ['tituba', 'parris', 'annjr', 'mercy', 'ingersoll', 'nurse']
+      .every((id) => s.hasSpokenTo(id)),
+  },
+];
+
+/** The question the whole game exists to ask. Raised by the third panel at
+ *  the memorial, then never dismissed. */
+const STANDING = {
+  id: 'why',
+  text: 'What caused it?',
+  active: (s) => s.knows('present.argument'),
+};
+
+/** The step currently in play, or null when they're all done. */
+function currentStep(state) {
+  return STEPS.find((o) => !o.done(state)) || null;
+}
+
+/** How many steps are complete — used for the small counter. */
+function progress(state) {
+  const done = STEPS.filter((o) => o.done(state)).length;
+  return { done, total: STEPS.length };
 }
 
 /* ===== src/content/clues.js ===== */
@@ -2187,6 +2798,53 @@ const PRESENT_CLUES = {
     { say: 'They run into the base of the wall and stop. All of them. Mid-sentence, mid-word, cut off in stone.', who: null },
     { learn: 'present.threshold', source: 'observed' },
     { say: 'That is not damage. Somebody designed it that way.', who: null },
+  ],
+
+  /* ------------------------------------------------------------------ *
+   * The three interpretive panels.
+   *
+   * A student may arrive knowing nothing about 1692 at all, and the game
+   * cannot rely on the village to teach the basics — inside 1692 nobody
+   * knows what is coming, so nobody can explain it. So the baseline goes
+   * here, on plaques, at a real memorial, where plaques belong.
+   *
+   * Panel three is where the game asks its question out loud. It is the
+   * only place it ever does.
+   * ------------------------------------------------------------------ */
+
+  panelHappened: [
+    { say: 'PANEL ONE — WHAT HAPPENED', who: null },
+    { say: 'In January 1692, two girls in the household of the Salem Village minister began having fits that no one could explain. A doctor examined them and suggested witchcraft.', who: null },
+    { say: 'By the end of February, three women had been arrested. One of them confessed, and named others.', who: null },
+    { say: 'Over the next eight months more than a hundred and fifty people were arrested across Essex County. Farmers, church members, a former minister, a four-year-old girl.', who: null },
+    { say: 'Nineteen were hanged. One man was crushed to death under stones. At least five more died in jail.', who: null },
+    { learn: 'present.happened', source: 'observed' },
+    { say: 'It was over in under a year. Nobody was executed after 22 September 1692. Within five years, people who had taken part were publicly apologising.', who: null },
+  ],
+
+  panelCourt: [
+    { say: 'PANEL TWO — THE COURT', who: null },
+    { say: 'The trials were held by a special court created by the governor in May 1692: the Court of Oyer and Terminer — "to hear and to determine."', who: null },
+    { say: 'It accepted spectral evidence. A witness could testify that the accused person\'s spirit had appeared and tormented them. Nobody else could see it. There was no way to disprove it.', who: null },
+    { say: 'The accused were not allowed lawyers.', who: null },
+    { learn: 'present.court', source: 'observed' },
+    { say: 'And confessing kept you alive. Not one person who confessed to witchcraft was executed.', who: null },
+    { say: 'Every single person hanged in 1692 had insisted they were innocent.', who: null },
+    { say: 'These were not people who did not know any better. They were people following rules — and the rules were the problem.', who: null },
+  ],
+
+  panelArgument: [
+    { say: 'PANEL THREE — WHY?', who: null },
+    { say: 'Historians have argued about this for three hundred years. Almost nobody thinks it was one thing.', who: null },
+    { say: 'Some point to LAND AND MONEY — a village split into two factions, feuding families, a disputed boundary, and a pattern in who accused whom.', who: null },
+    { say: 'Some point to WAR — a brutal frontier conflict to the north, and refugees from it living in the very households that did most of the accusing.', who: null },
+    { say: 'Some point to WHO WAS ACCUSED — mostly women, and often women who stood to inherit property, or who had already been difficult.', who: null },
+    { say: 'And some point to THE LAW ITSELF — spectral evidence, no defence counsel, a colony that had lost its charter, and a religion in which confessing was the only way to survive.', who: null },
+    { learn: 'present.argument', source: 'observed' },
+    { say: 'All four have real evidence behind them. None of them explains everything on its own.', who: null },
+    { say: 'This memorial does not tell you the answer. It is not settled.', who: null },
+    { say: 'So: what caused it?', who: null },
+    { say: 'Go and find out. Everything you notice goes in your notebook — press N to read it back.', who: null },
   ],
 
   memorialSign: [
@@ -2994,6 +3652,104 @@ const NPCS = {
     ],
     farewell: ['Mind the step on your way out.'],
   },
+
+  /* -------------------------------------------------------------------- *
+   * Ambient villagers
+   *
+   * No topic trees — they say their piece and go back to work. Their job is
+   * to make the village feel inhabited, and to let the player overhear the
+   * ordinary version of every grievance the named cast will state outright.
+   * A village of six hundred people should not contain six people.
+   * -------------------------------------------------------------------- */
+
+  swineboy: {
+    id: 'swineboy',
+    name: 'A boy with the swine',
+    spec: {
+      flesh: FLESH.fair, hair: HAIR.brown, child: true,
+      coat: CLOTH.russet, under: CLOTH.undyed,
+    },
+    greet: [
+      { say: 'A boy of about ten, trying to turn three pigs off the road with a stick. He is losing.', who: null },
+      'Get on! Get ON —',
+      { say: 'One of them goes straight past him into the field.', who: null },
+      'They get into Goodman Nurse\'s rye and then it is my father who hears about it.',
+      'Every year. Every single year.',
+    ],
+  },
+
+  goodwife: {
+    id: 'goodwife',
+    name: 'A woman at the well',
+    spec: {
+      flesh: FLESH.ruddy, hair: HAIR.grey,
+      coat: CLOTH.madder, skirt: CLOTH.madder,
+      apron: LINEN, coif: LINEN,
+    },
+    greet: [
+      { say: 'She is drawing water and does not hurry over it. This is where you hear things.', who: null },
+      'You will be here about the girls.',
+      { say: 'She does not wait for you to answer.', who: null },
+      'Everyone is here about the girls. There were two carts through this morning from Beverly.',
+      'I have lived in this village forty years and nobody came to look at us before.',
+      { learn: 'fact.strangers' },
+    ],
+  },
+
+  woodman: {
+    id: 'woodman',
+    name: 'A man splitting wood',
+    spec: {
+      flesh: FLESH.olive, hair: HAIR.dark,
+      coat: CLOTH.saddGreen, under: CLOTH.russet,
+    },
+    greet: [
+      { say: 'He sets the axe down but keeps hold of it.', who: null },
+      'Mind yourself, there is a wedge in this one.',
+      {
+        if: { knows: ['clue.woodpile'] },
+        then: [
+          { say: 'There is a great deal of wood here. Far more than the minister has.', who: null },
+          'You have been up at the parsonage, then.',
+          { say: 'He gets back to it.', who: null },
+          'I cut what my family burns. I am not obliged to cut what his does. That was the village\'s bargain, not mine.',
+          'Take it up with the committee. Everyone else does.',
+        ],
+        else: [
+          'A cord and a half so far this week and it is not near enough.',
+          'March is the month that finds out who laid in enough in October.',
+        ],
+      },
+    ],
+  },
+
+  watchman: {
+    id: 'watchman',
+    name: 'A man on watch',
+    spec: {
+      flesh: FLESH.fair, hair: HAIR.auburn,
+      coat: CLOTH.slate, collar: LINEN, hat: '#43403c',
+    },
+    greet: [
+      { say: 'He is standing where he can see the road, with a musket propped beside him.', who: null },
+      'Village watch. You will have come up the Salem road.',
+      {
+        if: { knows: ['fact.mercymaine'] },
+        then: [
+          'Then you know why we keep one.',
+          { say: 'He glances north, the way Mercy Lewis did.', who: null },
+          'The war is up the eastward, not here. But there are families in this village who came down from Casco and Falmouth with nothing, and they do not think it is far enough away.',
+          'We have had the watch set every night since the autumn. Some nights I think it is for the Indians.',
+          'Some nights I think it is so the men have somewhere to be.',
+        ],
+        else: [
+          'We keep a watch through the night, and have since the autumn.',
+          'There is fighting up the eastward — the Maine country. It has not come near us. That is not the same as nobody being afraid of it.',
+          { learn: 'fact.factions' },
+        ],
+      },
+    ],
+  },
 };
 
 /** Portrait moods, so a character can visibly harden between chapters. */
@@ -3129,14 +3885,14 @@ const VILLAGE = {
     { kind: 'meetinghouse', x: 18, y: 10, w: 9, h: 6, doorCol: 4 },
 
     // --- the parsonage. Note how small the woodpile is beside it. ------
-    { kind: 'house', x: 8, y: 24, w: 6, h: 5, doorCol: 2, windows: [1, 4], chimney: 'center' },
+    { kind: 'house', x: 8, y: 24, w: 6, h: 5, doorCol: 2, windows: [1, 4], chimney: 'center', leanTo: 'right' },
     { kind: 'woodpile', x: 14, y: 27 },
 
     // --- Ingersoll's ordinary (the tavern) -----------------------------
-    { kind: 'house', x: 30, y: 12, w: 7, h: 5, doorCol: 3, windows: [1, 5], chimney: 'left' },
+    { kind: 'house', x: 30, y: 12, w: 7, h: 5, doorCol: 3, windows: [1, 5], chimney: 'left', roofFrac: 0.46 },
 
     // --- the Nurse homestead, west ------------------------------------
-    { kind: 'house', x: 4, y: 9, w: 6, h: 5, doorCol: 3, windows: [1, 4], chimney: 'right' },
+    { kind: 'house', x: 4, y: 9, w: 6, h: 5, doorCol: 3, windows: [1, 4], chimney: 'right', leanTo: 'left' },
     { kind: 'fence', x: 4, y: 15 }, { kind: 'fence', x: 5, y: 15 },
     { kind: 'fence', x: 6, y: 15 }, { kind: 'fence', x: 8, y: 15 },
     { kind: 'fence', x: 9, y: 15 }, { kind: 'fence', x: 10, y: 15 },
@@ -3148,6 +3904,38 @@ const VILLAGE = {
     { kind: 'fence', x: 35, y: 31 }, { kind: 'fence', x: 36, y: 31 },
 
     { kind: 'well', x: 25, y: 22 },
+    { kind: 'cart', x: 28, y: 18 },
+
+    // --- the working farm ----------------------------------------------
+    // Salem Village was a farming community, not a street of houses. On
+    // most properties the biggest building was the barn.
+    { kind: 'barn', x: 37, y: 23, w: 8, h: 6 },
+    { kind: 'hayrick', x: 28, y: 26 },
+    { kind: 'hayrick', x: 2, y: 21 },
+
+    // Dry-laid field walls: every stone in them was pulled out of the field
+    // by hand, which is why boundaries mattered enough to kill over.
+    ...Array.from({ length: 9 }, (_, i) => ({ kind: 'stonewall', x: 16 + i, y: 24 })),
+    ...Array.from({ length: 6 }, (_, i) => ({ kind: 'stonewall', x: 16, y: 25 + i })),
+    ...Array.from({ length: 7 }, (_, i) => ({ kind: 'stonewall', x: 1 + i, y: 17 })),
+    ...Array.from({ length: 8 }, (_, i) => ({ kind: 'stonewall', x: 36 + i, y: 9 })),
+
+    // Orchard — mostly for cider, which is what a family actually drank.
+    ...[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => ({
+      kind: 'appletree', x: 2 + c * 3, y: 26 + r * 3,
+    }))),
+
+    // Livestock. The swine are on the road on purpose: free-ranging pigs
+    // trespassing into a neighbour's field was one of the commonest causes
+    // of ill-feeling in a New England village, and Rebecca Nurse mentions
+    // exactly that quarrel with the Putnams.
+    { kind: 'pig', x: 26, y: 18 }, { kind: 'pig', x: 27, y: 19 },
+    { kind: 'pig', x: 25, y: 19 },
+    { kind: 'cow', x: 39, y: 14 }, { kind: 'cow', x: 41, y: 17 },
+    { kind: 'sheep', x: 19, y: 27 }, { kind: 'sheep', x: 21, y: 28 },
+    { kind: 'sheep', x: 20, y: 30 },
+    { kind: 'chicken', x: 12, y: 30 }, { kind: 'chicken', x: 14, y: 31 },
+    { kind: 'chicken', x: 11, y: 32 },
 
     // --- the disputed boundary, north in the woods ---------------------
     { kind: 'marker', x: 15, y: 4 },
@@ -3164,6 +3952,8 @@ const VILLAGE = {
     ...treeLine('pine', 42, 44, 24, 3),
     ...treeLine('pine', 0, 18, 35, 3),
     ...treeLine('pine', 26, 44, 35, 3),
+    { kind: 'house', x: 2, y: 30, w: 5, h: 5, doorCol: 2, windows: [0, 3], chimney: 'center' },
+    { kind: 'house', x: 38, y: 3, w: 6, h: 5, doorCol: 3, windows: [1, 4], chimney: 'left', leanTo: 'right' },
     { kind: 'baretree', x: 12, y: 17 },
     { kind: 'baretree', x: 27, y: 30 },
     { kind: 'baretree', x: 16, y: 30 },
@@ -3188,6 +3978,10 @@ const VILLAGE = {
   ],
   npcs: [
     { id: 'mercy', x: 29, y: 23, dir: 'down' },
+    { id: 'swineboy', x: 26, y: 20, dir: 'up' },
+    { id: 'goodwife', x: 24, y: 21, dir: 'right' },
+    { id: 'woodman', x: 6, y: 22, dir: 'down' },
+    { id: 'watchman', x: 29, y: 15, dir: 'down' },
   ],
 };
 
@@ -3429,6 +4223,10 @@ const MEMORIAL = {
     { kind: 'locust', x: 1, y: 15 },
     { kind: 'locust', x: 24, y: 8 },
 
+    // The three interpretive panels: the baseline a student needs before
+    // 1692, where nobody can explain what is coming because nobody knows.
+    { kind: 'signboard', x: 6, y: 22 },
+    { kind: 'signboard', x: 10, y: 22 },
     { kind: 'signboard', x: 17, y: 22 },
     { kind: 'bin', x: 3, y: 23 },
 
@@ -3446,7 +4244,9 @@ const MEMORIAL = {
   ],
   interact: [
     { id: 'threshold', x: 13, y: 21, w: 2, h: 1 },
-    { id: 'memorialSign', x: 17, y: 22, w: 2, h: 2 },
+    { id: 'panelHappened', x: 6, y: 22, w: 2, h: 2 },
+    { id: 'panelCourt', x: 10, y: 22, w: 2, h: 2 },
+    { id: 'panelArgument', x: 17, y: 22, w: 2, h: 2 },
     { id: 'shopWindow', x: 8, y: 29, w: 7, h: 1 },
     // Each bench carries its own inscription.
     ...BENCH_SLOTS.map((b, i) => ({
@@ -3529,6 +4329,17 @@ const PROPS = {
   pew:          { w: 1, h: 1, build: () => buildPew() },
   accountbook:  { w: 1, h: 1, build: () => buildAccountBook(), passable: true },
 
+  // A working farm village, not a street of houses.
+  barn:         { w: 8, h: 6, build: (o) => buildBarn(o.w || 8, o.h || 6), sized: true },
+  stonewall:    { w: 1, h: 1, build: () => buildStoneWall() },
+  hayrick:      { w: 2, h: 2, build: () => buildHayrick(), solidRows: 1 },
+  cart:         { w: 2, h: 1, build: () => buildCart() },
+  appletree:    { w: 2, h: 3, build: () => buildAppleTree(), solidRows: 1 },
+  pig:          { w: 1, h: 1, build: () => buildPig() },
+  cow:          { w: 2, h: 1, build: () => buildCow() },
+  sheep:        { w: 1, h: 1, build: () => buildSheep() },
+  chicken:      { w: 1, h: 1, build: () => buildChicken(), passable: true },
+
   // Present day.
   membench:     { w: 2, h: 1, build: () => buildMemBench() },
   lowwall:      { w: 1, h: 1, build: () => buildLowWall() },
@@ -3548,7 +4359,7 @@ function propImage(prop) {
   const def = PROPS[prop.kind];
   // Sized props (houses) need one image per distinct configuration.
   const key = def.sized
-    ? `${prop.kind}:${prop.w}x${prop.h}:${prop.doorCol}:${(prop.windows || []).join(',')}:${prop.chimney}`
+    ? `${prop.kind}:${prop.w}x${prop.h}:${prop.doorCol}:${(prop.windows || []).join(',')}:${prop.chimney}:${prop.leanTo}:${prop.roofFrac}`
     : prop.kind;
   let img = PROP_CACHE.get(key);
   if (!img) { img = def.build(prop); PROP_CACHE.set(key, img); }
@@ -4067,6 +4878,67 @@ function drawNotebook(g, view, s, entries, scroll, sourceName) {
   return maxScroll;
 }
 
+/**
+ * The objective HUD.
+ *
+ * One line, top-right, in the yellow every game has used for "here is what
+ * to do next" since the nineties — because that convention is doing real
+ * work for a student who has never played anything like this. Below it, once
+ * the memorial has raised it, the standing question in a quieter colour.
+ *
+ * Deliberately not a quest log: one step at a time, no checklist, nothing
+ * that looks like a worksheet.
+ */
+function drawObjective(g, view, s, { step, standing, progress, flash }) {
+  const pad = 8 * s;
+  const right = view.x + view.w - pad;
+  // Hard cap, so a long goal wraps instead of spanning the whole screen and
+  // colliding with the place-name label in the opposite corner.
+  const maxW = Math.min(118 * s, view.w * 0.34);
+  let y = view.y + pad;
+
+  g.textAlign = 'right';
+  g.textBaseline = 'top';
+
+  if (step) {
+    const bodyFont = `600 ${7 * s}px system-ui, -apple-system, sans-serif`;
+    g.font = bodyFont;
+    const lines = wrapText(g, step.text, maxW);
+    let textW = 0;
+    for (const l of lines) textW = Math.max(textW, g.measureText(l).width);
+
+    const lineH = 9.5 * s;
+    const boxW = textW + 16 * s;
+    const boxH = 13 * s + lines.length * lineH;
+
+    g.fillStyle = 'rgba(14,16,20,0.72)';
+    g.fillRect(right - boxW, y, boxW, boxH);
+    g.fillStyle = flash > 0 ? '#f6e8b8' : '#e8c46a';
+    g.fillRect(right - boxW, y, 2 * s, boxH);
+
+    g.font = `700 ${5.5 * s}px system-ui, -apple-system, sans-serif`;
+    g.fillStyle = '#8d939b';
+    g.fillText(`GOAL  ${progress.done}/${progress.total}`, right - 8 * s, y + 4 * s);
+
+    g.font = bodyFont;
+    // A brief pale flash when a goal completes, then back to steady yellow.
+    g.fillStyle = flash > 0 ? '#fff6d8' : '#e8c46a';
+    let ly = y + 12 * s;
+    for (const l of lines) { g.fillText(l, right - 8 * s, ly); ly += lineH; }
+    y += boxH + 4 * s;
+  }
+
+  if (standing) {
+    g.font = `italic ${7.5 * s}px Georgia, Palatino, serif`;
+    const w = g.measureText(standing).width + 14 * s;
+    const h = 13 * s;
+    g.fillStyle = 'rgba(14,16,20,0.58)';
+    g.fillRect(right - w, y, w, h);
+    g.fillStyle = '#b9a06a';
+    g.fillText(standing, right - 8 * s, y + 3 * s);
+  }
+}
+
 /** Title screen. */
 function drawTitle(g, view, s, hasSave, index) {
   g.fillStyle = '#14161a';
@@ -4129,6 +5001,8 @@ function drawTitle(g, view, s, hasSave, index) {
 
 
 
+
+
 const MOVE_TIME = 0.16;      // seconds per tile
 const REVEAL_CPS = 55;       // typewriter speed
 
@@ -4146,6 +5020,7 @@ class Game {
     this.bg.imageSmoothingEnabled = false;
 
     this.input = new Input();
+    this.audio = new Audio();
     this.state = new GameState();
     this.runner = new DialogueRunner(this.state);
 
@@ -4156,6 +5031,8 @@ class Game {
     this.toast = { text: '', t: 0 };
     this.notebookScroll = 0;
     this.convNpc = null;
+    this.objFlash = 0;
+    this.lastStepId = null;
 
     initArt();
     this.playerFrames = buildActor(PLAYER_SPEC);
@@ -4177,6 +5054,12 @@ class Game {
   }
 
   /* ---------------- setup ---------------- */
+
+  /** Ambience is chosen by era and by whether you are under a roof. */
+  syncAmbience() {
+    const m = this.mapFor(this.player.map);
+    this.audio.setAmbience(m.indoor ? 'indoor' : (m.era === 'present' ? 'present' : '1692'));
+  }
 
   mapFor(id) {
     if (!this.maps[id]) {
@@ -4248,6 +5131,8 @@ class Game {
     }
     this.mode = 'play';
     this.state.visited.add(this.player.map);
+    this.lastStepId = (currentStep(this.state) || {}).id || null;
+    this.syncAmbience();
     this.openingBeat();
   }
 
@@ -4291,6 +5176,10 @@ class Game {
     this.choiceIndex = 0;
     this.runner.start(npc.def.greet || [], speaker, () => {
       this.state.markSpoke(npc.id);
+      // Ambient villagers have no topics — they say their piece and go back
+      // to work. Showing them a menu with one "say nothing more" option in
+      // it would be worse than showing them nothing.
+      if (!npc.def.topics || !npc.def.topics.length) { this.endConversation(); return; }
       this.openTopics();
     });
     this.syncDialogue();
@@ -4327,10 +5216,15 @@ class Game {
     if (cur.type === 'choice') { this.dlg = null; this.choiceIndex = 0; return; }
 
     const portrait = cur.speaker ? this.portraitFor(cur.speaker.id) : null;
+    // Stable per-speaker pitch, derived from the id so it never drifts.
+    const id = cur.speaker ? cur.speaker.id : '';
+    let hsum = 0; for (let i = 0; i < id.length; i++) hsum = (hsum * 31 + id.charCodeAt(i)) >>> 0;
+    const pitch = id ? 0.8 + ((hsum % 70) / 100) : 0.62;
     const L = dialogueLayout(this.g, this.view, this.scale, cur.text, !!portrait);
     this.dlg = {
       who: cur.who || '',
       portrait,
+      pitch,
       layout: L,
       pages: L.pages,
       page: 0,
@@ -4383,7 +5277,18 @@ class Game {
     });
   }
 
-  showToast(text) { this.toast = { text, t: 2.6 }; }
+  showToast(text) { this.toast = { text, t: 2.6 }; this.audio.noted(); }
+
+  /** Watch for a completed objective so it can be announced once. */
+  checkObjective() {
+    const step = currentStep(this.state);
+    const id = step ? step.id : '__done__';
+    if (this.lastStepId !== null && id !== this.lastStepId) {
+      this.objFlash = 1.1;
+      this.audio.objective();
+    }
+    this.lastStepId = id;
+  }
 
   /* ---------------- movement ---------------- */
 
@@ -4407,6 +5312,7 @@ class Game {
     p.steps += 1;
     p.animFrame = [0, 1, 0, 2][p.steps % 4];
     const map = this.mapFor(p.map);
+    this.audio.step(terrainAt(map, p.tx, p.ty));
 
     const w = warpAt(map, p.tx, p.ty);
     if (w) { this.doWarp(w); return; }
@@ -4433,6 +5339,8 @@ class Game {
     p.dirIndex = DIR_INDEX[p.dir];
     this.mapFor(w.to);
     this.fade = 0.28;
+    this.syncAmbience();
+    if (w.script === 'arrive1692') this.audio.timeShift(); else this.audio.door();
     this.save();
 
     // A warp can carry its own arrival beat. Only one does: the gap in the
@@ -4454,13 +5362,20 @@ class Game {
     const inp = this.input;
 
     if (this.toast.t > 0) this.toast.t -= dt;
+    if (this.objFlash > 0) this.objFlash = Math.max(0, this.objFlash - dt);
     if (this.fade > 0) this.fade = Math.max(0, this.fade - dt);
+
+    // Browsers require a gesture before audio; this is the first one.
+    if (inp.justPressed('confirm') || inp.direction()) this.audio.unlock();
+    if (this.mode !== 'title') this.checkObjective();
 
     if (this.mode === 'title') {
       const items = this.saved ? 2 : 1;
-      if (inp.justPressed('up')) this.titleIndex = (this.titleIndex + items - 1) % items;
-      if (inp.justPressed('down')) this.titleIndex = (this.titleIndex + 1) % items;
+      if (inp.justPressed('up')) { this.titleIndex = (this.titleIndex + items - 1) % items; this.audio.menuMove(); }
+      if (inp.justPressed('down')) { this.titleIndex = (this.titleIndex + 1) % items; this.audio.menuMove(); }
       if (inp.justPressed('confirm')) {
+        this.audio.unlock();
+        this.audio.menuPick();
         this.begin(!this.saved ? true : this.titleIndex === 1);
       }
       return;
@@ -4479,9 +5394,10 @@ class Game {
       const cur = this.runner.current;
       if (cur && cur.type === 'choice') {
         const n = cur.options.length;
-        if (inp.justPressed('up')) this.choiceIndex = (this.choiceIndex + n - 1) % n;
-        if (inp.justPressed('down')) this.choiceIndex = (this.choiceIndex + 1) % n;
+        if (inp.justPressed('up')) { this.choiceIndex = (this.choiceIndex + n - 1) % n; this.audio.menuMove(); }
+        if (inp.justPressed('down')) { this.choiceIndex = (this.choiceIndex + 1) % n; this.audio.menuMove(); }
         if (inp.justPressed('confirm')) {
+          this.audio.menuPick();
           this.runner.choose(this.choiceIndex);
           this.syncDialogue();
         } else if (inp.justPressed('cancel')) {
@@ -4493,7 +5409,14 @@ class Game {
         return;
       }
       if (this.dlg) {
-        if (this.dlg.revealed < this.dlg.total) this.dlg.revealed += REVEAL_CPS * dt;
+        if (this.dlg.revealed < this.dlg.total) {
+          const before = Math.floor(this.dlg.revealed);
+          this.dlg.revealed += REVEAL_CPS * dt;
+          // A blip every few characters, pitched per speaker so the cast
+          // sound different from each other and from narration.
+          const after = Math.floor(this.dlg.revealed);
+          if (Math.floor(after / 3) !== Math.floor(before / 3)) this.audio.blip(this.dlg.pitch);
+        }
         if (inp.justPressed('confirm')) this.advanceDialogue();
       }
       return;
@@ -4557,6 +5480,16 @@ class Game {
     g.fillRect(v.x + 8 * s, v.y + 8 * s, lw, 18 * s);
     g.fillStyle = '#d8d4c8';
     g.fillText(label, v.x + 16 * s, v.y + 13 * s);
+
+    // Objective HUD, above everything except the notebook.
+    if (this.mode !== 'notebook') {
+      drawObjective(g, v, s, {
+        step: currentStep(this.state),
+        standing: STANDING.active(this.state) ? STANDING.text : null,
+        progress: progress(this.state),
+        flash: this.objFlash,
+      });
+    }
 
     const cur = this.runner.current;
     if (this.mode === 'dialogue' && cur) {
@@ -4643,6 +5576,18 @@ document.getElementById('copy')?.addEventListener('click', async (e) => {
     e.target.textContent = 'Select and copy';
   }
   setTimeout(() => { e.target.textContent = 'Copy my notes'; }, 2500);
+});
+
+const soundBtn = document.getElementById('sound');
+function paintSoundBtn() {
+  if (soundBtn) soundBtn.textContent = game.audio.muted ? 'Sound: off' : 'Sound: on';
+}
+paintSoundBtn();
+soundBtn?.addEventListener('click', () => {
+  game.audio.unlock();
+  game.audio.toggleMute();
+  paintSoundBtn();
+  canvas.focus();
 });
 
 document.getElementById('reset')?.addEventListener('click', () => {

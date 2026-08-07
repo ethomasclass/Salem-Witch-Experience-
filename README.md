@@ -20,7 +20,7 @@ playable.** The remaining chapters are designed but not built.
 |---|---|
 | Audience | High school, general US History |
 | Runtime, when complete | ~32 min |
-| Runtime, current build | ~11 min |
+| Runtime, current build | ~14 min |
 | Platform | Browser, no install, no accounts |
 | Look | GBA-era Pokémon, oblique projection |
 
@@ -33,7 +33,8 @@ playable.** The remaining chapters are designed but not built.
 - **The village**: meetinghouse, parsonage, Ingersoll's ordinary, the Nurse
   homestead, the Putnam house, the woods, and the road to Salem Town.
 - **Six characters** with topic-based conversations: Tituba, Rev. Samuel
-  Parris, Ann Putnam Jr., Mercy Lewis, Rebecca Nurse, Nathaniel Ingersoll.
+  Parris, Ann Putnam Jr., Mercy Lewis, Rebecca Nurse, Nathaniel Ingersoll —
+  plus four ambient villagers who say their piece and go back to work.
 - **Five environmental clues**: the meetinghouse seating chart, the parsonage
   woodpile, the boundary marker, Ingersoll's account book, and the five-mile
   walk to Salem Town.
@@ -43,6 +44,17 @@ playable.** The remaining chapters are designed but not built.
   not only to what you know.
 - **A notebook** recording everything learned and who it came from, exportable
   as plain text for an assignment.
+- **Three interpretive panels** at the memorial giving the baseline a student
+  needs — what happened, how the court worked, and the four things historians
+  still argue about. The last one is the only place the game asks its question
+  out loud.
+- **A goal tracker** in the corner, one step at a time, with the standing
+  question underneath it once the memorial has raised it.
+- **Sound**, synthesised at runtime — footsteps that change with the ground,
+  per-character dialogue blips, wind and crows in 1692, traffic in the
+  present. One mute button, and the setting is remembered.
+- **A working farm village**: barn, hayrick, orchard, dry-laid stone walls,
+  free-ranging swine, cattle, sheep, hens, and four more villagers to talk to.
 
 ### What is not built yet
 
@@ -109,6 +121,8 @@ automatically.
   and the game never adjudicates. The disagreement is the lesson.
 - **Nothing violent is depicted.** Every atrocity in the later chapters
   arrives as something a person tells you, standing in their own kitchen.
+- **Sound can be switched off** from the button under the game, and the
+  choice is remembered. Nothing plays until a key is pressed.
 
 ---
 
@@ -162,12 +176,14 @@ src/
     world.js          map building, collision, camera, depth sorting
     dialogue.js       the script interpreter and topic menus
     state.js          knowledge flags, sources, save/load
-    ui.js             dialogue box, choices, notebook, title
+    ui.js             dialogue box, choices, notebook, goals, title
+    audio.js          runtime-synthesised sound; no audio files
   content/
     maps.js           the village, its interiors, and the road
     npcs.js           the cast and everything they say
     clues.js          what the player finds by looking
     knowledge.js      flag -> plain English, for the notebook and export
+    objectives.js     the goal tracker, and the standing question
 ```
 
 All art is drawn procedurally at boot — there are no image assets to load,
