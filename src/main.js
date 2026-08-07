@@ -632,10 +632,12 @@ class Game {
 
     // Objective HUD, above everything except the notebook.
     if (this.mode !== 'notebook') {
+      const step = currentStep(this.state);
       drawObjective(g, v, s, {
-        step: currentStep(this.state),
+        step,
         standing: STANDING.active(this.state) ? STANDING.text : null,
         progress: progress(this.state),
+        sub: step && step.count ? step.count(this.state) : null,
         flash: this.objFlash,
       });
     }

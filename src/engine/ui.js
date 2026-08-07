@@ -307,12 +307,12 @@ export function drawNotebook(g, view, s, entries, scroll, sourceName) {
  * Deliberately not a quest log: one step at a time, no checklist, nothing
  * that looks like a worksheet.
  */
-export function drawObjective(g, view, s, { step, standing, progress, flash }) {
+export function drawObjective(g, view, s, { step, standing, progress, sub, flash }) {
   const pad = 8 * s;
   const right = view.x + view.w - pad;
   // Hard cap, so a long goal wraps instead of spanning the whole screen and
   // colliding with the place-name label in the opposite corner.
-  const maxW = Math.min(118 * s, view.w * 0.34);
+  const maxW = Math.min(132 * s, view.w * 0.38);
   let y = view.y + pad;
 
   g.textAlign = 'right';
@@ -336,7 +336,10 @@ export function drawObjective(g, view, s, { step, standing, progress, flash }) {
 
     g.font = `700 ${5.5 * s}px system-ui, -apple-system, sans-serif`;
     g.fillStyle = '#8d939b';
-    g.fillText(`GOAL  ${progress.done}/${progress.total}`, right - 8 * s, y + 4 * s);
+    // The sub-count matters more than the step count: "2 of 4" is what tells
+    // a player their last five minutes counted for something.
+    const tail = sub ? `   ${sub[0]} of ${sub[1]}` : '';
+    g.fillText(`GOAL  ${progress.done}/${progress.total}${tail}`, right - 8 * s, y + 4 * s);
 
     g.font = bodyFont;
     // A brief pale flash when a goal completes, then back to steady yellow.

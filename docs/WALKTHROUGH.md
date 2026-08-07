@@ -51,6 +51,13 @@ the game telling you to go and look at something first.
 That last row is the only genuinely obscure link in the game — the stone is
 at the top of the map and the paper it unlocks is in a house at the bottom.
 
+### The goal box counts within a goal
+
+`GOAL 2/6 · 2 of 4` means: second of six goals in this chapter, and two of the
+four things in *this* goal are done. Goals that involve several things always
+name them and count them, so a student can tell whether the last five minutes
+counted for anything.
+
 ### Chapter exits are gated
 
 You cannot leave a chapter until its goals are done. Walk onto the exit early
