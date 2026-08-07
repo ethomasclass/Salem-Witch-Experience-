@@ -22,7 +22,9 @@ const SAVE_KEY = 'salem1692.save.v1';
 export class GameState {
   constructor() {
     this.flags = new Map();        // flag -> { source, chapter, at }
-    this.chapter = 'march';
+    this.chapter = 'memorial';     // memorial|march|dig|june|archive|september|reckoning
+    this.docs = new Map();         // doc id -> { chapter, at }
+    this.answer = '';              // the player's final answer, never graded
     this.talkedTo = new Set();     // npc ids the player has spoken with
     this.lastSpoke = null;         // most recent npc id
     this.visited = new Set();      // map ids
@@ -57,6 +59,21 @@ export class GameState {
     return flags.every((f) => !this.flags.has(f));
   }
 
+  /** Copy a document into the notebook. */
+  copyDoc(id) {
+    if (this.docs.has(id)) return false;
+    this.docs.set(id, { chapter: this.chapter, at: Date.now() });
+    return true;
+  }
+
+  hasDoc(id) { return this.docs.has(id); }
+
+  docLog() {
+    return [...this.docs.entries()]
+      .sort((a, b) => a[1].at - b[1].at)
+      .map(([id, rec]) => ({ id, ...rec }));
+  }
+
   markSpoke(npcId) {
     this.talkedTo.add(npcId);
     this.lastSpoke = npcId;
@@ -79,6 +96,8 @@ export class GameState {
       v: 1,
       chapter: this.chapter,
       flags: [...this.flags.entries()],
+      docs: [...this.docs.entries()],
+      answer: this.answer,
       talkedTo: [...this.talkedTo],
       visited: [...this.visited],
       finalAnswer: this.finalAnswer,
@@ -106,8 +125,10 @@ export class GameState {
     if (!data || data.v !== 1) return null;
 
     const s = new GameState();
-    s.chapter = data.chapter || 'march';
+    s.chapter = data.chapter || 'memorial';
     s.flags = new Map(data.flags || []);
+    s.docs = new Map(data.docs || []);
+    s.answer = data.answer || '';
     s.talkedTo = new Set(data.talkedTo || []);
     s.visited = new Set(data.visited || []);
     s.finalAnswer = data.finalAnswer || '';

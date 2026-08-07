@@ -13,10 +13,11 @@ import { TS } from './engine/art-ground.js';
 import { buildActor, buildPortrait, PLAYER_SPEC, SPR_H } from './engine/art-actors.js';
 import {
   dialogueLayout, drawDialogue, drawChoices, drawNotebook, drawTitle, drawToast,
-  drawObjective,
+  drawObjective, drawReader, drawDocTab, drawNotebookTabs, drawAnswer,
 } from './engine/ui.js';
 import { Audio } from './engine/audio.js';
-import { currentStep, progress, STANDING } from './content/objectives.js';
+import { currentStep, progress, STANDING, chapterComplete, remainingIn } from './content/objectives.js';
+import { DOCUMENTS, DOC_COUNT, FIDELITY_LABEL } from './content/documents.js';
 import { MAPS } from './content/maps.js';
 import { NPCS } from './content/npcs.js';
 import { CLUES, benchScript } from './content/clues.js';
@@ -49,9 +50,13 @@ class Game {
     this.portraits = new Map();
     this.toast = { text: '', t: 0 };
     this.notebookScroll = 0;
+    this.docScroll = 0;
+    this.notebookTab = 0;
     this.convNpc = null;
     this.objFlash = 0;
     this.lastStepId = null;
+    this.reader = null;         // the document currently open
+    this.answerText = '';
 
     initArt();
     this.playerFrames = buildActor(PLAYER_SPEC);
@@ -80,13 +85,16 @@ class Game {
     this.audio.setAmbience(m.indoor ? 'indoor' : (m.era === 'present' ? 'present' : '1692'));
   }
 
-  mapFor(id) {
-    if (!this.maps[id]) {
-      const m = buildMap(MAPS[id]);
-      m.actors = (MAPS[id].npcs || []).map((n) => this.makeNpc(n));
-      this.maps[id] = m;
+  mapFor(id, chapter = this.state.chapter) {
+    const key = `${id}:${chapter}`;
+    if (!this.maps[key]) {
+      const m = buildMap(MAPS[id], chapter);
+      m.actors = (m.def.byChapter && m.def.byChapter[chapter] && m.def.byChapter[chapter].npcs !== undefined
+        ? m.def.byChapter[chapter].npcs
+        : (MAPS[id].npcs || [])).map((n) => this.makeNpc(n));
+      this.maps[key] = m;
     }
-    return this.maps[id];
+    return this.maps[key];
   }
 
   makeNpc(placement) {
@@ -275,13 +283,36 @@ class Game {
 
   interact() {
     const map = this.mapFor(this.player.map);
-    const [fx, fy] = this.facingTile();
+    const [dx, dy] = DIR_VEC[this.player.dir];
+    let [fx, fy] = this.facingTile();
 
-    const npc = map.actors.find((a) => a.tx === fx && a.ty === fy);
+    let npc = map.actors.find((a) => a.tx === fx && a.ty === fy);
+    // Speak through a grate. The jail scene is a conversation held through
+    // iron bars, so interaction reaches one tile further when the thing in
+    // the way is something you can talk through.
+    if (!npc && map.talkThrough.has(`${fx},${fy}`)) {
+      const bx = fx + dx, by = fy + dy;
+      npc = map.actors.find((a) => a.tx === bx && a.ty === by);
+      if (npc) { this.talkTo(npc); return; }
+      fx = bx; fy = by;
+    }
     if (npc) { this.talkTo(npc); return; }
 
     const spot = interactAt(map, fx, fy);
     if (!spot) return;
+
+    // A document. Knowledge-gated exactly like a conversation topic: you
+    // cannot read Parris's contract until you have counted his woodpile.
+    if (spot.doc) {
+      if (spot.require && !this.state.knowsAll(spot.require)) {
+        this.startScript([{ say: spot.locked || 'Not yet.', who: null }], null, () => {
+          this.mode = 'play'; this.dlg = null;
+        });
+        return;
+      }
+      this.openReader(spot.doc);
+      return;
+    }
     // Memorial benches are generated from their inscription data rather than
     // hand-written twenty times over.
     const script = spot.bench ? benchScript(spot.bench) : CLUES[spot.id];
@@ -297,6 +328,15 @@ class Game {
   }
 
   showToast(text) { this.toast = { text, t: 2.6 }; this.audio.noted(); }
+
+  openReader(id) {
+    const doc = DOCUMENTS[id];
+    if (!doc) return;
+    this.reader = doc;
+    this.docScroll = 0;
+    this.mode = 'reader';
+    this.audio.menuPick();
+  }
 
   /** Watch for a completed objective so it can be announced once. */
   checkObjective() {
@@ -334,7 +374,20 @@ class Game {
     this.audio.step(terrainAt(map, p.tx, p.ty));
 
     const w = warpAt(map, p.tx, p.ty);
-    if (w) { this.doWarp(w); return; }
+    if (w) {
+      const blocked = this.warpBlocked(w);
+      if (blocked) {
+        // Step back off it and say what is still missing.
+        this.setTile(p.fromX, p.fromY);
+        this.startScript([
+          { say: 'Not yet. There is something here you have not done.', who: null },
+          { say: blocked, who: null },
+        ], null, () => { this.mode = 'play'; this.dlg = null; });
+        return;
+      }
+      this.doWarp(w);
+      return;
+    }
 
     const t = triggerAt(map, p.tx, p.ty);
     if (t && !this.state.knows(`fired.${map.id}.${t.id}`)) {
@@ -349,8 +402,20 @@ class Game {
     }
   }
 
+  /** A gated exit will not open until the chapter has actually been done. */
+  warpBlocked(w) {
+    if (!w.gate) return null;
+    if (chapterComplete(this.state, w.gate)) return null;
+    const left = remainingIn(this.state, w.gate);
+    return left.length ? left[0].text : null;
+  }
+
   doWarp(w) {
     const p = this.player;
+    if (w.setChapter) {
+      this.state.chapter = w.setChapter;
+      this.lastStepId = (currentStep(this.state) || {}).id || null;
+    }
     p.map = w.to;
     this.state.visited.add(w.to);
     this.setTile(w.tx, w.ty);
@@ -400,12 +465,45 @@ class Game {
       return;
     }
 
+    if (this.mode === 'reader') {
+      if (inp.justPressed('cancel') || inp.justPressed('notebook')) {
+        this.mode = 'play'; this.reader = null; return;
+      }
+      if (inp.justPressed('confirm')) {
+        if (this.state.copyDoc(this.reader.id)) {
+          this.showToast('Copied into your notebook');
+          this.save();
+        } else {
+          this.mode = 'play'; this.reader = null;
+        }
+        return;
+      }
+      if (inp.isDown('down')) this.docScroll += 320 * dt;
+      if (inp.isDown('up')) this.docScroll -= 320 * dt;
+      this.docScroll = Math.max(0, Math.min(this.docScroll, this.docMax || 0));
+      return;
+    }
+
+    if (this.mode === 'answer') return;   // driven by a DOM keydown handler
+
     if (this.mode === 'notebook') {
       if (inp.justPressed('cancel') || inp.justPressed('notebook')) this.mode = 'play';
+      if (inp.justPressed('left') || inp.justPressed('right')) {
+        this.notebookTab = 1 - this.notebookTab;
+        this.notebookScroll = 0;
+        this.audio.menuMove();
+      }
       if (inp.isDown('down')) this.notebookScroll += 300 * dt;
       if (inp.isDown('up')) this.notebookScroll -= 300 * dt;
       // maxScroll comes back from the last draw, so clamp against that.
       this.notebookScroll = Math.max(0, Math.min(this.notebookScroll, this.notebookMax || 0));
+      return;
+    }
+
+    // Reaching the reckoning's final step opens the closing screen.
+    if (this.mode === 'play' && this.state.chapter === 'reckoning'
+        && !this.state.answer && chapterComplete(this.state, 'reckoning')) {
+      this.openAnswer();
       return;
     }
 
@@ -528,11 +626,47 @@ class Game {
     }
 
     if (this.mode === 'notebook') {
-      this.notebookMax = drawNotebook(
-        g, v, s, notebookEntries(this.state), this.notebookScroll, sourceName) || 0;
+      if (this.notebookTab === 0) {
+        this.notebookMax = drawNotebook(
+          g, v, s, notebookEntries(this.state), this.notebookScroll, sourceName) || 0;
+      } else {
+        // Draw the shell, then the document list in place of the entries.
+        drawNotebook(g, v, s, [], 0, sourceName);
+        const docs = this.state.docLog().map((d) => DOCUMENTS[d.id]).filter(Boolean);
+        this.notebookMax = drawDocTab(g, v, s, docs, this.notebookScroll, DOC_COUNT) || 0;
+      }
+      drawNotebookTabs(g, v, s, this.notebookTab, this.state.docs.size, DOC_COUNT);
+    }
+
+    if (this.mode === 'reader' && this.reader) {
+      this.docMax = drawReader(g, v, s, this.reader,
+        FIDELITY_LABEL[this.reader.fidelity] || '', this.docScroll,
+        this.state.hasDoc(this.reader.id)) || 0;
+    }
+
+    if (this.mode === 'answer') {
+      drawAnswer(g, v, s, this.answerText, (Date.now() % 1000) < 500);
     }
 
     if (this.toast.t > 0) drawToast(g, v, s, this.toast.text, Math.min(1, this.toast.t));
+  }
+
+  openAnswer() {
+    this.mode = 'answer';
+    this.answerText = this.state.answer || '';
+  }
+
+  submitAnswer() {
+    this.state.answer = this.answerText.trim();
+    this.save();
+    this.mode = 'dialogue';
+    this.startScript([
+      { say: 'Written down.', who: null },
+      { say: 'Nothing here is going to tell you whether you are right. Historians have been arguing about this for three hundred and thirty years and they have not finished.', who: null },
+      { say: 'What you can do is show your working.', who: null },
+      { say: 'Press "Copy my notes" below. Everything you saw, everyone who told you something, every paper you copied, and what you just wrote — as plain text you can paste anywhere.', who: null },
+      { say: 'Twenty benches. Charter Street. Any time you like.', who: null },
+    ], null, () => { this.mode = 'play'; this.dlg = null; });
   }
 
   /* ---------------- export ---------------- */
@@ -545,10 +679,14 @@ class Game {
   exportNotes() {
     const entries = notebookEntries(this.state);
     const lines = [
-      'SALEM VILLAGE, 1692 — what I saw and was told',
-      'The memorial, and Salem Village in March 1692',
+      'SALEM VILLAGE, 1692',
       '',
     ];
+    if (this.state.answer) {
+      lines.push('MY ANSWER — what caused it?', '', this.state.answer, '',
+                 '---------------------------------------------', '');
+    }
+    lines.push('WHAT I SAW AND WAS TOLD', '');
     if (!entries.length) {
       lines.push('(Nothing recorded yet.)');
     } else {
@@ -557,7 +695,23 @@ class Game {
         lines.push(`   [${sourceName(e.source)}]`);
         lines.push('');
       });
-      lines.push('---');
+    }
+
+    const docs = this.state.docLog().map((d) => DOCUMENTS[d.id]).filter(Boolean);
+    if (docs.length) {
+      lines.push('---------------------------------------------', '');
+      lines.push(`DOCUMENTS I COPIED  (${docs.length}/${DOC_COUNT})`, '');
+      docs.forEach((d, i) => {
+        lines.push(`${i + 1}. ${d.title} (${d.date})`);
+        lines.push(`   ${d.note}`);
+        lines.push(`   Source: ${d.cite}`);
+        lines.push(`   [${FIDELITY_LABEL[d.fidelity]}]`);
+        lines.push('');
+      });
+    }
+
+    if (!this.state.answer) {
+      lines.push('---------------------------------------------');
       lines.push('Question to answer: what caused this? Weigh the causes against');
       lines.push('each other and use the evidence above. Say which source you trust');
       lines.push('for each claim, and why.');
@@ -614,6 +768,21 @@ document.getElementById('reset')?.addEventListener('click', () => {
   GameState.clear();
   location.reload();
 });
+
+// The closing screen takes free text, so it needs a real key handler rather
+// than the game's four-button input model.
+addEventListener('keydown', (e) => {
+  if (game.mode !== 'answer') return;
+  if (e.key === 'Enter') {
+    if (game.answerText.trim()) { e.preventDefault(); game.submitAnswer(); }
+    return;
+  }
+  if (e.key === 'Backspace') { e.preventDefault(); game.answerText = game.answerText.slice(0, -1); return; }
+  if (e.key.length === 1 && game.answerText.length < 1200) {
+    e.preventDefault();
+    game.answerText += e.key;
+  }
+}, true);
 
 let last = performance.now();
 function frame(now) {

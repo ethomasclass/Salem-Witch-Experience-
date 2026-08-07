@@ -357,6 +357,225 @@ export function drawObjective(g, view, s, { step, standing, progress, flash }) {
   }
 }
 
+/**
+ * The document reader.
+ *
+ * One of the two screens the design doc says this game needs that Pokémon
+ * never had: original text on one side, a plain modern gloss on the other,
+ * full screen, with the citation and — deliberately — a fidelity label. A
+ * student noticing that some sources are transcriptions and some are
+ * reconstructions is a student doing source criticism.
+ *
+ * It is a reader, not a graphic organiser. No fields, no prompts, nothing to
+ * fill in.
+ */
+export function drawReader(g, view, s, doc, fidelityLabel, scroll, copied) {
+  g.fillStyle = 'rgba(10,10,13,0.9)';
+  g.fillRect(view.x, view.y, view.w, view.h);
+
+  const bx = view.x + 12 * s, by = view.y + 12 * s;
+  const bw = view.w - 24 * s, bh = view.h - 24 * s;
+  panel(g, bx, by, bw, bh, s);
+
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+
+  // --- header ---------------------------------------------------------
+  g.font = `700 ${13 * s}px Georgia, serif`;
+  g.fillStyle = P.boxInk;
+  g.fillText(doc.title, bx + 16 * s, by + 12 * s);
+
+  g.font = `${8.5 * s}px system-ui, sans-serif`;
+  g.fillStyle = P.boxDim;
+  g.fillText(`${doc.date}  ·  ${doc.kind}`, bx + 16 * s, by + 30 * s);
+
+  g.textAlign = 'right';
+  g.fillStyle = copied ? '#5d7a4a' : P.accent;
+  g.fillText(copied ? 'copied into your notebook' : 'Z to copy this down',
+             bx + bw - 16 * s, by + 30 * s);
+  g.textAlign = 'left';
+
+  const ruleY = by + 44 * s;
+  g.strokeStyle = 'rgba(58,54,48,0.4)';
+  g.lineWidth = 1;
+  g.beginPath(); g.moveTo(bx + 16 * s, ruleY); g.lineTo(bx + bw - 16 * s, ruleY); g.stroke();
+
+  // --- two columns ----------------------------------------------------
+  const colGap = 18 * s;
+  const colW = (bw - 32 * s - colGap) / 2;
+  const leftX = bx + 16 * s;
+  const rightX = leftX + colW + colGap;
+  const top = ruleY + 12 * s;
+  const bottom = by + bh - 26 * s;
+
+  g.save();
+  g.beginPath();
+  g.rect(bx + 8 * s, top - 6 * s, bw - 16 * s, bottom - top + 6 * s);
+  g.clip();
+
+  // Original: monospaced, because the layout of a ledger or a warrant is
+  // part of what it is saying.
+  const monoH = 10 * s;
+  g.font = `${7.5 * s}px ui-monospace, Menlo, Consolas, monospace`;
+  g.fillStyle = '#3f3a32';
+  let ly = top - scroll;
+  for (const line of doc.original) { g.fillText(line, leftX, ly); ly += monoH; }
+
+  // Gloss: serif, plain modern English, wrapped.
+  g.font = `${10 * s}px Georgia, serif`;
+  g.fillStyle = P.boxInk;
+  let ry = top - scroll;
+  for (const para of doc.gloss) {
+    if (!para) { ry += 8 * s; continue; }
+    for (const l of wrapText(g, para, colW)) { g.fillText(l, rightX, ry); ry += 13 * s; }
+  }
+  g.restore();
+
+  const contentH = Math.max(doc.original.length * monoH, ry + scroll - top);
+  const maxScroll = Math.max(0, contentH - (bottom - top));
+
+  // --- footer ---------------------------------------------------------
+  g.font = `${7 * s}px system-ui, sans-serif`;
+  g.fillStyle = P.boxDim;
+  const foot = `${fidelityLabel}  ·  ${doc.cite}`;
+  const footLines = wrapText(g, foot, bw - 32 * s);
+  let fy = by + bh - 12 * s - footLines.length * 9 * s;
+  g.beginPath(); g.moveTo(bx + 16 * s, fy - 6 * s); g.lineTo(bx + bw - 16 * s, fy - 6 * s); g.stroke();
+  for (const l of footLines) { g.fillText(l, bx + 16 * s, fy); fy += 9 * s; }
+
+  if (maxScroll > 0) {
+    g.textAlign = 'right';
+    g.fillStyle = P.accent;
+    g.fillText(scroll < maxScroll - 1 ? '↓ more' : '↑ back to the top', bx + bw - 16 * s, by + bh - 12 * s - 9 * s);
+    g.textAlign = 'left';
+  }
+  g.font = `${7 * s}px system-ui, sans-serif`;
+  g.fillStyle = P.boxDim;
+  g.fillText('X to close', bx + 16 * s, by + 12 * s + 2 * s);
+
+  return maxScroll;
+}
+
+/** The notebook's document tab: what the player has copied down. */
+export function drawDocTab(g, view, s, docs, scroll, total) {
+  const bx = view.x + 20 * s, by = view.y + 20 * s;
+  const bw = view.w - 40 * s, bh = view.h - 40 * s;
+
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+  const top = by + 46 * s;
+  const bottom = by + bh - 12 * s;
+
+  if (!docs.length) {
+    g.font = `italic ${11 * s}px Georgia, serif`;
+    g.fillStyle = P.boxDim;
+    g.fillText('Nothing copied yet. Papers you find can be copied down.',
+               bx + 18 * s, top + 6 * s);
+    return 0;
+  }
+
+  g.save();
+  g.beginPath();
+  g.rect(bx + 8 * s, top - 4 * s, bw - 16 * s, bottom - top + 4 * s);
+  g.clip();
+
+  let y = top - scroll;
+  let contentH = 0;
+  for (const d of docs) {
+    const blockH = 30 * s;
+    if (y + blockH > top - 20 * s && y < bottom + 20 * s) {
+      g.font = `600 ${11 * s}px Georgia, serif`;
+      g.fillStyle = P.boxInk;
+      g.fillText(d.title, bx + 32 * s, y);
+      g.font = `${8.5 * s}px system-ui, sans-serif`;
+      g.fillStyle = P.boxDim;
+      g.fillText(`${d.date} · ${d.kind}`, bx + 32 * s, y + 14 * s);
+      g.fillStyle = P.accent;
+      g.fillRect(bx + 20 * s, y + 4 * s, 4 * s, 4 * s);
+    }
+    y += blockH;
+    contentH += blockH;
+  }
+  g.restore();
+
+  return Math.max(0, contentH - (bottom - top));
+}
+
+/** The two tabs across the top of the notebook. */
+export function drawNotebookTabs(g, view, s, tab, docCount, docTotal) {
+  const bx = view.x + 20 * s, by = view.y + 20 * s;
+  const labels = ['What I was told', `What I copied down   ${docCount}/${docTotal}`];
+  g.font = `600 ${9 * s}px system-ui, sans-serif`;
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+  let x = bx + 18 * s;
+  const y = by + 30 * s;
+  labels.forEach((label, i) => {
+    const w = g.measureText(label).width;
+    g.fillStyle = i === tab ? P.boxInk : P.boxDim;
+    g.fillText(label, x, y);
+    if (i === tab) {
+      g.fillStyle = P.accent;
+      g.fillRect(x, y + 13 * s, w, 2 * s);
+    }
+    x += w + 26 * s;
+  });
+}
+
+/**
+ * The closing screen. The game asks its question once, takes whatever the
+ * player types, and does not respond to it.
+ */
+export function drawAnswer(g, view, s, text, caret) {
+  g.fillStyle = 'rgba(8,9,12,0.94)';
+  g.fillRect(view.x, view.y, view.w, view.h);
+
+  const bx = view.x + 26 * s, by = view.y + 26 * s;
+  const bw = view.w - 52 * s, bh = view.h - 52 * s;
+  panel(g, bx, by, bw, bh, s);
+
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+  g.font = `700 ${17 * s}px Georgia, serif`;
+  g.fillStyle = P.boxInk;
+  g.fillText('What caused it?', bx + 22 * s, by + 22 * s);
+
+  g.font = `italic ${9.5 * s}px Georgia, serif`;
+  g.fillStyle = P.boxDim;
+  const intro = 'Write what you think. There is no right answer and nothing here is scored. '
+              + 'Use what you saw and what you were told, and say which of it you trust.';
+  let iy = by + 48 * s;
+  for (const l of wrapText(g, intro, bw - 44 * s)) { g.fillText(l, bx + 22 * s, iy); iy += 13 * s; }
+
+  const fx = bx + 22 * s, fy = iy + 12 * s;
+  const fw = bw - 44 * s, fh = bh - (fy - by) - 44 * s;
+  g.fillStyle = 'rgba(255,255,255,0.5)';
+  g.fillRect(fx, fy, fw, fh);
+  g.strokeStyle = P.boxEdge;
+  g.lineWidth = Math.max(1, s);
+  g.strokeRect(fx, fy, fw, fh);
+
+  g.font = `${11 * s}px Georgia, serif`;
+  g.fillStyle = P.boxInk;
+  let ty = fy + 10 * s;
+  const lines = text ? wrapText(g, text, fw - 20 * s) : [''];
+  for (const l of lines.slice(-Math.floor((fh - 20 * s) / (14 * s)))) {
+    g.fillText(l, fx + 10 * s, ty); ty += 14 * s;
+  }
+  if (caret) {
+    const last = lines[lines.length - 1] || '';
+    g.fillStyle = P.accent;
+    g.fillRect(fx + 10 * s + g.measureText(last).width + 1 * s, ty - 14 * s, 2 * s, 12 * s);
+  }
+
+  g.font = `${8.5 * s}px system-ui, sans-serif`;
+  g.fillStyle = P.boxDim;
+  g.textAlign = 'right';
+  g.fillText(text.trim() ? 'Enter to finish' : 'Type your answer',
+             bx + bw - 22 * s, by + bh - 24 * s);
+  g.textAlign = 'left';
+}
+
 /** Title screen. */
 export function drawTitle(g, view, s, hasSave, index) {
   g.fillStyle = '#14161a';

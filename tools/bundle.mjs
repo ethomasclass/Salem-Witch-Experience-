@@ -27,6 +27,7 @@ const ORDER = [
   'src/engine/dialogue.js',
   'src/engine/input.js',
   'src/engine/audio.js',
+  'src/content/documents.js',
   'src/content/knowledge.js',
   'src/content/objectives.js',
   'src/content/clues.js',

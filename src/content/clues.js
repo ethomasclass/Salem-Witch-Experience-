@@ -145,6 +145,136 @@ export const PRESENT_CLUES = {
 export const CLUES = {
   ...PRESENT_CLUES,
 
+  /* ---- transitions and arrivals ------------------------------------ */
+
+  toDig: [
+    { say: 'Behind the parsonage the ground dips where a cellar was dug.', who: null },
+    { say: 'You step down into it.', who: null },
+    { say: '...', who: null },
+    { say: 'The house is gone. The dip is still here, and it is lined with fieldstone, and there is a laminated sign on two posts.', who: null },
+    { say: 'Somewhere behind you a car goes past.', who: null },
+  ],
+
+  arriveDig: [
+    { say: 'Danvers, Massachusetts. It was called Salem Village until 1752, when the town changed its name and did not say why.', who: null },
+    { say: 'This is a patch of trees behind a residential street. There is a rectangle of stone in the ground, about the size of a classroom.', who: null },
+    { learn: 'dig.here', source: 'observed' },
+  ],
+
+  digSign: [
+    { say: 'SITE OF THE SALEM VILLAGE PARSONAGE, 1681–1784.', who: null },
+    { say: 'Home of the Reverend Samuel Parris and his household, including Tituba. The first accusations of 1692 originated in this house.', who: null },
+    { say: 'Excavated in 1970. Please do not climb on the foundation.', who: null },
+    { learn: 'dig.sign', source: 'observed' },
+  ],
+
+  cellarFloor: [
+    { say: 'You are standing on the cellar floor of the house you were in an hour ago.', who: null },
+    { say: 'The hearth was over there. Tituba was standing about where that root is.', who: null },
+    { say: 'Pace it out. It is not big. Two rooms and a loft, and nine or ten people in it, and one fire.', who: null },
+    { learn: 'dig.stood', source: 'observed' },
+  ],
+
+  toJune: [
+    { say: 'You walk back up out of the cellar hole.', who: null },
+    { say: '...', who: null },
+    { say: 'It is warm. The mud has dried into ruts and there is dust on everything.', who: null },
+    { say: 'It is June. Three months have gone by and you were not here for any of them.', who: null },
+    { learn: 'june.arrived', source: 'observed' },
+    { say: 'There are more carts on that road than you have ever seen on it.', who: null },
+  ],
+
+  toArchive: [
+    { say: 'You walk out of the meeting house where the court has been sitting.', who: null },
+    { say: '...', who: null },
+    { say: 'Fluorescent light. Grey boxes on grey shelves, floor to ceiling, with catalogue numbers on the spines.', who: null },
+    { say: 'The paperwork survived. All of it. It is in this room.', who: null },
+  ],
+
+  arriveArchive: [
+    { say: 'Every warrant, every deposition, every bill for chains. Three hundred and thirty years old, in acid-free boxes, in a reading room.', who: null },
+    { learn: 'law.papers', source: 'observed' },
+  ],
+
+  archiveBoxes: [
+    { say: 'Grey archival boxes, numbered. There are a great many of them.', who: null },
+    { say: 'This is the strangest thing about 1692, and nobody says it out loud: it is one of the best-documented events in early American history.', who: null },
+    { say: 'The court wrote everything down. They were not hiding. They thought they were doing law.', who: null },
+    { learn: 'law.documented', source: 'observed' },
+  ],
+
+  archiveTable: [
+    { say: 'A single sheet in a foam cradle, under a low light.', who: null },
+    { say: 'The handwriting is small and fast and the paper has gone the colour of weak tea.', who: null },
+    { say: 'Somebody sat down and wrote this, and then somebody was hanged.', who: null },
+  ],
+
+  toSeptember: [
+    { say: 'You leave the reading room the way you came in.', who: null },
+    { say: '...', who: null },
+    { say: 'Cold again. Not March cold — the tail end of a hot summer, with the first edge of autumn under it.', who: null },
+    { say: 'Late September. The road is empty.', who: null },
+    { learn: 'sept.arrived', source: 'observed' },
+    { say: 'There is nobody at the well. There is nobody on the road. There is nobody at all.', who: null },
+  ],
+
+  toReckoning: [
+    { say: 'You walk out past the meeting house for the last time.', who: null },
+    { say: '...', who: null },
+    { say: 'Traffic. A gift shop. Twenty stone benches around a square of grass.', who: null },
+    { say: 'You have been here before. You did not know any of their names then.', who: null },
+  ],
+
+  arriveReckoning: [
+    { say: 'The threshold stones are still cut off mid-sentence. You still walked over them coming in.', who: null },
+    { say: 'Go and read the benches again.', who: null },
+    { learn: 'reck.returned', source: 'observed' },
+  ],
+
+  /* ---- June ---------------------------------------------------------- */
+
+  jailOutside: [
+    { say: 'A low building on Prison Lane with a grate at ground level. You can hear people underneath the street.', who: null },
+    { say: 'There is no guard on the door. There does not need to be — nobody in there can pay what is owed to get out.', who: null },
+    { learn: 'june.jailoutside', source: 'observed' },
+  ],
+
+  arriveJail: [
+    { say: 'The gaol is a cellar. The floor is stone and there is straw on the stone and it has been a warm month.', who: null },
+    { say: 'There are more people down here than you expected. Some of them are children.', who: null },
+    { learn: 'june.jail', source: 'observed' },
+  ],
+
+  jailStraw: [
+    { say: 'Straw on stone, and it has not been changed in a while.', who: null },
+    { say: 'Sarah Good is at the far end. She was pregnant when they took her in March and she is not now.', who: null },
+    { say: 'The baby was born in this room and did not live. Her four-year-old daughter is in here too, and has been since March, in irons made for an adult.', who: null },
+    { learn: 'june.dorothy', source: 'observed' },
+  ],
+
+  courtRoom: [
+    { say: 'They have moved the benches. There is a table across the top of the room and a rail put up in front of it.', who: null },
+    { say: 'This is a church on Sunday and a courtroom the rest of the week, and it is the same room and the same people either way.', who: null },
+    { learn: 'june.courtroom', source: 'observed' },
+    { say: 'The seating chart is still nailed by the door.', who: null },
+  ],
+
+  /* ---- September ----------------------------------------------------- */
+
+  emptyHouse: [
+    { say: 'The door is not locked. Nothing in this village is locked.', who: null },
+    { say: 'There is a table, and a cold hearth, and a chair pushed back from the table as if somebody had got up in a hurry.', who: null },
+    { say: 'Nobody has been here for some time.', who: null },
+    { learn: 'sept.empty', source: 'observed' },
+    { say: 'The game does not tell you whose house this was. You could work it out.', who: null },
+  ],
+
+  sheriffInventory: [
+    { say: 'A paper nailed to the doorpost, official, with a seal on it.', who: null },
+    { say: 'It is a list of what was taken out of this house by the sheriff.', who: null },
+  ],
+
+
   /* Reverend Parris's contract promised him firewood. The village stopped
    * delivering it. The whole salary dispute, rendered as an object you can
    * look at and estimate. */

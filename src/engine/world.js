@@ -15,6 +15,7 @@ import {
   buildMemBench, buildLowWall, buildLocust, buildSignboard, buildBin,
   buildShopfront, buildBarn, buildStoneWall, buildHayrick, buildCart,
   buildAppleTree, buildPig, buildCow, buildSheep, buildChicken,
+  buildBars, buildPaper, buildArchiveBox, buildStraw,
 } from './art-props.js';
 import { SPR_W, SPR_H, DIR } from './art-actors.js';
 import { P } from '../palette.js';
@@ -77,6 +78,12 @@ export const PROPS = {
   cow:          { w: 2, h: 1, build: () => buildCow() },
   sheep:        { w: 1, h: 1, build: () => buildSheep() },
   chicken:      { w: 1, h: 1, build: () => buildChicken(), passable: true },
+  // Solid, but you can speak through it. The jail scene is a conversation
+  // held through a grate, which is the whole shape of it.
+  bars:         { w: 1, h: 1, build: () => buildBars(), talkThrough: true },
+  paper:        { w: 1, h: 1, build: () => buildPaper(), passable: true },
+  archivebox:   { w: 1, h: 1, build: () => buildArchiveBox() },
+  straw:        { w: 1, h: 1, build: () => buildStraw(), passable: true },
 
   // Present day.
   membench:     { w: 2, h: 1, build: () => buildMemBench() },
@@ -109,7 +116,26 @@ function propImage(prop) {
  * Map construction
  * ---------------------------------------------------------------------- */
 
-export function buildMap(def) {
+/**
+ * Build a map for a given chapter.
+ *
+ * The village is dressed three times across the game, so a map definition
+ * may carry `byChapter` overrides — extra props, removed props, a different
+ * cast, a different name. Everything not overridden is shared, which is the
+ * whole reason one village map can carry March, June and September.
+ */
+export function buildMap(def, chapter = 'march') {
+  const over = (def.byChapter && def.byChapter[chapter]) || {};
+  def = {
+    ...def,
+    ...over,
+    props: [...(def.props || []), ...(over.addProps || [])]
+      .filter((p) => !(over.hideProps || []).some((h) => h.x === p.x && h.y === p.y && h.kind === p.kind)),
+    interact: [...(def.interact || []), ...(over.addInteract || [])],
+    triggers: [...(def.triggers || []), ...(over.addTriggers || [])],
+    warps: [...(def.warps || []), ...(over.addWarps || [])],
+    npcs: over.npcs !== undefined ? over.npcs : (def.npcs || []),
+  };
   const rows = def.ground;
   const h = rows.length;
   const w = Math.max(...rows.map((r) => r.length));
@@ -135,9 +161,15 @@ export function buildMap(def) {
     }
   }
 
+  const talkThrough = new Set();
   const props = (def.props || []).map((p) => {
     const d = PROPS[p.kind];
     if (!d) throw new Error(`unknown prop kind: ${p.kind}`);
+    if (d.talkThrough) {
+      for (let y = p.y; y < p.y + (p.h || d.h); y++) {
+        for (let x = p.x; x < p.x + (p.w || d.w); x++) talkThrough.add(`${x},${y}`);
+      }
+    }
     const inst = {
       ...p,
       w: p.w || d.w,
@@ -186,8 +218,8 @@ export function buildMap(def) {
 
   return {
     id: def.id, name: def.name, indoor: !!def.indoor,
-    era: def.era || '1692',
-    w, h, terrain, solid, props, warps, interact, triggers,
+    era: def.era || '1692', chapter,
+    w, h, terrain, solid, props, warps, interact, triggers, talkThrough,
     npcs: [], def,
   };
 }

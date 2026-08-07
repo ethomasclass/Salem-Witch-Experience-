@@ -222,6 +222,66 @@ export const VILLAGE = {
     { id: 'woodman', x: 6, y: 22, dir: 'down' },
     { id: 'watchman', x: 29, y: 15, dir: 'down' },
   ],
+
+  // The same village, dressed three times. This is the emotional engine of
+  // the whole game and it costs one object per chapter.
+  byChapter: {
+    march: {
+      // Behind the parsonage the ground dips. In March this is nothing; once
+      // the chapter is done it is the way out, and it lands on the same
+      // ground three hundred and thirty years later.
+      addWarps: [
+        { x: 11, y: 22, to: 'dig', tx: 11, ty: 10, dir: 'up',
+          gate: 'march', script: 'toDig', setChapter: 'dig' },
+      ],
+    },
+    june: {
+      name: 'Salem Village · June',
+      // Carts and strangers. The road is busy for the first time.
+      addProps: [
+        { kind: 'cart', x: 24, y: 17 },
+        { kind: 'cart', x: 31, y: 20 },
+        { kind: 'cart', x: 19, y: 18 },
+      ],
+      addWarps: [
+        // Out of June and into the room where the paperwork ended up.
+        { x: 22, y: 9, to: 'archive', tx: 8, ty: 11, dir: 'up',
+          gate: 'june', script: 'toArchive', setChapter: 'archive' },
+        { x: 23, y: 9, to: 'archive', tx: 9, ty: 11, dir: 'up',
+          gate: 'june', script: 'toArchive', setChapter: 'archive' },
+      ],
+      npcs: [
+        { id: 'mercy', x: 29, y: 23, dir: 'down' },
+        { id: 'goodwife', x: 24, y: 21, dir: 'right' },
+        { id: 'watchman', x: 29, y: 15, dir: 'down' },
+        { id: 'stranger', x: 26, y: 19, dir: 'left' },
+        { id: 'stranger2', x: 20, y: 19, dir: 'right' },
+        { id: 'francis', x: 7, y: 16, dir: 'down' },
+      ],
+    },
+    september: {
+      name: 'Salem Village · September',
+      addWarps: [
+        { x: 22, y: 9, to: 'memorial', tx: 13, ty: 6, dir: 'down',
+          gate: 'september', script: 'toReckoning', setChapter: 'reckoning' },
+        { x: 23, y: 9, to: 'memorial', tx: 14, ty: 6, dir: 'down',
+          gate: 'september', script: 'toReckoning', setChapter: 'reckoning' },
+      ],
+      addInteract: [
+        { id: 'emptyHouse', x: 2, y: 34, w: 5, h: 1 },
+        { doc: 'seizureInventory', x: 30, y: 30, w: 2, h: 1 },
+      ],
+      addProps: [
+        { kind: 'paper', x: 30, y: 30 },
+      ],
+      // Almost nobody. No locked doors, no gates — just an empty road.
+      npcs: [
+        { id: 'francis', x: 7, y: 16, dir: 'down' },
+        { id: 'goodwife', x: 24, y: 21, dir: 'right' },
+        { id: 'neighbour', x: 27, y: 24, dir: 'left' },
+      ],
+    },
+  },
 };
 
 /* ---------------------------------------------------------------------- *
@@ -264,6 +324,16 @@ export const ROAD = {
     { x: 7, y: 0, to: 'village', tx: 22, ty: 36, dir: 'up' },
     { x: 8, y: 0, to: 'village', tx: 23, ty: 36, dir: 'up' },
   ],
+  byChapter: {
+    june: {
+      addProps: [
+        { kind: 'house', x: 11, y: 20, w: 5, h: 5, doorCol: 2, windows: [0], chimney: null, roofFrac: 0.44 },
+        { kind: 'bars', x: 11, y: 22 }, { kind: 'bars', x: 15, y: 22 },
+      ],
+      addWarps: [{ x: 13, y: 24, to: 'jail', tx: 6, ty: 8, dir: 'up' }],
+      addInteract: [{ id: 'jailOutside', x: 11, y: 24, w: 2, h: 1 }],
+    },
+  },
   triggers: [
     // Walking south from the village: the payoff at the rich end.
     { id: 'roadEnd', x: 7, y: 30, w: 2, h: 1 },
@@ -291,15 +361,22 @@ export const PARSONAGE = {
   props: [
     { kind: 'hearth', x: 4, y: 1 },
     { kind: 'table', x: 2, y: 5 },
+    { kind: 'paper', x: 2, y: 5 },
   ],
   warps: [{ x: 5, y: 8, to: 'village', tx: 10, ty: 29, dir: 'down' }],
   interact: [
     { id: 'parsonageHearth', x: 4, y: 1, w: 3, h: 2 },
+    { doc: 'parrisAgreement', x: 2, y: 5, w: 2, h: 1, require: ['clue.woodpile'],
+      locked: 'A paper on the table, face down. You have no reason to turn it over yet.' },
   ],
   npcs: [
     { id: 'tituba', x: 3, y: 3, dir: 'down' },
     { id: 'parris', x: 8, y: 4, dir: 'left' },
   ],
+  byChapter: {
+    june: { npcs: [{ id: 'parris', x: 8, y: 4, dir: 'left' }] },
+    september: { npcs: [{ id: 'parris', x: 8, y: 4, dir: 'left' }] },
+  },
 };
 
 export const MEETINGHOUSE = {
@@ -317,8 +394,31 @@ export const MEETINGHOUSE = {
     { id: 'seatingChart', x: 5, y: 1, w: 2, h: 2 },
     { id: 'pews', x: 2, y: 5, w: 3, h: 1 },
     { id: 'pews', x: 8, y: 7, w: 3, h: 1 },
+    { doc: 'seatingList', x: 7, y: 1, w: 1, h: 2, require: ['clue.seating'],
+      locked: 'There is a second sheet pinned beside the chart. Look at the chart first.' },
   ],
   npcs: [],
+  byChapter: {
+    june: {
+      name: 'The meetinghouse · the court sits here',
+      addProps: [{ kind: 'table', x: 5, y: 3 }, { kind: 'paper', x: 5, y: 3 }],
+      addInteract: [
+        { doc: 'putnamDeposition', x: 5, y: 3, w: 2, h: 1 },
+        { id: 'courtRoom', x: 8, y: 3, w: 3, h: 1 },
+      ],
+    },
+    september: {
+      addProps: [
+        { kind: 'table', x: 5, y: 3 }, { kind: 'paper', x: 5, y: 3 },
+        { kind: 'paper', x: 8, y: 3 }, { kind: 'paper', x: 10, y: 3 },
+      ],
+      addInteract: [
+        { doc: 'coreyRecord', x: 5, y: 3, w: 2, h: 1 },
+        { doc: 'deathWarrantReturn', x: 8, y: 3, w: 1, h: 1 },
+        { doc: 'eastyPetition', x: 10, y: 3, w: 1, h: 1 },
+      ],
+    },
+  },
 };
 
 export const TAVERN = {
@@ -339,10 +439,25 @@ export const TAVERN = {
   warps: [{ x: 5, y: 8, to: 'village', tx: 33, ty: 17, dir: 'down' }],
   interact: [
     { id: 'accountBook', x: 2, y: 3, w: 2, h: 1 },
+    { doc: 'accountBookPage', x: 2, y: 6, w: 2, h: 1, require: ['clue.accounts'],
+      locked: 'More of the same book, further down the table. Read the open page first.' },
   ],
   npcs: [
     { id: 'ingersoll', x: 6, y: 4, dir: 'left' },
   ],
+  byChapter: {
+    june: {
+      name: "Ingersoll's tavern · full house",
+      addProps: [{ kind: 'paper', x: 3, y: 6 }],
+      addInteract: [{ doc: 'nurseWarrant', x: 3, y: 6, w: 1, h: 1 }],
+      npcs: [
+        { id: 'ingersoll', x: 6, y: 4, dir: 'left' },
+        { id: 'marywarren', x: 8, y: 6, dir: 'left' },
+        { id: 'stranger3', x: 3, y: 2, dir: 'down' },
+      ],
+    },
+    september: { npcs: [{ id: 'ingersoll', x: 6, y: 4, dir: 'left' }] },
+  },
 };
 
 export const NURSEHOUSE = {
@@ -361,6 +476,19 @@ export const NURSEHOUSE = {
   warps: [{ x: 4, y: 7, to: 'village', tx: 7, ty: 14, dir: 'down' }],
   interact: [],
   npcs: [{ id: 'nurse', x: 5, y: 3, dir: 'down' }],
+  byChapter: {
+    june: {
+      name: 'The Nurse homestead · quiet',
+      addProps: [{ kind: 'paper', x: 5, y: 4 }],
+      addInteract: [{ doc: 'nursePetition', x: 5, y: 4, w: 2, h: 1 }],
+      npcs: [],
+    },
+    september: {
+      addProps: [{ kind: 'paper', x: 5, y: 4 }],
+      addInteract: [{ doc: 'nursePetition', x: 5, y: 4, w: 2, h: 1 }],
+      npcs: [],
+    },
+  },
 };
 
 export const PUTNAMHOUSE = {
@@ -377,8 +505,20 @@ export const PUTNAMHOUSE = {
     { kind: 'table', x: 2, y: 4 },
   ],
   warps: [{ x: 4, y: 7, to: 'village', tx: 33, ty: 30, dir: 'down' }],
-  interact: [],
+  props: [
+    { kind: 'hearth', x: 5, y: 1 },
+    { kind: 'table', x: 2, y: 4 },
+    { kind: 'paper', x: 2, y: 4 },
+  ],
+  interact: [
+    { doc: 'topsfieldPetition', x: 2, y: 4, w: 2, h: 1, require: ['clue.marker'],
+      locked: 'Papers on the table, in more than one hand. They mean nothing to you yet.' },
+  ],
   npcs: [{ id: 'annjr', x: 3, y: 3, dir: 'down' }],
+  byChapter: {
+    june: { npcs: [{ id: 'annjr', x: 3, y: 3, dir: 'down' }] },
+    september: { npcs: [{ id: 'annjr', x: 3, y: 3, dir: 'down' }] },
+  },
 };
 
 /* ---------------------------------------------------------------------- *
@@ -508,10 +648,154 @@ export const MEMORIAL = {
   npcs: [
     { id: 'nora', x: 18, y: 19, dir: 'left' },
   ],
+  byChapter: {
+    reckoning: {
+      name: 'Salem Witch Trials Memorial',
+      addProps: [
+        { kind: 'paper', x: 9, y: 18 }, { kind: 'paper', x: 11, y: 18 },
+        { kind: 'paper', x: 13, y: 18 },
+      ],
+      addInteract: [
+        { doc: 'annApology', x: 9, y: 18, w: 1, h: 1 },
+        { doc: 'sewallApology', x: 11, y: 18, w: 1, h: 1 },
+        { doc: 'johnsonAct', x: 13, y: 18, w: 1, h: 1 },
+      ],
+      addTriggers: [{ id: 'arriveReckoning', x: 12, y: 8, w: 4, h: 1 }],
+      npcs: [
+        { id: 'nora', x: 18, y: 19, dir: 'left' },
+        { id: 'descendant', x: 8, y: 12, dir: 'right' },
+      ],
+    },
+  },
+};
+
+
+/* ---------------------------------------------------------------------- *
+ * Interlude A — the parsonage cellar hole, present day
+ *
+ * The excavated foundation of the Salem Village parsonage, off Centre
+ * Street in Danvers. A real site: a rectangle of fieldstone in a patch of
+ * trees behind a residential street, with a sign and nothing else.
+ *
+ * The player steps into it from the 1692 parsonage dooryard. Same ground,
+ * three hundred and thirty years apart.
+ * ---------------------------------------------------------------------- */
+
+function digGround() {
+  const g = grid(22, 20, 'L');       // mown grass
+  box(g, 6, 5, 11, 8, 'G');          // the excavated floor
+  box(g, 0, 17, 22, 3, 'B');         // the path in from the street
+  return rows(g);
+}
+
+export const DIG = {
+  id: 'dig',
+  name: 'The parsonage foundation, Danvers',
+  era: 'present',
+  ground: digGround(),
+  props: [
+    // The cellar hole: a low wall of fieldstone on all four sides.
+    ...Array.from({ length: 11 }, (_, i) => ({ kind: 'lowwall', x: 6 + i, y: 4 })),
+    ...Array.from({ length: 11 }, (_, i) => 6 + i)
+      .filter((x) => x !== 11)
+      .map((x) => ({ kind: 'lowwall', x, y: 13 })),
+    ...Array.from({ length: 8 }, (_, i) => ({ kind: 'lowwall', x: 5, y: 5 + i })),
+    ...Array.from({ length: 8 }, (_, i) => ({ kind: 'lowwall', x: 17, y: 5 + i })),
+    { kind: 'signboard', x: 8, y: 15 },
+    { kind: 'locust', x: 1, y: 3 }, { kind: 'locust', x: 18, y: 2 },
+    { kind: 'locust', x: 19, y: 9 }, { kind: 'locust', x: 0, y: 10 },
+    { kind: 'bin', x: 14, y: 16 },
+  ],
+  warps: [
+    // Back the way you came — into June.
+    { x: 11, y: 18, to: 'village', tx: 11, ty: 22, dir: 'up',
+      script: 'toJune', setChapter: 'june' },
+    { x: 12, y: 18, to: 'village', tx: 12, ty: 22, dir: 'up',
+      script: 'toJune', setChapter: 'june' },
+  ],
+  interact: [
+    { id: 'digSign', x: 8, y: 15, w: 2, h: 2 },
+    { id: 'cellarFloor', x: 8, y: 8, w: 6, h: 3 },
+  ],
+  triggers: [{ id: 'arriveDig', x: 6, y: 16, w: 10, h: 1 }],
+  npcs: [{ id: 'archaeologist', x: 13, y: 9, dir: 'left' }],
+};
+
+/* ---------------------------------------------------------------------- *
+ * The Salem jail — June
+ *
+ * A cellar on Prison Lane. Prisoners were charged for their food and their
+ * irons, and nobody was released until the bill was paid.
+ * ---------------------------------------------------------------------- */
+
+export const JAIL = {
+  id: 'jail',
+  name: "Their Majesties' Gaol, Salem",
+  indoor: true,
+  ground: (() => {
+    const g = room(13, 10, 6);
+    box(g, 1, 1, 11, 3, 'H');        // stone floor at the cell end
+    return rows(g);
+  })(),
+  props: [
+    ...Array.from({ length: 11 }, (_, i) => ({ kind: 'bars', x: 1 + i, y: 4 })),
+    { kind: 'straw', x: 3, y: 2 }, { kind: 'straw', x: 4, y: 2 },
+    { kind: 'straw', x: 8, y: 2 }, { kind: 'straw', x: 9, y: 3 },
+    { kind: 'straw', x: 2, y: 3 },
+    { kind: 'table', x: 9, y: 6 },
+    { kind: 'paper', x: 9, y: 6 },
+  ],
+  warps: [{ x: 6, y: 9, to: 'road', tx: 7, ty: 30, dir: 'down' }],
+  interact: [
+    { doc: 'jailBill', x: 9, y: 6, w: 2, h: 1 },
+    { id: 'jailStraw', x: 2, y: 5, w: 3, h: 1 },
+  ],
+  triggers: [{ id: 'arriveJail', x: 6, y: 8, w: 1, h: 1 }],
+  // The bars are between you and them. You talk through the grate.
+  npcs: [
+    { id: 'nurseJail', x: 4, y: 3, dir: 'down' },
+    { id: 'titubaJail', x: 9, y: 3, dir: 'down' },
+  ],
+};
+
+/* ---------------------------------------------------------------------- *
+ * Interlude B — the trial papers, present day
+ *
+ * A reading room with the surviving court records in it. The one place in
+ * the whole game where a modern character is allowed to explain something.
+ * ---------------------------------------------------------------------- */
+
+export const ARCHIVE = {
+  id: 'archive',
+  name: 'Reading room',
+  era: 'present',
+  indoor: true,
+  ground: rows(room(18, 13, 8)),
+  props: [
+    ...Array.from({ length: 6 }, (_, i) => ({ kind: 'archivebox', x: 2 + i, y: 1 })),
+    ...Array.from({ length: 6 }, (_, i) => ({ kind: 'archivebox', x: 10 + i, y: 1 })),
+    { kind: 'table', x: 5, y: 5 }, { kind: 'table', x: 7, y: 5 },
+    { kind: 'table', x: 9, y: 5 },
+    { kind: 'paper', x: 6, y: 5 }, { kind: 'paper', x: 9, y: 5 },
+    { kind: 'table', x: 12, y: 8 },
+  ],
+  warps: [
+    { x: 8, y: 12, to: 'village', tx: 22, ty: 17, dir: 'down',
+      script: 'toSeptember', setChapter: 'september' },
+  ],
+  interact: [
+    { id: 'archiveTable', x: 5, y: 5, w: 6, h: 1 },
+    { id: 'archiveBoxes', x: 2, y: 1, w: 6, h: 1 },
+  ],
+  triggers: [{ id: 'arriveArchive', x: 8, y: 11, w: 1, h: 1 }],
+  npcs: [{ id: 'historian', x: 11, y: 5, dir: 'left' }],
 };
 
 export const MAPS = {
   memorial: MEMORIAL,
+  dig: DIG,
+  jail: JAIL,
+  archive: ARCHIVE,
   village: VILLAGE,
   road: ROAD,
   parsonage: PARSONAGE,

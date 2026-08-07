@@ -1,10 +1,10 @@
 # Salem Village, 1692 — outline for the rest of the game
 
-Chapter zero (the memorial) and chapter one (March) are built. This is the
-plan for everything after them, plus the document-collection mechanic that
-runs through all of it.
+> **Status: all of this is now built.** This document is kept as the record of
+> what was planned and why. Where the build diverged, the code is the truth.
 
-Nothing here is written as dialogue yet. This is the shape.
+The plan for the whole game after chapter one, plus the document-collection
+mechanic that runs through all of it.
 
 **Read [`DESIGN.md`](DESIGN.md) first** — the rules it sets are assumed
 throughout, in particular: people not paper, the player cannot act, violence

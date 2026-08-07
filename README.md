@@ -7,21 +7,21 @@ and travel forward occasionally to ask historians what you just saw.
 You cannot change anything. You walk around, talk to people, notice things,
 and go home.
 
-The design is in [`docs/DESIGN.md`](docs/DESIGN.md); the plan for the
-unbuilt chapters is in [`docs/OUTLINE.md`](docs/OUTLINE.md).
+The design is in [`docs/DESIGN.md`](docs/DESIGN.md); the chapter-by-chapter
+plan it was built from is in [`docs/OUTLINE.md`](docs/OUTLINE.md).
 
 ---
 
 ## Status
 
-**Chapter zero (the memorial, present day) and chapter one (March 1692) are
-playable.** The remaining chapters are designed but not built.
+**The whole game is playable, start to finish.** Seven chapters: the
+memorial, March 1692, the parsonage dig, June 1692, the trial papers,
+September 1692, and back to the memorial.
 
 | | |
 |---|---|
 | Audience | High school, general US History |
-| Runtime, when complete | ~32 min |
-| Runtime, current build | ~14 min |
+| Runtime | ~32 min |
 | Platform | Browser, no install, no accounts |
 | Look | GBA-era Pokémon, oblique projection |
 
@@ -57,13 +57,30 @@ playable.** The remaining chapters are designed but not built.
 - **A working farm village**: barn, hayrick, orchard, dry-laid stone walls,
   free-ranging swine, cattle, sheep, hens, and four more villagers to talk to.
 
-### What is not built yet
+### The document collection
 
-June 1692, September 1692, and the three present-day interludes — all
-outlined in [`docs/OUTLINE.md`](docs/OUTLINE.md), with a build order. The
-player character is currently a pure observer; the single "noticing" moment
-belongs to the September chapter. No portrait mood variants are in use yet,
-and the document-collection mechanic is designed but not implemented.
+Fifteen real surviving documents. The player never picks one up — they are a
+student in front of a primary source, so they copy it down. Each is
+knowledge-gated like a conversation topic, so copying is the reward for the
+conversation work rather than a scavenger hunt, and several of them
+contradict the person who told the player about them.
+
+The reader shows original text beside a plain modern gloss, with the citation
+**and a fidelity label**: `close` follows the surviving document, and
+`reconstructed` is written in the form of the record without transcribing one
+specific sheet. That distinction is shown to the player on purpose — a
+student noticing that some sources are transcriptions and some are
+reconstructions is a student doing source criticism.
+
+> **Before this goes in front of a class**, check every transcription against
+> Rosenthal's *Records of the Salem Witch-Hunt* and the Salem Witch Trials
+> Documentary Archive. Both are cited on screen.
+
+### Still to do
+
+The Wabanaki gap below. Portrait mood variants (characters should visibly
+harden between March and September). And a real classroom playtest — the
+timings are estimates.
 
 ---
 
@@ -72,7 +89,7 @@ and the document-collection mechanic is designed but not implemented.
 ### For a classroom — the single file
 
 **[`dist/salem-village-1692.html`](dist/salem-village-1692.html)** is the whole
-game in one self-contained file, about 150 KB. Download it and double-click
+game in one self-contained file, about 340 KB. Download it and double-click
 it. No server, no install, no network. Email it, put it on a shared drive, or
 upload it to Canvas or Google Classroom as a file.
 
@@ -156,9 +173,11 @@ the Salem Witch-Hunt*.
 > voice is in it. Work from published interviews or actual consultation rather
 > than writing that character from scratch.
 
-Mercy Lewis's thread in this build is settler-side only. This needs closing
-before the June chapter, which is where the frontier material does its real
-work.
+Mercy Lewis's June thread — the one where she describes what she sees when
+it takes her, and where the game connects the Maine raids to the accusations
+— is told entirely from the settler side. This is the biggest remaining
+weakness in the writing and it needs a Wabanaki voice before this is used
+widely.
 
 ---
 
@@ -182,7 +201,8 @@ src/
     ui.js             dialogue box, choices, notebook, goals, title
     audio.js          runtime-synthesised sound; no audio files
   content/
-    maps.js           the village, its interiors, and the road
+    maps.js           every map, and how the village is dressed per chapter
+    documents.js      the fifteen primary sources, with fidelity labels
     npcs.js           the cast and everything they say
     clues.js          what the player finds by looking
     knowledge.js      flag -> plain English, for the notebook and export

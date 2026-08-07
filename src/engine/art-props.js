@@ -889,6 +889,58 @@ export function buildChicken() {
   return s;
 }
 
+/** Iron bars. The Salem jail was a cellar with a grate. */
+export function buildBars() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  rect(g, 0, 0, TS, 3, '#3a3d42');
+  hline(g, 0, 0, TS, P.outline);
+  for (let x = 1; x < TS; x += 4) {
+    rect(g, x, 2, 2, TS - 2, '#4c5057');
+    vline(g, x, 2, TS - 2, P.outline);
+    px(g, x + 1, 5, '#6d727a');
+  }
+  rect(g, 0, TS - 4, TS, 3, '#3a3d42');
+  hline(g, 0, TS - 2, TS, P.outline);
+  return s;
+}
+
+/** A loose sheet of paper — where a document can be copied from. */
+export function buildPaper() {
+  const s = surface(TS, TS);
+  const g = s.g;
+  rect(g, 2, 5, 12, 9, '#ddd4bd');
+  stroke(g, 2, 5, 12, 9, '#9a8f77');
+  for (let i = 0; i < 4; i++) hline(g, 4, 7 + i * 2, 8 - (i % 2) * 2, '#8d8571');
+  px(g, 12, 12, '#6b5540');
+  return s;
+}
+
+/** An archive box on a shelf. Present day. */
+export function buildArchiveBox() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  rect(g, 1, 4, 14, 11, '#8a8272');
+  stroke(g, 1, 4, 14, 11, P.outline);
+  rect(g, 1, 4, 14, 3, '#9e9686');
+  rect(g, 4, 9, 8, 4, '#d8d2c2');
+  stroke(g, 4, 9, 8, 4, '#6f6857');
+  return s;
+}
+
+/** Straw on a stone floor. */
+export function buildStraw() {
+  const s = surface(TS, TS);
+  const g = s.g;
+  for (let i = 0; i < 14; i++) {
+    const x = 1 + Math.floor(hash(i, 3, 601) * 13);
+    const y = 3 + Math.floor(hash(i, 7, 607) * 11);
+    const len = 2 + Math.floor(hash(i, 11, 613) * 3);
+    rect(g, x, y, len, 1, i % 3 ? '#8a7647' : '#6f5f3a');
+  }
+  return s;
+}
+
 /** Ingersoll's account book, open on the tavern table. Debt as a map of
  *  resentment — who owes whom, in one object. */
 export function buildAccountBook() {
