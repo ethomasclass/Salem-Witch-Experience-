@@ -73,6 +73,12 @@ some went out at night to bring the bodies home anyway. People who were friendly
 in March now say nothing at all. No locked doors, no gates — just silence where a
 conversation used to be.
 
+**The noticing.** Once, late in this chapter, one person looks directly at the
+player and speaks to them — Ann Putnam Jr. is the candidate. The player has been
+invisible for two chapters and is still unable to act; that is the point. The
+helplessness stops being a UI constraint and becomes the payload. Build exactly
+one of these. A second would make it a mechanic instead of a rupture.
+
 ### Present · ≈ 3 min — The memorial
 
 A descendant with ancestors on both sides of it — one hanged, one who signed the
@@ -219,7 +225,14 @@ curious student can chase them.
 
 - **The player is an observer and cannot act** — No mechanic in which the player
   accuses anyone, even as a "choice." These were real people who were killed. It
-  also dodges every time-travel paradox a clever sixteen-year-old will raise.
+  also dodges every time-travel paradox a clever sixteen-year-old will raise. The
+  September noticing does not weaken this: being seen is not being able to help.
+- **Violence is carried by testimony, never depicted** — Giles Corey's pressing,
+  Dorothy Good in irons, the beating that produced Tituba's confession: the player
+  learns each of these because a person tells them, flatly, standing in a kitchen.
+  Nothing violent renders on screen. This is not squeamishness — the surviving
+  records *are* testimony, so hearsay-at-one-remove is the historically honest
+  form. It also happens to be the version that survives a parent email.
 - **Two palettes, one map** — 1692 in cold greys and muted earth; the present
   warmer and more saturated. Same geography in both eras so the locations rhyme —
   meetinghouse to memorial, parsonage to dig site.
@@ -233,25 +246,31 @@ curious student can chase them.
   and this game is 95% dialogue.
 - **An exit artifact for the teacher** — The player's final answer, exportable as
   plain text they can paste into an assignment. Without it this is a fun thirty
-  minutes with no assessment hook. If a DBQ is wanted, it happens afterward on
-  paper — the game is the research phase.
+  minutes with no assessment hook. Scoped to **general US History**: a plain
+  claim-plus-evidence paragraph that rewards sourcing and causal weighting, not
+  AP rubric point-counting. If a DBQ is wanted, it happens afterward on paper —
+  the game is the research phase.
+- **One pass, four threads in parallel** — All four causal threads are reachable
+  in a single ~30 min run. Fits one class period, and every student arrives at
+  discussion having seen the same evidence base — so they differ on *weighting*,
+  which is the argument worth having. No thread may be gated behind a replay.
 
 ---
 
-## Open questions for the next conversation
+## Decisions
 
-1. **Does the player character have a stake, or are they a ghost?** A silent
-   observer works. But "a kid from now who keeps coming back and can't change
-   anything" gains real weight by September — especially if someone in 1692
-   starts to notice them.
-2. **Is this APUSH specifically, or general US History?** Changes whether the
-   ending anchors to the AP DBQ rubric or stays looser and prioritizes sourcing
-   over point-counting.
-3. **How dark does it go?** Giles Corey pressed to death, four-year-old Dorothy
-   Good in irons, Tituba's coerced confession. These are the moments that land
-   hardest and also the ones that draw complaints.
-4. **One playthrough or several?** Decides whether the four causal threads run
-   parallel in a single pass or nest across replays.
+1. **Player stake — someone notices you.** Pure observer through March and June.
+   One rupture in September, and only one. See the Sept 1692 beat.
+2. **Course — general US History.** The ending prioritizes sourcing and causal
+   weighting over AP rubric points. Exit artifact is a claim-plus-evidence
+   paragraph.
+3. **Intensity — aftermath and testimony.** Nothing violent depicted on screen;
+   every atrocity arrives as something a person tells you.
+4. **Structure — single pass, threads parallel.** No causal thread gated behind
+   a replay.
+
+### Still open
+
 5. **What is it called?** No working title yet.
 
 ---
