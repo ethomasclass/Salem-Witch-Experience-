@@ -7,7 +7,8 @@ and travel forward occasionally to ask historians what you just saw.
 You cannot change anything. You walk around, talk to people, notice things,
 and go home.
 
-The full design is in [`docs/DESIGN.md`](docs/DESIGN.md).
+The design is in [`docs/DESIGN.md`](docs/DESIGN.md); the plan for the
+unbuilt chapters is in [`docs/OUTLINE.md`](docs/OUTLINE.md).
 
 ---
 
@@ -58,9 +59,11 @@ playable.** The remaining chapters are designed but not built.
 
 ### What is not built yet
 
-June 1692, September 1692, and the three present-day interludes. The player
-character is currently a pure observer; the single "noticing" moment belongs
-to the September chapter. No portrait mood variants are in use yet.
+June 1692, September 1692, and the three present-day interludes — all
+outlined in [`docs/OUTLINE.md`](docs/OUTLINE.md), with a build order. The
+player character is currently a pure observer; the single "noticing" moment
+belongs to the September chapter. No portrait mood variants are in use yet,
+and the document-collection mechanic is designed but not implemented.
 
 ---
 

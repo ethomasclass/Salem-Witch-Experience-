@@ -333,6 +333,24 @@ formally. That is characterisation as well as readability.
 
 ---
 
+## The rest of the game
+
+The full chapter-by-chapter outline — including the document-collection
+mechanic and the build order — is in [`OUTLINE.md`](OUTLINE.md).
+
+Two decisions from it that change rules set above:
+
+- **Documents become a collection**, but the player copies rather than takes,
+  and every one is knowledge-gated like a conversation topic. Fifteen real
+  sources across the whole game. This is the doc's own "reserve physical
+  documents for the two or three things that only work as objects", scaled
+  from one chapter to five.
+- **The player may try to warn Rebecca Nurse** in the June jail scene — and
+  she does not believe them. This is the "cannot act" rule paying off as
+  drama rather than as a locked door, and it needs no time-travel mechanism.
+
+---
+
 ## Decisions
 
 0. **Open in the present, at the memorial.** ~3 min chapter zero. See the
