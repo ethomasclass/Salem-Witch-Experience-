@@ -23,6 +23,14 @@ import { MAPS } from './content/maps.js';
 import { NPCS } from './content/npcs.js';
 import { CLUES, benchScript } from './content/clues.js';
 import { notebookEntries, sourceName, KNOWLEDGE } from './content/knowledge.js';
+import { PORTRAIT_ART } from './content/portraits.js';
+
+// Which chapters wear the hardened faces. March is the only time the player
+// meets these people before anything has happened to them.
+const HARD_CHAPTERS = new Set(['june', 'archive', 'september', 'reckoning']);
+
+// Cast entries that are the same person in different clothes.
+const PORTRAIT_ALIAS = { titubaJail: 'tituba', nurseJail: 'nurse' };
 
 const MOVE_TIME = 0.16;      // seconds per tile
 const REVEAL_CPS = 55;       // typewriter speed
@@ -49,6 +57,7 @@ class Game {
     this.titleIndex = 0;
     this.maps = {};
     this.portraits = new Map();
+    this.drawnPortraits = new Map();
     this.toast = { text: '', t: 0 };
     this.notebookScroll = 0;
     this.docScroll = 0;
@@ -60,6 +69,7 @@ class Game {
     this.answerText = '';
 
     initArt();
+    this.loadPortraits();
     this.playerFrames = buildActor(PLAYER_SPEC);
 
     this.player = {
@@ -113,12 +123,60 @@ class Game {
     };
   }
 
+  /**
+   * The face in the dialogue box.
+   *
+   * Drawn art if we have it for this character and mood, procedural art
+   * otherwise. The fallback is not a nicety: a portrait that fails to decode
+   * would otherwise be a black rectangle in front of a class, and every
+   * character still has a generated face that agrees with their sprite.
+   *
+   * Mood is the chapter. Everyone the player meets again after March has had
+   * three months of this happen to them, and the face should say so before
+   * the dialogue does.
+   */
   portraitFor(npcId) {
-    if (!this.portraits.has(npcId)) {
-      const def = NPCS[npcId];
-      this.portraits.set(npcId, def ? buildPortrait(def.spec, 'neutral') : null);
+    const mood = HARD_CHAPTERS.has(this.state.chapter) ? 'hard' : 'neutral';
+    const key = `${npcId}:${mood}`;
+    if (this.portraits.has(key)) return this.portraits.get(key);
+
+    // The jail versions of Tituba and Rebecca Nurse are separate cast entries
+    // because their clothing changes, but they are the same two faces.
+    const artId = PORTRAIT_ALIAS[npcId] || npcId;
+    const drawn = this.drawnPortraits.get(`${artId}-${mood}`)
+               || this.drawnPortraits.get(`${artId}-neutral`);
+    if (drawn) { this.portraits.set(key, drawn); return drawn; }
+
+    const def = NPCS[npcId];
+    const built = def ? buildPortrait(def.spec, mood) : null;
+    this.portraits.set(key, built);
+    return built;
+  }
+
+  /**
+   * Decode the drawn portraits once at boot.
+   *
+   * They are data URIs compiled into the bundle, so this never touches the
+   * network and cannot be blocked by a school filter — but decoding is still
+   * async, so until each one lands the procedural face stands in. Nothing
+   * waits on this and nothing breaks if it never finishes.
+   */
+  loadPortraits() {
+    this.drawnPortraits = new Map();
+    for (const [key, uri] of Object.entries(PORTRAIT_ART)) {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        const g = c.getContext('2d');
+        g.imageSmoothingEnabled = false;
+        g.drawImage(img, 0, 0);
+        this.drawnPortraits.set(key, { canvas: c, w: c.width, h: c.height });
+        this.portraits.clear();       // re-resolve anything already cached
+      };
+      img.onerror = () => {};          // procedural portrait stands in
+      img.src = uri;
     }
-    return this.portraits.get(npcId);
   }
 
   resize() {
@@ -809,6 +867,12 @@ class Game {
         lines.push('');
       });
     }
+
+    lines.push('---------------------------------------------', '');
+    lines.push('A note on the pictures: no likeness survives of anyone in this');
+    lines.push('story. The character portraits were generated with AI and');
+    lines.push('hand-quantized to the game\'s palette. They are inventions, not');
+    lines.push('evidence.', '');
 
     if (!this.state.answer) {
       lines.push('---------------------------------------------');

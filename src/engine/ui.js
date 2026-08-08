@@ -799,5 +799,15 @@ export function drawTitle(g, view, s, hasSave, index) {
   g.font = `${10 * s}px system-ui, sans-serif`;
   g.fillStyle = '#5c626b';
   g.fillText('Arrow keys or WASD to move  ·  Z / Space to talk  ·  N for notebook',
-             view.x + view.w / 2, view.y + view.h - 22 * s);
+             view.x + view.w / 2, view.y + view.h - 32 * s);
+
+  // Said out loud, on the first screen, because this game spends half an hour
+  // teaching students to ask where a source came from. No likeness survives
+  // of anyone here — not Tituba, not Rebecca Nurse, not Ann Putnam — so every
+  // face in it is an invention, and it would be incoherent to quietly present
+  // invented faces as real people in a game about evidence.
+  g.font = `${9 * s}px system-ui, sans-serif`;
+  g.fillStyle = '#4a4f57';
+  g.fillText('No portrait survives of anyone in this story. Every face here is imagined.',
+             view.x + view.w / 2, view.y + view.h - 16 * s);
 }

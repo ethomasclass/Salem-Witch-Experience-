@@ -32,3 +32,23 @@ source. If a face needs redoing later you want the 1024px original, not a
 versions into the bundle; nothing in this folder ships to a student.
 
 The prompts that produced them are in `docs/PORTRAIT-PROMPTS.md`.
+
+---
+
+## Building
+
+```sh
+node tools/build-portraits.mjs             # writes src/content/portraits.js
+node tools/build-portraits.mjs --contact   # also a 4x contact sheet
+node tools/build-portraits.mjs --raw       # skip the palette quantize, to compare
+```
+
+The tool downsamples 2048 -> 64 by repeated halving (a single drawImage that
+big makes Chromium pick a cheap filter and the face turns to porridge), then
+snaps every pixel to that character's own ramps from `npcs.js` using a
+luminance-weighted match. Output lands as data URIs in
+`src/content/portraits.js`, about 3 KB per face.
+
+Which mood shows is decided by chapter, in `main.js`: `neutral` in the
+memorial and March, `hard` from June on. `titubaJail` and `nurseJail` are
+separate cast entries but the same two faces, so they alias.
