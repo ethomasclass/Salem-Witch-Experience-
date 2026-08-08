@@ -421,9 +421,13 @@ export const NPCS = {
         if: { chapter: 'september' },
         then: [
           { say: 'She is by the window. She has been twelve years old for six months.', who: null },
-          { say: 'She looks at you, and keeps looking, in a way nobody in this village has looked at you since March.', who: null },
+          { say: 'She looks at you, and keeps looking, in a way nobody in this village has looked at you before.', who: null },
           'Have you been here before?',
-          { say: 'You have. Three times. She has never once been able to see you properly until now.', who: null },
+          {
+            if: { metBefore: ['annjr'] },
+            then: [{ say: 'You have. You stood in this room in March and she told you her mother was unwell. She has never once been able to see you properly until now.', who: null }],
+            else: [{ say: 'You have. Not in this room, and never in front of her. She should have no idea. She is looking at you anyway.', who: null }],
+          },
           { say: 'There is no answer you can give her. There is no option here to choose.', who: null },
           { learn: 'sept.noticed' },
           { say: 'She waits.', who: null },
@@ -794,6 +798,14 @@ export const NPCS = {
         if: { chapter: 'september' },
         then: [
           { say: 'The room is empty in the middle of the day. He is wiping something that is already clean.', who: null },
+          {
+            if: { metBefore: ['ingersoll'] },
+            then: [
+              'You were in here in March. The room was full and I was glad of it.',
+              { say: 'He does not look up.', who: null },
+            ],
+            else: [],
+          },
           'Sit anywhere.',
           { say: 'There is nobody to sit near.', who: null },
         ],
@@ -1037,7 +1049,16 @@ export const NPCS = {
           { say: 'He says it before you ask.', who: null },
           'Everyone who comes up that path is coming to ask me where my wife is, so I have got into the habit of saying it first.',
         ],
-        else: ['Still here.'],
+        else: [
+          {
+            if: { chapter: 'september', metBefore: ['francis'] },
+            then: [
+              'You were here in June, asking after her.',
+              { say: 'He does not finish the thought. There is nothing to finish it with.', who: null },
+            ],
+            else: ['Still here.'],
+          },
+        ],
       },
     ],
     topics: [
@@ -1109,9 +1130,21 @@ export const NPCS = {
         then: [
           { say: 'The cell is a cellar with a grate in it. The floor is stone and there is straw on the stone.', who: null },
           { say: 'She is sitting against the wall. She gets up anyway.', who: null },
-          'Well. I did not expect you.',
-          { say: 'She sounds pleased. That is the worst part.', who: null },
-          'Come where I can see you. My eyes are no better than they were.',
+          {
+            // Whether she knows you is decided three chapters ago, in a
+            // kitchen, by a player who had no reason yet to bother.
+            if: { metBefore: ['nurse'] },
+            then: [
+              'Well. I did not expect you.',
+              { say: 'She sounds pleased. That is the worst part.', who: null },
+              'You came to the house in the spring. I remember. Come where I can see you — my eyes are no better than they were.',
+            ],
+            else: [
+              { say: 'She looks at you the way you would look at anyone who had come a long way to stare.', who: null },
+              'I do not know your face.',
+              'Well. Come where I can see it, then. My eyes are not what they were.',
+            ],
+          },
         ],
         else: ['You came back.'],
       },
@@ -1191,9 +1224,19 @@ export const NPCS = {
       {
         if: { notSpokenTo: ['titubaJail'] },
         then: [
-          { say: 'She is further down the same cellar. She recognises you.', who: null },
-          'You.',
-          'You were in that kitchen in March, standing where you were not underfoot.',
+          {
+            if: { metBefore: ['tituba'] },
+            then: [
+              { say: 'She is further down the same cellar. She recognises you.', who: null },
+              'You.',
+              'You were in that kitchen in March, standing where you were not underfoot.',
+            ],
+            else: [
+              { say: 'She is further down the same cellar. She does not know you and does not pretend to.', who: null },
+              'Another one come to look.',
+              { say: 'She goes back to what she was doing, which is nothing.', who: null },
+            ],
+          },
           { say: 'She has been in this room since the first of March.', who: null },
         ],
         else: ['Still here. So am I.'],

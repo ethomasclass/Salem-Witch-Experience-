@@ -19,6 +19,9 @@
 
 const SAVE_KEY = 'salem1692.save.v1';
 
+// Chapters in order, for asking whether something happened before now.
+const CHAPTER_ORDER = ['memorial', 'march', 'dig', 'june', 'archive', 'september', 'reckoning'];
+
 export class GameState {
   constructor() {
     this.flags = new Map();        // flag -> { source, chapter, at }
@@ -26,9 +29,20 @@ export class GameState {
     this.docs = new Map();         // doc id -> { chapter, at }
     this.answer = '';              // the player's final answer, never graded
     this.talkedTo = new Set();     // npc ids the player has spoken with
+    // Which chapter each of them was FIRST spoken to in. `talkedTo` alone
+    // cannot answer "did you know me before all this", because by June it
+    // is true whether the player met them in March or thirty seconds ago.
+    this.metIn = new Map();        // npc id -> chapter of first meeting
     this.lastSpoke = null;         // most recent npc id
     this.visited = new Set();      // map ids
     this.finalAnswer = '';
+
+    // Disputes the game has already pointed out, so it says it once and
+    // then shuts up, and the position the player has taken on each. A
+    // position is never scored and never has to be given — it exists so the
+    // exported notes can be an argument rather than an inventory.
+    this.disputesSeen = new Set();   // dispute ids already announced
+    this.positions = new Map();      // dispute id -> 'a' | 'b' | 'unsure'
   }
 
   /** Record a piece of knowledge. `source` is an npc id, a prop id, or
@@ -36,6 +50,10 @@ export class GameState {
   learn(flag, source = 'observed') {
     if (this.flags.has(flag)) return false;
     this.flags.set(flag, { source, chapter: this.chapter, at: Date.now() });
+    // The engine must not know what a dispute is — that is content. It just
+    // reports that something genuinely new landed, and lets the game layer
+    // decide whether it matters.
+    if (this.onRecord) this.onRecord(flag);
     return true;
   }
 
@@ -63,6 +81,7 @@ export class GameState {
   copyDoc(id) {
     if (this.docs.has(id)) return false;
     this.docs.set(id, { chapter: this.chapter, at: Date.now() });
+    if (this.onRecord) this.onRecord(`doc:${id}`);
     return true;
   }
 
@@ -75,11 +94,37 @@ export class GameState {
   }
 
   markSpoke(npcId) {
+    if (!this.metIn.has(npcId)) this.metIn.set(npcId, this.chapter);
     this.talkedTo.add(npcId);
     this.lastSpoke = npcId;
   }
 
   hasSpokenTo(npcId) { return this.talkedTo.has(npcId); }
+
+  /** True when the player met this character in an earlier chapter than the
+   *  one they are standing in now. This is what makes March retroactively
+   *  matter: the people you bothered to talk to then know you now. */
+  metBefore(npcId) {
+    const then = this.metIn.get(npcId);
+    if (!then) return false;
+    const i = CHAPTER_ORDER.indexOf(then), j = CHAPTER_ORDER.indexOf(this.chapter);
+    return i >= 0 && j >= 0 && i < j;
+  }
+
+  /** True the first time a given dispute is raised. */
+  noteDispute(id) {
+    if (this.disputesSeen.has(id)) return false;
+    this.disputesSeen.add(id);
+    return true;
+  }
+
+  /** Record, clear, or read which side the player finds more credible. */
+  setPosition(id, side) {
+    if (side === null) this.positions.delete(id);
+    else this.positions.set(id, side);
+  }
+
+  positionOn(id) { return this.positions.get(id) || null; }
 
   /** Everything the player knows, newest first — backs the notebook screen
    *  and the end-of-game export. */
@@ -99,8 +144,11 @@ export class GameState {
       docs: [...this.docs.entries()],
       answer: this.answer,
       talkedTo: [...this.talkedTo],
+      metIn: [...this.metIn.entries()],
       visited: [...this.visited],
       finalAnswer: this.finalAnswer,
+      disputesSeen: [...this.disputesSeen],
+      positions: [...this.positions.entries()],
       player: player ? { map: player.map, x: player.tx, y: player.ty, dir: player.dir } : null,
     });
   }
@@ -130,8 +178,13 @@ export class GameState {
     s.docs = new Map(data.docs || []);
     s.answer = data.answer || '';
     s.talkedTo = new Set(data.talkedTo || []);
+    // A save from before metIn existed still loads; those characters simply
+    // do not recognise the player, which is the safe way to be wrong.
+    s.metIn = new Map(data.metIn || []);
     s.visited = new Set(data.visited || []);
     s.finalAnswer = data.finalAnswer || '';
+    s.disputesSeen = new Set(data.disputesSeen || []);
+    s.positions = new Map(data.positions || []);
     return { state: s, player: data.player || null };
   }
 

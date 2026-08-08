@@ -273,7 +273,31 @@ export const VILLAGE = {
       ],
       addProps: [
         { kind: 'paper', x: 30, y: 30 },
+        // What is left behind rather than what is gone. A cart standing in
+        // the road with nobody loading it, and hay nobody is going to need,
+        // because the household that cut it is in Salem jail or scattered.
+        { kind: 'cart', x: 20, y: 17 },
+        { kind: 'hayrick', x: 35, y: 19 },
       ],
+
+      // Half the livestock is gone.
+      //
+      // This is the sheriff's inventory, told without a document: five cows,
+      // a yoke of oxen, the hay, the beds. A player who has copied that page
+      // and then walks past an empty pen has been told the same thing twice,
+      // and the second time nobody had to say it.
+      //
+      // Deliberately half and not all — a village with no animals at all
+      // reads as abandoned, and Salem Village in September 1692 was not
+      // abandoned. It was still there, with a fifth of it missing.
+      hideProps: [
+        { kind: 'pig', x: 26, y: 18 }, { kind: 'pig', x: 27, y: 19 },
+        { kind: 'cow', x: 39, y: 14 },
+        { kind: 'sheep', x: 19, y: 27 }, { kind: 'sheep', x: 21, y: 28 },
+        { kind: 'chicken', x: 12, y: 30 }, { kind: 'chicken', x: 14, y: 31 },
+        { kind: 'cart', x: 28, y: 18 },
+      ],
+
       // Almost nobody. No locked doors, no gates — just an empty road.
       npcs: [
         { id: 'francis', x: 7, y: 16, dir: 'down' },

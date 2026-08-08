@@ -14,6 +14,7 @@ import { buildActor, buildPortrait, PLAYER_SPEC, SPR_H } from './engine/art-acto
 import {
   dialogueLayout, drawDialogue, drawChoices, drawNotebook, drawTitle, drawToast,
   drawObjective, drawReader, drawDocTab, drawNotebookTabs, drawAnswer, drawPrompt, drawWayfinder,
+  drawDisputeTab,
   wrapText,
 } from './engine/ui.js';
 import { Audio } from './engine/audio.js';
@@ -22,8 +23,9 @@ import { DOCUMENTS, DOC_COUNT, FIDELITY_LABEL } from './content/documents.js';
 import { MAPS } from './content/maps.js';
 import { NPCS } from './content/npcs.js';
 import { CLUES, benchScript } from './content/clues.js';
-import { notebookEntries, sourceName, KNOWLEDGE } from './content/knowledge.js';
+import { notebookEntries, sourceName, shortSourceName, KNOWLEDGE } from './content/knowledge.js';
 import { PORTRAIT_ART } from './content/portraits.js';
+import { DISPUTES, activeDisputes, disputeCompletedBy, sideSourceOf } from './content/disputes.js';
 
 // Which chapters wear the hardened faces. March is the only time the player
 // meets these people before anything has happened to them.
@@ -58,6 +60,7 @@ class Game {
     this.audio = new Audio();
     this.state = new GameState();
     this.runner = new DialogueRunner(this.state);
+    this.bindState();
 
     this.mode = 'title';
     this.titleIndex = 0;
@@ -71,6 +74,8 @@ class Game {
     this.convNpc = null;
     this.objFlash = 0;
     this.moveHeld = 0;          // seconds of unbroken walking, for auto-run
+    this.pendingDispute = null; // a contradiction waiting for a gap to speak in
+    this.disputeSel = 0;
     this.lastStepId = null;
     this.reader = null;         // the document currently open
     this.answerText = '';
@@ -207,6 +212,7 @@ class Game {
     if (!fresh && this.saved) {
       this.state = this.saved.state;
       this.runner = new DialogueRunner(this.state);
+      this.bindState();
       const p = this.saved.player;
       if (p && MAPS[p.map]) {
         this.player.map = p.map;
@@ -218,6 +224,7 @@ class Game {
       GameState.clear();
       this.state = new GameState();
       this.runner = new DialogueRunner(this.state);
+      this.bindState();
       this.player.map = 'memorial';
       this.setTile(13, 25);
       this.player.dir = 'up';
@@ -296,11 +303,48 @@ class Game {
 
   endConversation() {
     const npc = this.convNpc;
+
+    // A contradiction is worth interrupting for, but not worth interrupting
+    // mid-sentence. It waits until the conversation that produced it is
+    // over, then the person in front of you says it, and the notebook keeps
+    // it from then on.
+    if (this.pendingDispute) {
+      const d = this.pendingDispute;
+      this.pendingDispute = null;
+      const speaker = npc ? { id: npc.id, name: npc.name, spec: npc.def.spec } : null;
+      this.startScript([
+        { say: d.line, who: speaker ? npc.name : null },
+        { say: `Both accounts are in your notebook now, marked as disagreeing. The game is not going to tell you which one is true.`, who: null },
+      ], speaker, () => { this.finishConversation(); });
+      this.showToast('Your sources disagree');
+      return;
+    }
+    this.finishConversation();
+  }
+
+  finishConversation() {
+    const npc = this.convNpc;
     if (npc) { npc.dir = npc.homeDir; npc.dirIndex = DIR_INDEX[npc.homeDir]; }
     this.convNpc = null;
     this.mode = 'play';
     this.dlg = null;
     this.save();
+  }
+
+  /**
+   * Called by GameState whenever a genuinely new flag or document lands.
+   *
+   * Only the second half of a pair triggers anything, so the game points at
+   * a disagreement once — at the moment it becomes a disagreement — and then
+   * never mentions it again.
+   */
+  onRecord(key) {
+    const d = disputeCompletedBy(this.state, key);
+    if (d && this.state.noteDispute(d.id)) this.pendingDispute = d;
+  }
+
+  bindState() {
+    this.state.onRecord = (key) => this.onRecord(key);
   }
 
   /** Rebuild the paginated view whenever the runner produces a new line. */
@@ -442,7 +486,7 @@ class Game {
     }
     // Memorial benches are generated from their inscription data rather than
     // hand-written twenty times over.
-    const script = spot.bench ? benchScript(spot.bench) : CLUES[spot.id];
+    const script = spot.bench ? benchScript(spot.bench, this.state) : CLUES[spot.id];
     if (!script) return;
 
     const before = this.state.flags.size;
@@ -616,11 +660,39 @@ class Game {
 
     if (this.mode === 'notebook') {
       if (inp.justPressed('cancel') || inp.justPressed('notebook')) this.mode = 'play';
-      if (inp.justPressed('left') || inp.justPressed('right')) {
-        this.notebookTab = 1 - this.notebookTab;
+      if (inp.justPressed('left')) {
+        this.notebookTab = (this.notebookTab + 2) % 3;
         this.notebookScroll = 0;
         this.audio.menuMove();
       }
+      if (inp.justPressed('right')) {
+        this.notebookTab = (this.notebookTab + 1) % 3;
+        this.notebookScroll = 0;
+        this.audio.menuMove();
+      }
+
+      // On the disputes tab the arrows move a cursor rather than scrolling
+      // freely, because 1/2/3 have to apply to something specific.
+      if (this.notebookTab === 2) {
+        const list = activeDisputes(this.state);
+        if (list.length) {
+          if (inp.justPressed('down')) { this.disputeSel = Math.min(list.length - 1, this.disputeSel + 1); this.audio.menuMove(); }
+          if (inp.justPressed('up')) { this.disputeSel = Math.max(0, this.disputeSel - 1); this.audio.menuMove(); }
+          const d = list[Math.min(this.disputeSel, list.length - 1)];
+          const pick = (side) => {
+            // Pressing the same key again clears it. A student who changes
+            // their mind should not be stuck with their first instinct.
+            this.state.setPosition(d.id, this.state.positionOn(d.id) === side ? null : side);
+            this.audio.menuPick();
+            this.save();
+          };
+          if (inp.justPressed('pos1')) pick('a');
+          if (inp.justPressed('pos2')) pick('b');
+          if (inp.justPressed('pos3')) pick('unsure');
+        }
+        return;
+      }
+
       if (inp.isDown('down')) this.notebookScroll += 300 * dt;
       if (inp.isDown('up')) this.notebookScroll -= 300 * dt;
       // maxScroll comes back from the last draw, so clamp against that.
@@ -801,13 +873,19 @@ class Game {
       if (this.notebookTab === 0) {
         this.notebookMax = drawNotebook(
           g, v, s, notebookEntries(this.state), this.notebookScroll, sourceName) || 0;
-      } else {
+      } else if (this.notebookTab === 1) {
         // Draw the shell, then the document list in place of the entries.
         drawNotebook(g, v, s, [], 0, sourceName);
         const docs = this.state.docLog().map((d) => DOCUMENTS[d.id]).filter(Boolean);
         this.notebookMax = drawDocTab(g, v, s, docs, this.notebookScroll, DOC_COUNT) || 0;
+      } else {
+        const list = activeDisputes(this.state);
+        this.disputeSel = Math.min(this.disputeSel, Math.max(0, list.length - 1));
+        this.notebookMax = drawDisputeTab(
+          g, v, s, list, this.state, this.notebookScroll, this.disputeSel, shortSourceName) || 0;
       }
-      drawNotebookTabs(g, v, s, this.notebookTab, this.state.docs.size, DOC_COUNT);
+      drawNotebookTabs(g, v, s, this.notebookTab, this.state.docs.size, DOC_COUNT,
+                       activeDisputes(this.state).length);
     }
 
     if (this.mode === 'reader' && this.reader) {
@@ -886,6 +964,25 @@ class Game {
       });
     }
 
+    const disputes = activeDisputes(this.state);
+    if (disputes.length) {
+      lines.push('---------------------------------------------', '');
+      lines.push(`WHERE MY SOURCES DISAGREED  (${disputes.length})`, '');
+      disputes.forEach((d, i) => {
+        const a = shortSourceName(d.a.startsWith('doc:') ? 'document' : this.state.sourceOf(d.a));
+        const b = shortSourceName(d.b.startsWith('doc:') ? 'document' : this.state.sourceOf(d.b));
+        const pos = this.state.positionOn(d.id);
+        lines.push(`${i + 1}. ${d.claim}`);
+        lines.push(`   ${a}: ${d.sideA}`);
+        lines.push(`   ${b}: ${d.sideB}`);
+        lines.push(pos === 'a' ? `   I find ${a} more credible.`
+                 : pos === 'b' ? `   I find ${b} more credible.`
+                 : pos === 'unsure' ? '   I cannot tell which of these is true.'
+                 : '   I did not decide.');
+        lines.push('');
+      });
+    }
+
     lines.push('---------------------------------------------', '');
     lines.push('A note on the pictures: no likeness survives of anyone in this');
     lines.push('story. The character portraits were generated with AI and');
@@ -916,6 +1013,10 @@ window.__wrapText = wrapText;
 window.__DOCUMENTS = DOCUMENTS;
 window.__FIDELITY = FIDELITY_LABEL;
 window.__readerMetrics = () => drawReader.metrics;
+window.__benchScript = benchScript;
+window.__DISPUTES = DISPUTES;
+window.__MAPS = MAPS;
+window.__activeDisputes = activeDisputes;
 
 const pad = document.getElementById('touch');
 if (pad) {

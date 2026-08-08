@@ -577,24 +577,165 @@ export function drawDocTab(g, view, s, docs, scroll, total) {
   return Math.max(0, contentH - (bottom - top));
 }
 
-/** The two tabs across the top of the notebook. */
-export function drawNotebookTabs(g, view, s, tab, docCount, docTotal) {
+/**
+ * The disputes tab: where the sources disagree, and what the player makes
+ * of it.
+ *
+ * This is the one screen in the game that asks the player for a judgement,
+ * and it is deliberately the smallest possible version of that: two
+ * accounts, who said each, and three keys. Nothing is scored, nothing is
+ * required, and "not sure" is a real answer that survives into the export —
+ * because "the sources conflict and I can't resolve it" is a legitimate
+ * finding and a student should be able to say it.
+ *
+ * @param sel  index of the highlighted dispute, for the position keys
+ */
+export function drawDisputeTab(g, view, s, disputes, state, scroll, sel, sourceName) {
+  g.fillStyle = 'rgba(12,12,16,0.72)';
+  g.fillRect(view.x, view.y, view.w, view.h);
+
   const bx = view.x + 20 * s, by = view.y + 20 * s;
-  const labels = ['What I was told', `What I copied down   ${docCount}/${docTotal}`];
-  g.font = `600 ${9 * s}px system-ui, sans-serif`;
+  const bw = view.w - 40 * s, bh = view.h - 40 * s;
+  panel(g, bx, by, bw, bh, s);
+
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+  g.font = `700 ${13 * s}px Georgia, serif`;
+  g.fillStyle = P.boxInk;
+  g.fillText('Where my sources disagree', bx + 18 * s, by + 14 * s);
+
+  const top = by + 54 * s;
+  const bottom = by + bh - 20 * s;
+
+  g.strokeStyle = 'rgba(58,54,48,0.35)';
+  g.lineWidth = 1;
+  g.beginPath();
+  g.moveTo(bx + 18 * s, top - 8 * s);
+  g.lineTo(bx + bw - 18 * s, top - 8 * s);
+  g.stroke();
+
+  if (!disputes.length) {
+    g.font = `italic ${11 * s}px Georgia, serif`;
+    g.fillStyle = P.boxDim;
+    for (const [i, line] of [
+      'Nothing here yet.',
+      'When two people tell you different things about the same event,',
+      'both accounts land here and you can say which one you believe.',
+    ].entries()) {
+      g.fillText(line, bx + 18 * s, top + 6 * s + i * 15 * s);
+    }
+    return 0;
+  }
+
+  g.save();
+  g.beginPath();
+  g.rect(bx + 8 * s, top - 4 * s, bw - 16 * s, bottom - top + 4 * s);
+  g.clip();
+
+  const colW = bw - 56 * s;
+  let y = top - scroll;
+  let contentH = 0;
+
+  disputes.forEach((d, i) => {
+    const chosen = state.positionOn(d.id);
+    const a = sourceName(sideSourceOfSafe(state, d.a));
+    const b = sourceName(sideSourceOfSafe(state, d.b));
+
+    g.font = `600 ${11 * s}px Georgia, serif`;
+    const cLines = wrapText(g, d.claim, colW - 10 * s);
+    g.font = `${9.5 * s}px Georgia, serif`;
+    const aLines = wrapText(g, d.sideA, colW - 16 * s);
+    const bLines = wrapText(g, d.sideB, colW - 16 * s);
+    const blockH = (cLines.length * 13 + 4 + (aLines.length + bLines.length) * 12 + 28 + 22) * s;
+
+    if (y + blockH > top - 30 * s && y < bottom + 30 * s) {
+      if (i === sel) {
+        g.fillStyle = 'rgba(125,63,44,0.09)';
+        g.fillRect(bx + 12 * s, y - 4 * s, bw - 24 * s, blockH - 4 * s);
+      }
+      g.font = `600 ${11 * s}px Georgia, serif`;
+      g.fillStyle = P.boxInk;
+      let ty = y;
+      for (const l of wrapText(g, d.claim, colW - 10 * s)) { g.fillText(l, bx + 30 * s, ty); ty += 13 * s; }
+      g.fillStyle = P.accent;
+      g.fillRect(bx + 20 * s, y + 4 * s, 4 * s, 4 * s);
+
+      let ly = ty + 4 * s;
+      const side = (lines, who, key) => {
+        const picked = chosen === key;
+        g.fillStyle = picked ? P.accent : P.boxDim;
+        g.font = `600 ${8 * s}px system-ui, sans-serif`;
+        g.fillText(picked ? `▸ ${who}` : who, bx + 30 * s, ly);
+        ly += 11 * s;
+        g.font = `${9.5 * s}px Georgia, serif`;
+        g.fillStyle = picked ? P.boxInk : '#5f5a50';
+        for (const l of lines) { g.fillText(l, bx + 38 * s, ly); ly += 12 * s; }
+        ly += 3 * s;
+      };
+      side(aLines, a, 'a');
+      side(bLines, b, 'b');
+
+      g.font = `${8 * s}px system-ui, sans-serif`;
+      g.fillStyle = chosen === 'unsure' ? P.accent : P.boxDim;
+      const verdict = chosen === 'a' ? `You find ${a} more credible.`
+                    : chosen === 'b' ? `You find ${b} more credible.`
+                    : chosen === 'unsure' ? 'You cannot tell which of these is true.'
+                    : i === sel ? '1 / 2 / 3 to say which you believe' : '—';
+      g.fillText(verdict, bx + 30 * s, ly);
+    }
+    y += blockH;
+    contentH += blockH;
+  });
+  g.restore();
+
+  g.font = `${8 * s}px system-ui, sans-serif`;
+  g.fillStyle = P.boxDim;
+  g.fillText('↑↓ move · 1 first account · 2 second · 3 cannot tell',
+             bx + 18 * s, by + bh - 16 * s);
+
+  return Math.max(0, contentH - (bottom - top));
+}
+
+// Kept local so ui.js does not have to import from content/.
+function sideSourceOfSafe(state, key) {
+  return key.startsWith('doc:') ? 'document' : state.sourceOf(key);
+}
+
+/** The tabs across the top of the notebook. */
+export function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount) {
+  const bx = view.x + 20 * s, by = view.y + 20 * s;
+  const labels = [
+    'What I was told',
+    `What I copied down   ${docCount}/${docTotal}`,
+    disputeCount ? `Where they disagree  ${disputeCount}` : 'Where they disagree',
+  ];
+  // Three tabs have to fit inside the panel. Close the gaps first, then
+  // shrink the type, and measure rather than guessing — the labels carry
+  // counts that change width as the player collects things.
+  const bw = view.w - 40 * s;
+  const avail = bw - 36 * s;
+  let size = 9, widths = [], total = 0, gap = 0;
+  for (; size >= 6; size -= 0.25) {
+    g.font = `600 ${size * s}px system-ui, sans-serif`;
+    widths = labels.map((l) => g.measureText(l).width);
+    total = widths.reduce((n, w) => n + w, 0);
+    gap = (avail - total) / (labels.length - 1);
+    if (gap >= 9 * s) break;
+  }
+  gap = Math.max(6 * s, Math.min(24 * s, gap));
+
   g.textAlign = 'left';
   g.textBaseline = 'top';
   let x = bx + 18 * s;
-  const y = by + 30 * s;
+  const y = by + 32 * s;
   labels.forEach((label, i) => {
-    const w = g.measureText(label).width;
     g.fillStyle = i === tab ? P.boxInk : P.boxDim;
     g.fillText(label, x, y);
     if (i === tab) {
       g.fillStyle = P.accent;
-      g.fillRect(x, y + 13 * s, w, 2 * s);
+      g.fillRect(x, y + 12 * s, widths[i], 2 * s);
     }
-    x += w + 26 * s;
+    x += widths[i] + gap;
   });
 }
 

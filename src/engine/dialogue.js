@@ -14,7 +14,8 @@
 //   { choice: [ { label, require, then } ] }
 //   { end: true }                    stop early
 //
-// Condition objects accept: knows: [], notKnows: [], spokenTo: [], chapter.
+// Condition objects accept: knows: [], notKnows: [], spokenTo: [], metBefore: [],
+// notMetBefore: [], chapter.
 
 export class DialogueRunner {
   constructor(state) {
@@ -142,6 +143,11 @@ export class DialogueRunner {
     if (cond.hide && s.knowsAll(cond.hide)) return false;
     if (cond.spokenTo && !cond.spokenTo.every((id) => s.hasSpokenTo(id))) return false;
     if (cond.notSpokenTo && cond.notSpokenTo.some((id) => s.hasSpokenTo(id))) return false;
+    // "You knew me before this started." Names the id from the EARLIER
+    // chapter, so the jail versions of Tituba and Rebecca Nurse ask about
+    // the March versions of themselves.
+    if (cond.metBefore && !cond.metBefore.every((id) => s.metBefore(id))) return false;
+    if (cond.notMetBefore && cond.notMetBefore.some((id) => s.metBefore(id))) return false;
     if (cond.chapter && s.chapter !== cond.chapter) return false;
     if (typeof cond.when === 'function' && !cond.when(s)) return false;
     return true;

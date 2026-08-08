@@ -141,6 +141,41 @@ export function sourceName(id) {
   return SOURCES[id] || 'I saw this myself';
 }
 
+// Bare names, for places that put a source inside a sentence. The SOURCES
+// strings above are whole notebook lines ("Told to me by Rev. Parris") and
+// composing with them produces "You find Told to me by Rev. Parris more
+// credible", which is nonsense.
+const SHORT_SOURCES = {
+  observed: 'what you saw yourself',
+  document: 'the document',
+  nora: 'Nora',
+  francis: 'Francis Nurse',
+  nurseJail: 'Rebecca Nurse',
+  titubaJail: 'Tituba',
+  marywarren: 'Mary Warren',
+  neighbour: 'the neighbour',
+  archaeologist: 'Dr. Reyes',
+  historian: 'Dr. Whitfield',
+  descendant: 'Ellen Towne-Putnam',
+  stranger: 'a visitor',
+  stranger2: 'a visitor',
+  stranger3: 'a man in the tavern',
+  goodwife: 'the woman at the well',
+  woodman: 'the man splitting wood',
+  watchman: 'the man on watch',
+  swineboy: 'the boy with the swine',
+  tituba: 'Tituba',
+  parris: 'Rev. Parris',
+  annjr: 'Ann Putnam Jr.',
+  nurse: 'Rebecca Nurse',
+  ingersoll: 'Nathaniel Ingersoll',
+  mercy: 'Mercy Lewis',
+};
+
+export function shortSourceName(id) {
+  return SHORT_SOURCES[id] || 'what you saw yourself';
+}
+
 /** Notebook entries, in the order the player learned them. Internal
  *  bookkeeping flags (asked.*) never surface. */
 export function notebookEntries(state) {

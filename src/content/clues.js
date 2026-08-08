@@ -16,24 +16,102 @@
  * standing on a city street in Massachusetts and it should feel like it.
  * ---------------------------------------------------------------------- */
 
+/**
+ * What a bench says once you know who is on it.
+ *
+ * The whole seven-chapter shape exists so that the player walks past these
+ * twenty stones twice: once at the start, when the names mean nothing, and
+ * once at the end, when some of them are people. Everything below is
+ * gated on what the player actually did, so on the first visit none of it
+ * fires and the benches are what the memorial intends them to be — twenty
+ * identical slabs with no interesting one.
+ *
+ * The rest stay silent rather than saying "you never learned about this
+ * person." Twelve benches scolding a student for what they missed would
+ * turn a memorial into a score screen.
+ *
+ * Each entry is checked in order; the first match is the one that speaks,
+ * so the closest connection wins over the more distant one.
+ */
+const BENCH_MEMORY = {
+  'REBECCA NURSE': [
+    { when: (s) => s.knows('june.warned'), say:
+      'You told her this date. You stood on the other side of the bars in June and said it out loud, and she asked whether you had eaten.' },
+    { when: (s) => s.talkedTo.has('nurseJail'), say:
+      'The last time you saw her she was on the other side of a grate, and she was worried about her sister.' },
+    { when: (s) => s.talkedTo.has('nurse'), say:
+      'You sat in her kitchen in March. She offered you something to eat and asked after nobody in particular.' },
+  ],
+  'SARAH GOOD': [
+    { when: (s) => s.hasDoc('jailBill'), say:
+      'She gave birth in the jail you walked into. The child died there.' },
+    { when: (s) => s.hasDoc('seatingList'), say:
+      'Hers is the last name on the seating list. The one with no sum written beside it.' },
+  ],
+  'GILES COREY': [
+    { when: (s) => s.hasDoc('coreyRecord'), say:
+      'Two days under the stones, so that the farm would go to his sons-in-law instead of to the sheriff. He worked out what it would cost him.' },
+    { when: () => true, say: 'It is the only one that does not say HANGED.' },
+  ],
+  'MARY EASTEY': [
+    { when: (s) => s.hasDoc('eastyPetition'), say:
+      'She asked the court to change its methods so that it would stop killing other people. She already knew it was too late for her.' },
+    { when: (s) => s.knows('june.threesisters'), say:
+      'Rebecca Nurse\'s sister. One of the three Towne girls the Putnams had been in court with for thirty years.' },
+  ],
+  'MARTHA COREY': [
+    { when: (s) => s.hasDoc('deathWarrantReturn'), say:
+      'First of the eight names on the sheriff\'s return. You copied that list down.' },
+  ],
+  'ALICE PARKER':   [{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return.' }],
+  'MARY PARKER':    [{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return.' }],
+  'ANN PUDEATOR':   [{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return.' }],
+  'WILMOT REDD':    [{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return.' }],
+  'MARGARET SCOTT': [{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return.' }],
+  'SAMUEL WARDWELL':[{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return. He confessed, and then took it back. That is why he is on this wall and other confessors are not.' }],
+  'JOHN PROCTOR': [
+    { when: (s) => s.hasDoc('accountBookPage'), say:
+      'His name is in Ingersoll\'s account book, owing one pound two to Ingersoll himself.' },
+  ],
+  'GEORGE JACOBS SR.': [
+    { when: (s) => s.hasDoc('accountBookPage'), say:
+      'His name is in Ingersoll\'s account book, owing one fifteen. To the Putnams.' },
+  ],
+  'JOHN WILLARD': [
+    { when: (s) => s.hasDoc('accountBookPage'), say:
+      'His name is at the top of Ingersoll\'s account book, owing one pound four. To the Putnams.' },
+  ],
+};
+
 /** A bench inscription. Twenty of these, and they are all the same shape —
  *  which is the memorial's actual design argument: no ranking, no
  *  interesting one, just twenty people and what was done to them. */
-export function benchScript(b) {
+export function benchScript(b, state) {
   const lines = [
     { say: 'A granite slab, cantilevered out of the wall. Just long enough to sit on.', who: null },
     { say: `Cut into the edge:  ${b.name}`, who: null },
     { say: `${b.fate} · ${b.date}`, who: null },
   ];
+
   if (b.name === 'REBECCA NURSE') {
     lines.push(
       { learn: 'present.nurse', source: 'observed' },
       { say: 'It is exactly like the other nineteen. Same stone, same lettering, same length.', who: null },
-      { say: 'You will want to remember this one.', who: null },
     );
-  } else if (b.name === 'GILES COREY') {
-    lines.push({ say: 'It is the only one that does not say HANGED.', who: null });
   }
+
+  const memory = state && (BENCH_MEMORY[b.name] || []).find((m) => m.when(state));
+  if (memory) {
+    lines.push({ say: memory.say, who: null });
+    // Only Rebecca Nurse gets a second beat, because she is the one the
+    // player was told to remember before they had any reason to.
+    if (b.name === 'REBECCA NURSE' && state.knows('june.warned')) {
+      lines.push({ say: 'She was right that you had been listening to frightened people. She was wrong about the rest of it.', who: null });
+    }
+  } else if (b.name === 'REBECCA NURSE') {
+    lines.push({ say: 'You will want to remember this one.', who: null });
+  }
+
   return lines;
 }
 

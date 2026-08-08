@@ -11,6 +11,10 @@ const KEYMAP = {
   KeyX: 'cancel', Escape: 'cancel', Backspace: 'cancel',
   KeyN: 'notebook', Tab: 'notebook',
   ShiftLeft: 'run', ShiftRight: 'run',
+  // Taking a position on a disputed claim, in the notebook.
+  Digit1: 'pos1', Numpad1: 'pos1',
+  Digit2: 'pos2', Numpad2: 'pos2',
+  Digit3: 'pos3', Numpad3: 'pos3',
 };
 
 export class Input {

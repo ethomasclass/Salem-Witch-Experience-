@@ -39,8 +39,23 @@ pressing Z tells you exactly what to go and do first.
 
 If no prompt appears, there is nothing in front of you. Turn, or step closer.
 
-**Press N for the notebook, then ← or → to switch tabs:**
-`What I was told` and `What I copied down  n/15`.
+**Press N for the notebook, then ← or → for its three tabs:**
+`What I was told`, `What I copied down  n/15`, and `Where they disagree`.
+
+### The disputes tab
+
+When two sources tell you incompatible things about the same event, the
+person in front of you says so once — *"That is not the account Mr. Parris
+gave you"* — and both accounts land on the third tab with who said each.
+
+There, **1** marks the first account more credible, **2** the second, and
+**3** says you cannot tell. Pressing the same key again clears it. Nothing is
+scored, nothing is required, and all three answers go into the exported notes.
+"I cannot tell which of these is true" is a legitimate finding and students
+should be allowed to say it.
+
+There are six pairs. A student who talks to everyone will find most of them;
+one requires copying a document, not just listening to people.
 
 ### Documents are locked until you have earned them
 
@@ -95,7 +110,8 @@ and the game steps you back and names the one thing still missing.
 | Run | Hold **Shift**. Walking without stopping also speeds up after a moment, so the touch d-pad gets it too |
 | Talk, examine, advance, copy | **Z** (or Space / Enter) |
 | Close a reader, back out of a conversation | **X** (or Esc) |
-| Notebook | **N** — then ← → to switch tabs |
+| Notebook | **N** — then ← → for its three tabs |
+| Take a position on a dispute | **1** / **2** / **3**, on the disputes tab |
 
 ---
 

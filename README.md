@@ -45,6 +45,20 @@ September 1692, and back to the memorial.
   walk to Salem Town.
 - **Gossip as currency** — carrying a rumour from one house to another opens a
   topic that was not there before.
+- **Contradictions that land.** When a second account arrives that cannot both
+  be true with one you already hold, whoever you are standing in front of says
+  so, once. Both accounts go into a third notebook tab with who told you each.
+  Six pairs, all of them seams that were already in the writing.
+- **A position you can take.** On any disputed claim you may mark which source
+  you find more credible — or that you cannot tell, which is a real answer and
+  survives into the export. Nothing is scored.
+- **People who remember you.** Characters know whether you met them *before*
+  all this, not merely whether you have met. Rebecca Nurse in the June jail
+  either knows your face from her own kitchen in March or does not, and the
+  scene is a different scene either way.
+- **Benches that remember.** On the last visit to the memorial, the stones of
+  people you actually met or read about say so. The rest stay silent rather
+  than scolding you for what you missed.
 - **Source-sensitive replies** — characters react to *who* told you something,
   not only to what you know.
 - **A notebook** recording everything learned and who it came from, exportable
@@ -74,7 +88,10 @@ September 1692, and back to the memorial.
   the one the player walked through in March. One mute button, and the
   setting is remembered.
 - **A working farm village**: barn, hayrick, orchard, dry-laid stone walls,
-  free-ranging swine, cattle, sheep, hens, and four more villagers to talk to.
+  free-ranging swine, cattle, sheep, hens, and four more villagers to talk to
+  — and, by September, visibly half as much livestock, a cart standing in the
+  road with nobody loading it, and hay nobody is coming back for. The
+  sheriff's inventory, told without a document.
 
 ### The document collection
 
@@ -150,7 +167,8 @@ Any static host works for a shared link. GitHub Pages is the obvious one.
 | Run | Hold Shift — or just keep walking, it speeds up on its own |
 | Talk, examine, advance, copy a document | Z, Space or Enter |
 | Close a reader, back out of a conversation | X or Esc |
-| Notebook | N — then ← → to switch tabs |
+| Notebook | N — then ← → for its three tabs |
+| Take a position | On the disputes tab: 1, 2, or 3 |
 
 **Everything is one press of Z.** Examining a thing you can see (a stone, a
 woodpile, a chart) records it. Opening a document copies it. The notebook has

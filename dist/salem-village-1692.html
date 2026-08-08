@@ -2032,6 +2032,9 @@ const PLAYER_SPEC = {
 // leaves their own browser.
 
 const SAVE_KEY = 'salem1692.save.v1';
+
+// Chapters in order, for asking whether something happened before now.
+const CHAPTER_ORDER = ['memorial', 'march', 'dig', 'june', 'archive', 'september', 'reckoning'];
 class GameState {
   constructor() {
     this.flags = new Map();        // flag -> { source, chapter, at }
@@ -2039,9 +2042,20 @@ class GameState {
     this.docs = new Map();         // doc id -> { chapter, at }
     this.answer = '';              // the player's final answer, never graded
     this.talkedTo = new Set();     // npc ids the player has spoken with
+    // Which chapter each of them was FIRST spoken to in. `talkedTo` alone
+    // cannot answer "did you know me before all this", because by June it
+    // is true whether the player met them in March or thirty seconds ago.
+    this.metIn = new Map();        // npc id -> chapter of first meeting
     this.lastSpoke = null;         // most recent npc id
     this.visited = new Set();      // map ids
     this.finalAnswer = '';
+
+    // Disputes the game has already pointed out, so it says it once and
+    // then shuts up, and the position the player has taken on each. A
+    // position is never scored and never has to be given — it exists so the
+    // exported notes can be an argument rather than an inventory.
+    this.disputesSeen = new Set();   // dispute ids already announced
+    this.positions = new Map();      // dispute id -> 'a' | 'b' | 'unsure'
   }
 
   /** Record a piece of knowledge. `source` is an npc id, a prop id, or
@@ -2049,6 +2063,10 @@ class GameState {
   learn(flag, source = 'observed') {
     if (this.flags.has(flag)) return false;
     this.flags.set(flag, { source, chapter: this.chapter, at: Date.now() });
+    // The engine must not know what a dispute is — that is content. It just
+    // reports that something genuinely new landed, and lets the game layer
+    // decide whether it matters.
+    if (this.onRecord) this.onRecord(flag);
     return true;
   }
 
@@ -2076,6 +2094,7 @@ class GameState {
   copyDoc(id) {
     if (this.docs.has(id)) return false;
     this.docs.set(id, { chapter: this.chapter, at: Date.now() });
+    if (this.onRecord) this.onRecord(`doc:${id}`);
     return true;
   }
 
@@ -2088,11 +2107,37 @@ class GameState {
   }
 
   markSpoke(npcId) {
+    if (!this.metIn.has(npcId)) this.metIn.set(npcId, this.chapter);
     this.talkedTo.add(npcId);
     this.lastSpoke = npcId;
   }
 
   hasSpokenTo(npcId) { return this.talkedTo.has(npcId); }
+
+  /** True when the player met this character in an earlier chapter than the
+   *  one they are standing in now. This is what makes March retroactively
+   *  matter: the people you bothered to talk to then know you now. */
+  metBefore(npcId) {
+    const then = this.metIn.get(npcId);
+    if (!then) return false;
+    const i = CHAPTER_ORDER.indexOf(then), j = CHAPTER_ORDER.indexOf(this.chapter);
+    return i >= 0 && j >= 0 && i < j;
+  }
+
+  /** True the first time a given dispute is raised. */
+  noteDispute(id) {
+    if (this.disputesSeen.has(id)) return false;
+    this.disputesSeen.add(id);
+    return true;
+  }
+
+  /** Record, clear, or read which side the player finds more credible. */
+  setPosition(id, side) {
+    if (side === null) this.positions.delete(id);
+    else this.positions.set(id, side);
+  }
+
+  positionOn(id) { return this.positions.get(id) || null; }
 
   /** Everything the player knows, newest first — backs the notebook screen
    *  and the end-of-game export. */
@@ -2112,8 +2157,11 @@ class GameState {
       docs: [...this.docs.entries()],
       answer: this.answer,
       talkedTo: [...this.talkedTo],
+      metIn: [...this.metIn.entries()],
       visited: [...this.visited],
       finalAnswer: this.finalAnswer,
+      disputesSeen: [...this.disputesSeen],
+      positions: [...this.positions.entries()],
       player: player ? { map: player.map, x: player.tx, y: player.ty, dir: player.dir } : null,
     });
   }
@@ -2143,8 +2191,13 @@ class GameState {
     s.docs = new Map(data.docs || []);
     s.answer = data.answer || '';
     s.talkedTo = new Set(data.talkedTo || []);
+    // A save from before metIn existed still loads; those characters simply
+    // do not recognise the player, which is the safe way to be wrong.
+    s.metIn = new Map(data.metIn || []);
     s.visited = new Set(data.visited || []);
     s.finalAnswer = data.finalAnswer || '';
+    s.disputesSeen = new Set(data.disputesSeen || []);
+    s.positions = new Map(data.positions || []);
     return { state: s, player: data.player || null };
   }
 
@@ -2170,7 +2223,8 @@ class GameState {
 //   { choice: [ { label, require, then } ] }
 //   { end: true }                    stop early
 //
-// Condition objects accept: knows: [], notKnows: [], spokenTo: [], chapter.
+// Condition objects accept: knows: [], notKnows: [], spokenTo: [], metBefore: [],
+// notMetBefore: [], chapter.
 class DialogueRunner {
   constructor(state) {
     this.state = state;
@@ -2297,6 +2351,11 @@ class DialogueRunner {
     if (cond.hide && s.knowsAll(cond.hide)) return false;
     if (cond.spokenTo && !cond.spokenTo.every((id) => s.hasSpokenTo(id))) return false;
     if (cond.notSpokenTo && cond.notSpokenTo.some((id) => s.hasSpokenTo(id))) return false;
+    // "You knew me before this started." Names the id from the EARLIER
+    // chapter, so the jail versions of Tituba and Rebecca Nurse ask about
+    // the March versions of themselves.
+    if (cond.metBefore && !cond.metBefore.every((id) => s.metBefore(id))) return false;
+    if (cond.notMetBefore && cond.notMetBefore.some((id) => s.metBefore(id))) return false;
     if (cond.chapter && s.chapter !== cond.chapter) return false;
     if (typeof cond.when === 'function' && !cond.when(s)) return false;
     return true;
@@ -2356,6 +2415,10 @@ const KEYMAP = {
   KeyX: 'cancel', Escape: 'cancel', Backspace: 'cancel',
   KeyN: 'notebook', Tab: 'notebook',
   ShiftLeft: 'run', ShiftRight: 'run',
+  // Taking a position on a disputed claim, in the notebook.
+  Digit1: 'pos1', Numpad1: 'pos1',
+  Digit2: 'pos2', Numpad2: 'pos2',
+  Digit3: 'pos3', Numpad3: 'pos3',
 };
 class Input {
   constructor() {
@@ -2710,6 +2773,115 @@ const PORTRAIT_ART = {
   'tituba-hard': 'data:image/png;base64,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',
   'tituba-neutral': 'data:image/png;base64,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',
 };
+
+/* ===== src/content/disputes.js ===== */
+// Where the sources disagree.
+//
+// The design doc's promise is that "two students can finish with different
+// notebooks and both be right about the facts, because characters contradict
+// each other and the game never adjudicates." That was true, and it was also
+// invisible: a student could copy Parris's account of the examinations and
+// Tituba's account of the same afternoon into the same notebook, one after
+// the other, and never register that they cannot both be the whole truth.
+//
+// So the game notices out loud, once, at the moment the second account
+// arrives — and then marks the claim disputed and shows both sides with who
+// said them. It still does not adjudicate. Naming a disagreement is not the
+// same as settling it, and the settling is the student's job.
+//
+// EVERY PAIR HERE IS ALREADY IN THE WRITING. Nothing was invented to create
+// a conflict; these are the seams that were always in the content, and the
+// only new thing is that the game now points at them.
+//
+// `a` and `b` are knowledge flags, or 'doc:<id>' for a copied document.
+// `line` is what a character says when the second one lands — written to be
+// spoken by whoever the player is standing in front of, so it must work in
+// anyone's mouth.
+const DISPUTES = [
+  {
+    id: 'parris-tituba',
+    a: 'june.parrisrecords',
+    b: 'june.beating',
+    line: 'That is not the account Mr. Parris gave you.',
+    claim: 'What happened in the parsonage before Tituba was examined',
+    sideA: 'Parris says he wrote the examinations down himself — names, questions, answers, everything the afflicted did while it was said.',
+    sideB: 'Tituba says he beat her first and told her what it would be well for her to say.',
+  },
+  {
+    id: 'ergot',
+    a: 'law.ergot_claim',
+    b: 'law.ergot_rebut',
+    line: 'The tidy explanation and the objection to it do not sit together.',
+    claim: 'Whether ergot poisoning explains 1692',
+    sideA: 'Ergot-infected rye can cause hallucinations and convulsions, and it is the explanation most people have heard.',
+    sideB: 'The symptoms are wrong, whole households ate the same bread, and it says nothing at all about WHO was accused.',
+  },
+  {
+    id: 'who-swore-it',
+    a: 'june.fatherwrites',
+    b: 'doc:putnamDeposition',
+    line: 'The paper says she swore it. She says her father wrote it.',
+    claim: 'Whose words the depositions actually are',
+    sideA: 'Ann Putnam Jr. says her father writes them down and reads them back to her for agreement.',
+    sideB: 'The deposition itself is sworn in her name, upon her oath, before the Jurors of Inquest.',
+  },
+  {
+    id: 'how-names-arrive',
+    a: 'june.annnames',
+    b: 'june.mercysees',
+    line: 'Mercy Lewis does not describe it the way Ann Putnam does.',
+    claim: 'How a name arrives during a fit',
+    sideA: 'Ann Putnam Jr. says the shapes come to her, and she says whose they are.',
+    sideB: 'Mercy Lewis says she sees dark shapes at the edge of a room, and that the magistrates wait patiently until she produces a name.',
+  },
+  {
+    id: 'what-started-it',
+    a: 'fact.griggs',
+    b: 'fact.witchcake',
+    line: 'That is a different account of what set it off.',
+    claim: 'What turned an illness into an accusation',
+    sideA: 'Doctor Griggs examined the girls, found nothing physical, and suggested the evil hand was upon them.',
+    sideB: 'Mary Sibley had a witch cake baked and fed to a dog — and it was after that that the girls began naming names.',
+  },
+  {
+    id: 'ingersoll-himself',
+    a: 'june.ingersollguilt',
+    b: 'sept.quiet',
+    line: 'He tells it differently now than he did in June.',
+    claim: 'How Nathaniel Ingersoll accounts for his own part',
+    sideA: 'In June he said he was taking more money than ever and was ashamed of it, and that Rebecca Nurse was brought through his door in irons.',
+    sideB: 'In September he says nobody in the village wants to be remembered as having enjoyed it.',
+  },
+];
+
+/** Anything that fires a dispute, for a fast membership test. */
+const DISPUTED_KEYS = new Set(DISPUTES.flatMap((d) => [d.a, d.b]));
+
+/** The disputes both of whose sides the player now holds. */
+function activeDisputes(state) {
+  const has = (k) => (k.startsWith('doc:') ? state.hasDoc(k.slice(4)) : state.knows(k));
+  return DISPUTES.filter((d) => has(d.a) && has(d.b));
+}
+
+/**
+ * Which dispute, if any, has just been completed by learning `key`.
+ *
+ * Returns null when the player already had both sides, so the line fires
+ * once — at the moment the second account arrives — and never again.
+ */
+function disputeCompletedBy(state, key) {
+  if (!DISPUTED_KEYS.has(key)) return null;
+  const has = (k) => (k.startsWith('doc:') ? state.hasDoc(k.slice(4)) : state.knows(k));
+  return DISPUTES.find((d) => {
+    const other = d.a === key ? d.b : d.b === key ? d.a : null;
+    return other !== null && has(other);
+  }) || null;
+}
+
+/** Who the player heard a side from, for the notebook. */
+function sideSourceOf(state, key) {
+  return key.startsWith('doc:') ? 'the document itself' : state.sourceOf(key);
+}
 
 /* ===== src/content/documents.js ===== */
 // The fifteen documents.
@@ -3444,6 +3616,40 @@ function sourceName(id) {
   return SOURCES[id] || 'I saw this myself';
 }
 
+// Bare names, for places that put a source inside a sentence. The SOURCES
+// strings above are whole notebook lines ("Told to me by Rev. Parris") and
+// composing with them produces "You find Told to me by Rev. Parris more
+// credible", which is nonsense.
+const SHORT_SOURCES = {
+  observed: 'what you saw yourself',
+  document: 'the document',
+  nora: 'Nora',
+  francis: 'Francis Nurse',
+  nurseJail: 'Rebecca Nurse',
+  titubaJail: 'Tituba',
+  marywarren: 'Mary Warren',
+  neighbour: 'the neighbour',
+  archaeologist: 'Dr. Reyes',
+  historian: 'Dr. Whitfield',
+  descendant: 'Ellen Towne-Putnam',
+  stranger: 'a visitor',
+  stranger2: 'a visitor',
+  stranger3: 'a man in the tavern',
+  goodwife: 'the woman at the well',
+  woodman: 'the man splitting wood',
+  watchman: 'the man on watch',
+  swineboy: 'the boy with the swine',
+  tituba: 'Tituba',
+  parris: 'Rev. Parris',
+  annjr: 'Ann Putnam Jr.',
+  nurse: 'Rebecca Nurse',
+  ingersoll: 'Nathaniel Ingersoll',
+  mercy: 'Mercy Lewis',
+};
+function shortSourceName(id) {
+  return SHORT_SOURCES[id] || 'what you saw yourself';
+}
+
 /** Notebook entries, in the order the player learned them. Internal
  *  bookkeeping flags (asked.*) never surface. */
 function notebookEntries(state) {
@@ -3698,24 +3904,102 @@ function remainingIn(state, chapter) {
  * standing on a city street in Massachusetts and it should feel like it.
  * ---------------------------------------------------------------------- */
 
+/**
+ * What a bench says once you know who is on it.
+ *
+ * The whole seven-chapter shape exists so that the player walks past these
+ * twenty stones twice: once at the start, when the names mean nothing, and
+ * once at the end, when some of them are people. Everything below is
+ * gated on what the player actually did, so on the first visit none of it
+ * fires and the benches are what the memorial intends them to be — twenty
+ * identical slabs with no interesting one.
+ *
+ * The rest stay silent rather than saying "you never learned about this
+ * person." Twelve benches scolding a student for what they missed would
+ * turn a memorial into a score screen.
+ *
+ * Each entry is checked in order; the first match is the one that speaks,
+ * so the closest connection wins over the more distant one.
+ */
+const BENCH_MEMORY = {
+  'REBECCA NURSE': [
+    { when: (s) => s.knows('june.warned'), say:
+      'You told her this date. You stood on the other side of the bars in June and said it out loud, and she asked whether you had eaten.' },
+    { when: (s) => s.talkedTo.has('nurseJail'), say:
+      'The last time you saw her she was on the other side of a grate, and she was worried about her sister.' },
+    { when: (s) => s.talkedTo.has('nurse'), say:
+      'You sat in her kitchen in March. She offered you something to eat and asked after nobody in particular.' },
+  ],
+  'SARAH GOOD': [
+    { when: (s) => s.hasDoc('jailBill'), say:
+      'She gave birth in the jail you walked into. The child died there.' },
+    { when: (s) => s.hasDoc('seatingList'), say:
+      'Hers is the last name on the seating list. The one with no sum written beside it.' },
+  ],
+  'GILES COREY': [
+    { when: (s) => s.hasDoc('coreyRecord'), say:
+      'Two days under the stones, so that the farm would go to his sons-in-law instead of to the sheriff. He worked out what it would cost him.' },
+    { when: () => true, say: 'It is the only one that does not say HANGED.' },
+  ],
+  'MARY EASTEY': [
+    { when: (s) => s.hasDoc('eastyPetition'), say:
+      'She asked the court to change its methods so that it would stop killing other people. She already knew it was too late for her.' },
+    { when: (s) => s.knows('june.threesisters'), say:
+      'Rebecca Nurse\'s sister. One of the three Towne girls the Putnams had been in court with for thirty years.' },
+  ],
+  'MARTHA COREY': [
+    { when: (s) => s.hasDoc('deathWarrantReturn'), say:
+      'First of the eight names on the sheriff\'s return. You copied that list down.' },
+  ],
+  'ALICE PARKER':   [{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return.' }],
+  'MARY PARKER':    [{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return.' }],
+  'ANN PUDEATOR':   [{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return.' }],
+  'WILMOT REDD':    [{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return.' }],
+  'MARGARET SCOTT': [{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return.' }],
+  'SAMUEL WARDWELL':[{ when: (s) => s.hasDoc('deathWarrantReturn'), say: 'One of the eight on the sheriff\'s return. He confessed, and then took it back. That is why he is on this wall and other confessors are not.' }],
+  'JOHN PROCTOR': [
+    { when: (s) => s.hasDoc('accountBookPage'), say:
+      'His name is in Ingersoll\'s account book, owing one pound two to Ingersoll himself.' },
+  ],
+  'GEORGE JACOBS SR.': [
+    { when: (s) => s.hasDoc('accountBookPage'), say:
+      'His name is in Ingersoll\'s account book, owing one fifteen. To the Putnams.' },
+  ],
+  'JOHN WILLARD': [
+    { when: (s) => s.hasDoc('accountBookPage'), say:
+      'His name is at the top of Ingersoll\'s account book, owing one pound four. To the Putnams.' },
+  ],
+};
+
 /** A bench inscription. Twenty of these, and they are all the same shape —
  *  which is the memorial's actual design argument: no ranking, no
  *  interesting one, just twenty people and what was done to them. */
-function benchScript(b) {
+function benchScript(b, state) {
   const lines = [
     { say: 'A granite slab, cantilevered out of the wall. Just long enough to sit on.', who: null },
     { say: `Cut into the edge:  ${b.name}`, who: null },
     { say: `${b.fate} · ${b.date}`, who: null },
   ];
+
   if (b.name === 'REBECCA NURSE') {
     lines.push(
       { learn: 'present.nurse', source: 'observed' },
       { say: 'It is exactly like the other nineteen. Same stone, same lettering, same length.', who: null },
-      { say: 'You will want to remember this one.', who: null },
     );
-  } else if (b.name === 'GILES COREY') {
-    lines.push({ say: 'It is the only one that does not say HANGED.', who: null });
   }
+
+  const memory = state && (BENCH_MEMORY[b.name] || []).find((m) => m.when(state));
+  if (memory) {
+    lines.push({ say: memory.say, who: null });
+    // Only Rebecca Nurse gets a second beat, because she is the one the
+    // player was told to remember before they had any reason to.
+    if (b.name === 'REBECCA NURSE' && state.knows('june.warned')) {
+      lines.push({ say: 'She was right that you had been listening to frightened people. She was wrong about the rest of it.', who: null });
+    }
+  } else if (b.name === 'REBECCA NURSE') {
+    lines.push({ say: 'You will want to remember this one.', who: null });
+  }
+
   return lines;
 }
 const PRESENT_CLUES = {
@@ -4450,9 +4734,13 @@ const NPCS = {
         if: { chapter: 'september' },
         then: [
           { say: 'She is by the window. She has been twelve years old for six months.', who: null },
-          { say: 'She looks at you, and keeps looking, in a way nobody in this village has looked at you since March.', who: null },
+          { say: 'She looks at you, and keeps looking, in a way nobody in this village has looked at you before.', who: null },
           'Have you been here before?',
-          { say: 'You have. Three times. She has never once been able to see you properly until now.', who: null },
+          {
+            if: { metBefore: ['annjr'] },
+            then: [{ say: 'You have. You stood in this room in March and she told you her mother was unwell. She has never once been able to see you properly until now.', who: null }],
+            else: [{ say: 'You have. Not in this room, and never in front of her. She should have no idea. She is looking at you anyway.', who: null }],
+          },
           { say: 'There is no answer you can give her. There is no option here to choose.', who: null },
           { learn: 'sept.noticed' },
           { say: 'She waits.', who: null },
@@ -4823,6 +5111,14 @@ const NPCS = {
         if: { chapter: 'september' },
         then: [
           { say: 'The room is empty in the middle of the day. He is wiping something that is already clean.', who: null },
+          {
+            if: { metBefore: ['ingersoll'] },
+            then: [
+              'You were in here in March. The room was full and I was glad of it.',
+              { say: 'He does not look up.', who: null },
+            ],
+            else: [],
+          },
           'Sit anywhere.',
           { say: 'There is nobody to sit near.', who: null },
         ],
@@ -5066,7 +5362,16 @@ const NPCS = {
           { say: 'He says it before you ask.', who: null },
           'Everyone who comes up that path is coming to ask me where my wife is, so I have got into the habit of saying it first.',
         ],
-        else: ['Still here.'],
+        else: [
+          {
+            if: { chapter: 'september', metBefore: ['francis'] },
+            then: [
+              'You were here in June, asking after her.',
+              { say: 'He does not finish the thought. There is nothing to finish it with.', who: null },
+            ],
+            else: ['Still here.'],
+          },
+        ],
       },
     ],
     topics: [
@@ -5138,9 +5443,21 @@ const NPCS = {
         then: [
           { say: 'The cell is a cellar with a grate in it. The floor is stone and there is straw on the stone.', who: null },
           { say: 'She is sitting against the wall. She gets up anyway.', who: null },
-          'Well. I did not expect you.',
-          { say: 'She sounds pleased. That is the worst part.', who: null },
-          'Come where I can see you. My eyes are no better than they were.',
+          {
+            // Whether she knows you is decided three chapters ago, in a
+            // kitchen, by a player who had no reason yet to bother.
+            if: { metBefore: ['nurse'] },
+            then: [
+              'Well. I did not expect you.',
+              { say: 'She sounds pleased. That is the worst part.', who: null },
+              'You came to the house in the spring. I remember. Come where I can see you — my eyes are no better than they were.',
+            ],
+            else: [
+              { say: 'She looks at you the way you would look at anyone who had come a long way to stare.', who: null },
+              'I do not know your face.',
+              'Well. Come where I can see it, then. My eyes are not what they were.',
+            ],
+          },
         ],
         else: ['You came back.'],
       },
@@ -5220,9 +5537,19 @@ const NPCS = {
       {
         if: { notSpokenTo: ['titubaJail'] },
         then: [
-          { say: 'She is further down the same cellar. She recognises you.', who: null },
-          'You.',
-          'You were in that kitchen in March, standing where you were not underfoot.',
+          {
+            if: { metBefore: ['tituba'] },
+            then: [
+              { say: 'She is further down the same cellar. She recognises you.', who: null },
+              'You.',
+              'You were in that kitchen in March, standing where you were not underfoot.',
+            ],
+            else: [
+              { say: 'She is further down the same cellar. She does not know you and does not pretend to.', who: null },
+              'Another one come to look.',
+              { say: 'She goes back to what she was doing, which is nothing.', who: null },
+            ],
+          },
           { say: 'She has been in this room since the first of March.', who: null },
         ],
         else: ['Still here. So am I.'],
@@ -5974,7 +6301,31 @@ const VILLAGE = {
       ],
       addProps: [
         { kind: 'paper', x: 30, y: 30 },
+        // What is left behind rather than what is gone. A cart standing in
+        // the road with nobody loading it, and hay nobody is going to need,
+        // because the household that cut it is in Salem jail or scattered.
+        { kind: 'cart', x: 20, y: 17 },
+        { kind: 'hayrick', x: 35, y: 19 },
       ],
+
+      // Half the livestock is gone.
+      //
+      // This is the sheriff's inventory, told without a document: five cows,
+      // a yoke of oxen, the hay, the beds. A player who has copied that page
+      // and then walks past an empty pen has been told the same thing twice,
+      // and the second time nobody had to say it.
+      //
+      // Deliberately half and not all — a village with no animals at all
+      // reads as abandoned, and Salem Village in September 1692 was not
+      // abandoned. It was still there, with a fifth of it missing.
+      hideProps: [
+        { kind: 'pig', x: 26, y: 18 }, { kind: 'pig', x: 27, y: 19 },
+        { kind: 'cow', x: 39, y: 14 },
+        { kind: 'sheep', x: 19, y: 27 }, { kind: 'sheep', x: 21, y: 28 },
+        { kind: 'chicken', x: 12, y: 30 }, { kind: 'chicken', x: 14, y: 31 },
+        { kind: 'cart', x: 28, y: 18 },
+      ],
+
       // Almost nobody. No locked doors, no gates — just an empty road.
       npcs: [
         { id: 'francis', x: 7, y: 16, dir: 'down' },
@@ -7412,24 +7763,165 @@ function drawDocTab(g, view, s, docs, scroll, total) {
   return Math.max(0, contentH - (bottom - top));
 }
 
-/** The two tabs across the top of the notebook. */
-function drawNotebookTabs(g, view, s, tab, docCount, docTotal) {
+/**
+ * The disputes tab: where the sources disagree, and what the player makes
+ * of it.
+ *
+ * This is the one screen in the game that asks the player for a judgement,
+ * and it is deliberately the smallest possible version of that: two
+ * accounts, who said each, and three keys. Nothing is scored, nothing is
+ * required, and "not sure" is a real answer that survives into the export —
+ * because "the sources conflict and I can't resolve it" is a legitimate
+ * finding and a student should be able to say it.
+ *
+ * @param sel  index of the highlighted dispute, for the position keys
+ */
+function drawDisputeTab(g, view, s, disputes, state, scroll, sel, sourceName) {
+  g.fillStyle = 'rgba(12,12,16,0.72)';
+  g.fillRect(view.x, view.y, view.w, view.h);
+
   const bx = view.x + 20 * s, by = view.y + 20 * s;
-  const labels = ['What I was told', `What I copied down   ${docCount}/${docTotal}`];
-  g.font = `600 ${9 * s}px system-ui, sans-serif`;
+  const bw = view.w - 40 * s, bh = view.h - 40 * s;
+  panel(g, bx, by, bw, bh, s);
+
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+  g.font = `700 ${13 * s}px Georgia, serif`;
+  g.fillStyle = P.boxInk;
+  g.fillText('Where my sources disagree', bx + 18 * s, by + 14 * s);
+
+  const top = by + 54 * s;
+  const bottom = by + bh - 20 * s;
+
+  g.strokeStyle = 'rgba(58,54,48,0.35)';
+  g.lineWidth = 1;
+  g.beginPath();
+  g.moveTo(bx + 18 * s, top - 8 * s);
+  g.lineTo(bx + bw - 18 * s, top - 8 * s);
+  g.stroke();
+
+  if (!disputes.length) {
+    g.font = `italic ${11 * s}px Georgia, serif`;
+    g.fillStyle = P.boxDim;
+    for (const [i, line] of [
+      'Nothing here yet.',
+      'When two people tell you different things about the same event,',
+      'both accounts land here and you can say which one you believe.',
+    ].entries()) {
+      g.fillText(line, bx + 18 * s, top + 6 * s + i * 15 * s);
+    }
+    return 0;
+  }
+
+  g.save();
+  g.beginPath();
+  g.rect(bx + 8 * s, top - 4 * s, bw - 16 * s, bottom - top + 4 * s);
+  g.clip();
+
+  const colW = bw - 56 * s;
+  let y = top - scroll;
+  let contentH = 0;
+
+  disputes.forEach((d, i) => {
+    const chosen = state.positionOn(d.id);
+    const a = sourceName(sideSourceOfSafe(state, d.a));
+    const b = sourceName(sideSourceOfSafe(state, d.b));
+
+    g.font = `600 ${11 * s}px Georgia, serif`;
+    const cLines = wrapText(g, d.claim, colW - 10 * s);
+    g.font = `${9.5 * s}px Georgia, serif`;
+    const aLines = wrapText(g, d.sideA, colW - 16 * s);
+    const bLines = wrapText(g, d.sideB, colW - 16 * s);
+    const blockH = (cLines.length * 13 + 4 + (aLines.length + bLines.length) * 12 + 28 + 22) * s;
+
+    if (y + blockH > top - 30 * s && y < bottom + 30 * s) {
+      if (i === sel) {
+        g.fillStyle = 'rgba(125,63,44,0.09)';
+        g.fillRect(bx + 12 * s, y - 4 * s, bw - 24 * s, blockH - 4 * s);
+      }
+      g.font = `600 ${11 * s}px Georgia, serif`;
+      g.fillStyle = P.boxInk;
+      let ty = y;
+      for (const l of wrapText(g, d.claim, colW - 10 * s)) { g.fillText(l, bx + 30 * s, ty); ty += 13 * s; }
+      g.fillStyle = P.accent;
+      g.fillRect(bx + 20 * s, y + 4 * s, 4 * s, 4 * s);
+
+      let ly = ty + 4 * s;
+      const side = (lines, who, key) => {
+        const picked = chosen === key;
+        g.fillStyle = picked ? P.accent : P.boxDim;
+        g.font = `600 ${8 * s}px system-ui, sans-serif`;
+        g.fillText(picked ? `▸ ${who}` : who, bx + 30 * s, ly);
+        ly += 11 * s;
+        g.font = `${9.5 * s}px Georgia, serif`;
+        g.fillStyle = picked ? P.boxInk : '#5f5a50';
+        for (const l of lines) { g.fillText(l, bx + 38 * s, ly); ly += 12 * s; }
+        ly += 3 * s;
+      };
+      side(aLines, a, 'a');
+      side(bLines, b, 'b');
+
+      g.font = `${8 * s}px system-ui, sans-serif`;
+      g.fillStyle = chosen === 'unsure' ? P.accent : P.boxDim;
+      const verdict = chosen === 'a' ? `You find ${a} more credible.`
+                    : chosen === 'b' ? `You find ${b} more credible.`
+                    : chosen === 'unsure' ? 'You cannot tell which of these is true.'
+                    : i === sel ? '1 / 2 / 3 to say which you believe' : '—';
+      g.fillText(verdict, bx + 30 * s, ly);
+    }
+    y += blockH;
+    contentH += blockH;
+  });
+  g.restore();
+
+  g.font = `${8 * s}px system-ui, sans-serif`;
+  g.fillStyle = P.boxDim;
+  g.fillText('↑↓ move · 1 first account · 2 second · 3 cannot tell',
+             bx + 18 * s, by + bh - 16 * s);
+
+  return Math.max(0, contentH - (bottom - top));
+}
+
+// Kept local so ui.js does not have to import from content/.
+function sideSourceOfSafe(state, key) {
+  return key.startsWith('doc:') ? 'document' : state.sourceOf(key);
+}
+
+/** The tabs across the top of the notebook. */
+function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount) {
+  const bx = view.x + 20 * s, by = view.y + 20 * s;
+  const labels = [
+    'What I was told',
+    `What I copied down   ${docCount}/${docTotal}`,
+    disputeCount ? `Where they disagree  ${disputeCount}` : 'Where they disagree',
+  ];
+  // Three tabs have to fit inside the panel. Close the gaps first, then
+  // shrink the type, and measure rather than guessing — the labels carry
+  // counts that change width as the player collects things.
+  const bw = view.w - 40 * s;
+  const avail = bw - 36 * s;
+  let size = 9, widths = [], total = 0, gap = 0;
+  for (; size >= 6; size -= 0.25) {
+    g.font = `600 ${size * s}px system-ui, sans-serif`;
+    widths = labels.map((l) => g.measureText(l).width);
+    total = widths.reduce((n, w) => n + w, 0);
+    gap = (avail - total) / (labels.length - 1);
+    if (gap >= 9 * s) break;
+  }
+  gap = Math.max(6 * s, Math.min(24 * s, gap));
+
   g.textAlign = 'left';
   g.textBaseline = 'top';
   let x = bx + 18 * s;
-  const y = by + 30 * s;
+  const y = by + 32 * s;
   labels.forEach((label, i) => {
-    const w = g.measureText(label).width;
     g.fillStyle = i === tab ? P.boxInk : P.boxDim;
     g.fillText(label, x, y);
     if (i === tab) {
       g.fillStyle = P.accent;
-      g.fillRect(x, y + 13 * s, w, 2 * s);
+      g.fillRect(x, y + 12 * s, widths[i], 2 * s);
     }
-    x += w + 26 * s;
+    x += widths[i] + gap;
   });
 }
 
@@ -7674,6 +8166,7 @@ function drawTitle(g, view, s, hasSave, index) {
 
 
 
+
 // Which chapters wear the hardened faces. March is the only time the player
 // meets these people before anything has happened to them.
 const HARD_CHAPTERS = new Set(['june', 'archive', 'september', 'reckoning']);
@@ -7707,6 +8200,7 @@ class Game {
     this.audio = new Audio();
     this.state = new GameState();
     this.runner = new DialogueRunner(this.state);
+    this.bindState();
 
     this.mode = 'title';
     this.titleIndex = 0;
@@ -7720,6 +8214,8 @@ class Game {
     this.convNpc = null;
     this.objFlash = 0;
     this.moveHeld = 0;          // seconds of unbroken walking, for auto-run
+    this.pendingDispute = null; // a contradiction waiting for a gap to speak in
+    this.disputeSel = 0;
     this.lastStepId = null;
     this.reader = null;         // the document currently open
     this.answerText = '';
@@ -7856,6 +8352,7 @@ class Game {
     if (!fresh && this.saved) {
       this.state = this.saved.state;
       this.runner = new DialogueRunner(this.state);
+      this.bindState();
       const p = this.saved.player;
       if (p && MAPS[p.map]) {
         this.player.map = p.map;
@@ -7867,6 +8364,7 @@ class Game {
       GameState.clear();
       this.state = new GameState();
       this.runner = new DialogueRunner(this.state);
+      this.bindState();
       this.player.map = 'memorial';
       this.setTile(13, 25);
       this.player.dir = 'up';
@@ -7945,11 +8443,48 @@ class Game {
 
   endConversation() {
     const npc = this.convNpc;
+
+    // A contradiction is worth interrupting for, but not worth interrupting
+    // mid-sentence. It waits until the conversation that produced it is
+    // over, then the person in front of you says it, and the notebook keeps
+    // it from then on.
+    if (this.pendingDispute) {
+      const d = this.pendingDispute;
+      this.pendingDispute = null;
+      const speaker = npc ? { id: npc.id, name: npc.name, spec: npc.def.spec } : null;
+      this.startScript([
+        { say: d.line, who: speaker ? npc.name : null },
+        { say: `Both accounts are in your notebook now, marked as disagreeing. The game is not going to tell you which one is true.`, who: null },
+      ], speaker, () => { this.finishConversation(); });
+      this.showToast('Your sources disagree');
+      return;
+    }
+    this.finishConversation();
+  }
+
+  finishConversation() {
+    const npc = this.convNpc;
     if (npc) { npc.dir = npc.homeDir; npc.dirIndex = DIR_INDEX[npc.homeDir]; }
     this.convNpc = null;
     this.mode = 'play';
     this.dlg = null;
     this.save();
+  }
+
+  /**
+   * Called by GameState whenever a genuinely new flag or document lands.
+   *
+   * Only the second half of a pair triggers anything, so the game points at
+   * a disagreement once — at the moment it becomes a disagreement — and then
+   * never mentions it again.
+   */
+  onRecord(key) {
+    const d = disputeCompletedBy(this.state, key);
+    if (d && this.state.noteDispute(d.id)) this.pendingDispute = d;
+  }
+
+  bindState() {
+    this.state.onRecord = (key) => this.onRecord(key);
   }
 
   /** Rebuild the paginated view whenever the runner produces a new line. */
@@ -8091,7 +8626,7 @@ class Game {
     }
     // Memorial benches are generated from their inscription data rather than
     // hand-written twenty times over.
-    const script = spot.bench ? benchScript(spot.bench) : CLUES[spot.id];
+    const script = spot.bench ? benchScript(spot.bench, this.state) : CLUES[spot.id];
     if (!script) return;
 
     const before = this.state.flags.size;
@@ -8265,11 +8800,39 @@ class Game {
 
     if (this.mode === 'notebook') {
       if (inp.justPressed('cancel') || inp.justPressed('notebook')) this.mode = 'play';
-      if (inp.justPressed('left') || inp.justPressed('right')) {
-        this.notebookTab = 1 - this.notebookTab;
+      if (inp.justPressed('left')) {
+        this.notebookTab = (this.notebookTab + 2) % 3;
         this.notebookScroll = 0;
         this.audio.menuMove();
       }
+      if (inp.justPressed('right')) {
+        this.notebookTab = (this.notebookTab + 1) % 3;
+        this.notebookScroll = 0;
+        this.audio.menuMove();
+      }
+
+      // On the disputes tab the arrows move a cursor rather than scrolling
+      // freely, because 1/2/3 have to apply to something specific.
+      if (this.notebookTab === 2) {
+        const list = activeDisputes(this.state);
+        if (list.length) {
+          if (inp.justPressed('down')) { this.disputeSel = Math.min(list.length - 1, this.disputeSel + 1); this.audio.menuMove(); }
+          if (inp.justPressed('up')) { this.disputeSel = Math.max(0, this.disputeSel - 1); this.audio.menuMove(); }
+          const d = list[Math.min(this.disputeSel, list.length - 1)];
+          const pick = (side) => {
+            // Pressing the same key again clears it. A student who changes
+            // their mind should not be stuck with their first instinct.
+            this.state.setPosition(d.id, this.state.positionOn(d.id) === side ? null : side);
+            this.audio.menuPick();
+            this.save();
+          };
+          if (inp.justPressed('pos1')) pick('a');
+          if (inp.justPressed('pos2')) pick('b');
+          if (inp.justPressed('pos3')) pick('unsure');
+        }
+        return;
+      }
+
       if (inp.isDown('down')) this.notebookScroll += 300 * dt;
       if (inp.isDown('up')) this.notebookScroll -= 300 * dt;
       // maxScroll comes back from the last draw, so clamp against that.
@@ -8450,13 +9013,19 @@ class Game {
       if (this.notebookTab === 0) {
         this.notebookMax = drawNotebook(
           g, v, s, notebookEntries(this.state), this.notebookScroll, sourceName) || 0;
-      } else {
+      } else if (this.notebookTab === 1) {
         // Draw the shell, then the document list in place of the entries.
         drawNotebook(g, v, s, [], 0, sourceName);
         const docs = this.state.docLog().map((d) => DOCUMENTS[d.id]).filter(Boolean);
         this.notebookMax = drawDocTab(g, v, s, docs, this.notebookScroll, DOC_COUNT) || 0;
+      } else {
+        const list = activeDisputes(this.state);
+        this.disputeSel = Math.min(this.disputeSel, Math.max(0, list.length - 1));
+        this.notebookMax = drawDisputeTab(
+          g, v, s, list, this.state, this.notebookScroll, this.disputeSel, shortSourceName) || 0;
       }
-      drawNotebookTabs(g, v, s, this.notebookTab, this.state.docs.size, DOC_COUNT);
+      drawNotebookTabs(g, v, s, this.notebookTab, this.state.docs.size, DOC_COUNT,
+                       activeDisputes(this.state).length);
     }
 
     if (this.mode === 'reader' && this.reader) {
@@ -8535,6 +9104,25 @@ class Game {
       });
     }
 
+    const disputes = activeDisputes(this.state);
+    if (disputes.length) {
+      lines.push('---------------------------------------------', '');
+      lines.push(`WHERE MY SOURCES DISAGREED  (${disputes.length})`, '');
+      disputes.forEach((d, i) => {
+        const a = shortSourceName(d.a.startsWith('doc:') ? 'document' : this.state.sourceOf(d.a));
+        const b = shortSourceName(d.b.startsWith('doc:') ? 'document' : this.state.sourceOf(d.b));
+        const pos = this.state.positionOn(d.id);
+        lines.push(`${i + 1}. ${d.claim}`);
+        lines.push(`   ${a}: ${d.sideA}`);
+        lines.push(`   ${b}: ${d.sideB}`);
+        lines.push(pos === 'a' ? `   I find ${a} more credible.`
+                 : pos === 'b' ? `   I find ${b} more credible.`
+                 : pos === 'unsure' ? '   I cannot tell which of these is true.'
+                 : '   I did not decide.');
+        lines.push('');
+      });
+    }
+
     lines.push('---------------------------------------------', '');
     lines.push('A note on the pictures: no likeness survives of anyone in this');
     lines.push('story. The character portraits were generated with AI and');
@@ -8565,6 +9153,10 @@ window.__wrapText = wrapText;
 window.__DOCUMENTS = DOCUMENTS;
 window.__FIDELITY = FIDELITY_LABEL;
 window.__readerMetrics = () => drawReader.metrics;
+window.__benchScript = benchScript;
+window.__DISPUTES = DISPUTES;
+window.__MAPS = MAPS;
+window.__activeDisputes = activeDisputes;
 
 const pad = document.getElementById('touch');
 if (pad) {
