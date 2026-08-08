@@ -10,6 +10,7 @@ const KEYMAP = {
   KeyZ: 'confirm', Space: 'confirm', Enter: 'confirm',
   KeyX: 'cancel', Escape: 'cancel', Backspace: 'cancel',
   KeyN: 'notebook', Tab: 'notebook',
+  ShiftLeft: 'run', ShiftRight: 'run',
 };
 
 export class Input {

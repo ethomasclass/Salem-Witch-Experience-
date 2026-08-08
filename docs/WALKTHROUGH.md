@@ -92,6 +92,7 @@ and the game steps you back and names the one thing still missing.
 | | |
 |---|---|
 | Move | Arrow keys or WASD |
+| Run | Hold **Shift**. Walking without stopping also speeds up after a moment, so the touch d-pad gets it too |
 | Talk, examine, advance, copy | **Z** (or Space / Enter) |
 | Close a reader, back out of a conversation | **X** (or Esc) |
 | Notebook | **N** — then ← → to switch tabs |

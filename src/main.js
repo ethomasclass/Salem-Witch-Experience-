@@ -33,6 +33,12 @@ const HARD_CHAPTERS = new Set(['june', 'archive', 'september', 'reckoning']);
 const PORTRAIT_ALIAS = { titubaJail: 'tituba', nurseJail: 'nurse' };
 
 const MOVE_TIME = 0.16;      // seconds per tile
+// Holding shift roughly halves that. The village is deliberately walkable
+// rather than fast — noticing it is the whole point — but a student who has
+// already read the seating chart and is going back for the boundary marker
+// is not noticing anything, they are commuting. Crossing the map is about
+// forty tiles, which is six seconds of held arrow key at walking pace.
+const RUN_TIME = 0.095;
 const REVEAL_CPS = 55;       // typewriter speed
 
 class Game {
@@ -64,6 +70,7 @@ class Game {
     this.notebookTab = 0;
     this.convNpc = null;
     this.objFlash = 0;
+    this.moveHeld = 0;          // seconds of unbroken walking, for auto-run
     this.lastStepId = null;
     this.reader = null;         // the document currently open
     this.answerText = '';
@@ -93,7 +100,8 @@ class Game {
   /** Ambience is chosen by era and by whether you are under a roof. */
   syncAmbience() {
     const m = this.mapFor(this.player.map);
-    this.audio.setAmbience(m.indoor ? 'indoor' : (m.era === 'present' ? 'present' : '1692'));
+    const outdoor1692 = this.state.chapter === 'september' ? '1692-late' : '1692';
+    this.audio.setAmbience(m.indoor ? 'indoor' : (m.era === 'present' ? 'present' : outdoor1692));
   }
 
   mapFor(id, chapter = this.state.chapter) {
@@ -664,8 +672,18 @@ class Game {
     if (inp.justPressed('confirm')) { this.interact(); return; }
 
     const p = this.player;
+
+    // Auto-run after a moment of unbroken walking, so the speed-up is
+    // available to the touch d-pad too — a lot of these are going on
+    // Chromebooks with no shift key in reach of the thumb holding a
+    // direction. It also matches the intent on its own: potter around a
+    // dooryard and you stay slow, cross the whole map and you speed up.
+    const walking = p.moving || !!inp.direction();
+    this.moveHeld = walking ? this.moveHeld + dt : 0;
+    const stepTime = (inp.isDown('run') || this.moveHeld > 0.7) ? RUN_TIME : MOVE_TIME;
+
     if (p.moving) {
-      p.t += dt / MOVE_TIME;
+      p.t += dt / stepTime;
       if (p.t >= 1) {
         p.t = 0; p.moving = false;
         p.px = p.tx * TS; p.py = p.ty * TS;

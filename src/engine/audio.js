@@ -192,13 +192,22 @@ export class Audio {
       filt.type = 'lowpass'; filt.frequency.value = 150; filt.Q.value = 0.5;
       g.gain.linearRampToValueAtTime(0.14, t + 1.2);
     } else {
-      // Open ground in March: wind, with slow gusts.
-      filt.type = 'bandpass'; filt.frequency.value = 480; filt.Q.value = 0.5;
-      g.gain.linearRampToValueAtTime(0.22, t + 1.5);
+      // Open ground in 1692: wind, with slow gusts.
+      //
+      // September is the same wind with the life taken out of it. By then the
+      // village has lost a fifth of its households to the jail, the gallows or
+      // flight, and a place that empty should not sound identical to the one
+      // the player walked through in March. Thinner, colder, and — below —
+      // no crows left calling to each other.
+      const late = name === '1692-late';
+      filt.type = 'bandpass';
+      filt.frequency.value = late ? 620 : 480;
+      filt.Q.value = late ? 0.8 : 0.5;
+      g.gain.linearRampToValueAtTime(late ? 0.17 : 0.22, t + 1.5);
       const lfo = this.ctx.createOscillator();
       const lfoGain = this.ctx.createGain();
-      lfo.frequency.value = 0.09;
-      lfoGain.gain.value = 260;
+      lfo.frequency.value = late ? 0.06 : 0.09;
+      lfoGain.gain.value = late ? 170 : 260;
       lfo.connect(lfoGain); lfoGain.connect(filt.frequency);
       lfo.start(t); nodes.push(lfo, lfoGain);
     }
@@ -210,10 +219,13 @@ export class Audio {
 
     // Occasional punctuation, so the bed does not become wallpaper.
     clearInterval(this._punct);
-    if (name === '1692') {
+    if (name === '1692' || name === '1692-late') {
+      // Crows thin out rather than vanish: one bird a long way off, now and
+      // then, instead of a pair arguing overhead.
+      const odds = name === '1692-late' ? 0.12 : 0.35;
       this._punct = setInterval(() => {
-        if (!this.muted && Math.random() < 0.35) this.crow();
-      }, 9000);
+        if (!this.muted && Math.random() < odds) this.crow();
+      }, name === '1692-late' ? 16000 : 9000);
     } else if (name === 'present') {
       this._punct = setInterval(() => {
         if (!this.muted && Math.random() < 0.3) this.passingCar();

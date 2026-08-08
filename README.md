@@ -59,9 +59,20 @@ September 1692, and back to the memorial.
   as the target is on screen. Deliberately not a minimap — a map in the corner
   makes players watch the corner instead of the village.
 - **An interaction prompt** over the player naming the verb: talk, look, read.
+- **Drawn portraits** for the twelve speaking characters, in two moods —
+  everyone the player meets again after March wears a visibly harder face.
+  Quantized to each character's own sprite ramps so the two cannot drift
+  apart, and any that fails to decode falls back to the procedural face.
+  Sources and prompts: [`art/portraits/`](art/portraits/) and
+  [`docs/PORTRAIT-PROMPTS.md`](docs/PORTRAIT-PROMPTS.md).
+  **No likeness survives of anyone in this story; every face is imagined,
+  and the game says so on its title screen and in the student's export.**
 - **Sound**, synthesised at runtime — footsteps that change with the ground,
   per-character dialogue blips, wind and crows in 1692, traffic in the
-  present. One mute button, and the setting is remembered.
+  present, and a thinner, colder wind with almost no crows in September —
+  a village that has lost a fifth of its households should not sound like
+  the one the player walked through in March. One mute button, and the
+  setting is remembered.
 - **A working farm village**: barn, hayrick, orchard, dry-laid stone walls,
   free-ranging swine, cattle, sheep, hens, and four more villagers to talk to.
 
@@ -96,9 +107,8 @@ with the real fonts and fails if any of them overflow. Run it after editing
 
 ### Still to do
 
-The Wabanaki gap below. Portrait mood variants (characters should visibly
-harden between March and September). And a real classroom playtest — the
-timings are estimates.
+The Wabanaki gap below, and a real classroom playtest — the timings are
+estimates.
 
 ---
 
@@ -137,6 +147,7 @@ Any static host works for a shared link. GitHub Pages is the obvious one.
 | | |
 |---|---|
 | Move | Arrow keys or WASD |
+| Run | Hold Shift — or just keep walking, it speeds up on its own |
 | Talk, examine, advance, copy a document | Z, Space or Enter |
 | Close a reader, back out of a conversation | X or Esc |
 | Notebook | N — then ← → to switch tabs |
