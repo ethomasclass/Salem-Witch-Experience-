@@ -7592,28 +7592,36 @@ function drawTitle(g, view, s, hasSave, index) {
   g.textAlign = 'center';
   g.textBaseline = 'middle';
 
+  // One stack, measured in tile units from the top of the view.
+  //
+  // Everything here used to mix two coordinate systems: the title block was
+  // placed with absolute `s` offsets while the menu anchored to a fraction of
+  // the height. They grow at different rates, so "Begin" was printed on top
+  // of the tagline at every window size.
+  const cx = view.x + view.w / 2;
+  const Y = (u) => view.y + u * s;
+
   g.font = `700 ${34 * s}px Georgia, "Iowan Old Style", Palatino, serif`;
   g.fillStyle = '#e6e2d8';
-  g.fillText('Salem Village', view.x + view.w / 2, view.y + view.h * 0.34);
+  g.fillText('Salem Village', cx, Y(72));
 
   g.font = `italic ${30 * s}px Georgia, serif`;
   g.fillStyle = '#a8b4c4';
-  g.fillText('1692', view.x + view.w / 2, view.y + view.h * 0.34 + 38 * s);
+  g.fillText('1692', cx, Y(108));
 
   g.font = `${12 * s}px system-ui, sans-serif`;
   g.fillStyle = '#7e858e';
-  g.fillText('Walk. Talk to people. Notice things.',
-             view.x + view.w / 2, view.y + view.h * 0.34 + 74 * s);
+  g.fillText('Walk. Talk to people. Notice things.', cx, Y(140));
 
   const items = hasSave ? ['Continue', 'Begin again'] : ['Begin'];
   items.forEach((label, i) => {
-    const y = view.y + view.h * 0.68 + i * 30 * s;
+    const y = Y(170 + i * 26);
     g.font = `${i === index ? '700 ' : ''}${15 * s}px Georgia, serif`;
     g.fillStyle = i === index ? '#efeade' : '#79808a';
-    g.fillText(label, view.x + view.w / 2, y);
+    g.fillText(label, cx, y);
     if (i === index) {
       g.fillStyle = P.accent;
-      g.fillRect(view.x + view.w / 2 - g.measureText(label).width / 2, y + 13 * s,
+      g.fillRect(cx - g.measureText(label).width / 2, y + 11 * s,
                  g.measureText(label).width, 2 * s);
     }
   });
@@ -7621,7 +7629,7 @@ function drawTitle(g, view, s, hasSave, index) {
   g.font = `${10 * s}px system-ui, sans-serif`;
   g.fillStyle = '#5c626b';
   g.fillText('Arrow keys or WASD to move  ·  Z / Space to talk  ·  N for notebook',
-             view.x + view.w / 2, view.y + view.h - 32 * s);
+             cx, Y(222));
 
   // Said out loud, on the first screen, because this game spends half an hour
   // teaching students to ask where a source came from. No likeness survives
@@ -7631,7 +7639,7 @@ function drawTitle(g, view, s, hasSave, index) {
   g.font = `${9 * s}px system-ui, sans-serif`;
   g.fillStyle = '#4a4f57';
   g.fillText('No portrait survives of anyone in this story. Every face here is imagined.',
-             view.x + view.w / 2, view.y + view.h - 16 * s);
+             cx, Y(233));
 }
 
 /* ===== src/main.js ===== */
