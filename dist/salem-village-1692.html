@@ -2693,6 +2693,29 @@ class Audio {
 // that some sources are transcriptions and some are reconstructions is a
 // student doing source criticism, which is the entire point.
 //
+// ---------------------------------------------------------------------
+// LENGTH, WHICH IS A HISTORICAL QUESTION AND NOT ONLY A DESIGN ONE
+//
+// These are excerpts, and they are meant to fit the reader without
+// scrolling. A document a student scrolls through is a document a student
+// skims. Two rules follow, and both are load-bearing:
+//
+//   * `original` lines are hand-wrapped to about 29 characters, because
+//     that is the width of the reader's left column. Let a line run longer
+//     and it wraps, doubling the line count for no gain.
+//   * Anything cut from a transcription is marked `[…]` on its own line.
+//     Silently trimming a source and still calling it the document would
+//     teach exactly the wrong habit, in a game whose whole subject is what
+//     a record does and does not say.
+//
+// `gloss` is a translation plus one pointed observation. It is not a place
+// to re-narrate what the player has already been told by a person — that
+// work belongs in dialogue, where somebody can be wrong about it.
+//
+// tools/check-fit.mjs measures every document against the real column box
+// using the real fonts. Run it after editing anything here.
+// ---------------------------------------------------------------------
+//
 // Everything here should be checked against Bernard Rosenthal, *Records of
 // the Salem Witch-Hunt* (Cambridge, 2009), and the Salem Witch Trials
 // Documentary Archive at the University of Virginia, both cited on screen.
@@ -2712,37 +2735,28 @@ const DOCUMENTS = {
     cite: 'Salem Village Book of Record, 1689. See Rosenthal, Records of the Salem Witch-Hunt.',
     note: 'The promise, in writing, that the village then broke.',
     original: [
-      'Agreed with Mr Samuel Parris to take the office of the ministry',
-      'among us, upon these termes following:',
+      'Agreed with Mr Samuel Parris',
+      'to take the office of the',
+      'ministry among us:',
       '',
-      'First, that he is to have Sixty six pounds for his yearly',
-      'salary, one third part in money, and the other two third',
-      'parts in provisions at these prices following, viz: Indian',
-      'corn at two shillings a bushell, Rye at three shillings,',
-      'Barley at three shillings, Beefe at three pence per pound,',
-      'Porke at two pence per pound, Butter at six pence.',
+      'First, that he is to have',
+      'Sixty six pounds for his',
+      'yearly salary, one third part',
+      'in money, and the other two',
+      'third parts in provisions.',
       '',
-      'Item: that his fire wood be given in freely to him.',
-      '',
-      'Item: that the Ministry house and barne be kept in good',
-      'repaire, and the land improved for his use.',
+      'Item: that his fire wood be',
+      'given in freely to him.',
+      '[…]',
     ],
     gloss: [
-      'The village hired Samuel Parris as minister on these terms.',
+      'Parris was hired on these terms. Sixty-six pounds a year, mostly paid in corn and meat.',
       '',
-      'Sixty-six pounds a year. Only a third of it in actual money —',
-      'the rest paid in corn, rye, barley, beef, pork and butter, at',
-      'fixed prices written into the contract.',
+      'And his firewood free.',
       '',
-      'AND: his firewood supplied free.',
+      'Two years later the village stopped collecting the tax that paid him, and stopped delivering the wood.',
       '',
-      'AND: the parsonage and barn kept in repair for him.',
-      '',
-      'Two years later the village elected a committee that stopped',
-      'collecting the tax that paid the salary, and stopped delivering',
-      'the wood.',
-      '',
-      'His woodpile is outside. Go and count it.',
+      'His woodpile is outside.',
     ],
   },
 
@@ -2752,37 +2766,27 @@ const DOCUMENTS = {
     date: '1690',
     kind: 'A number',
     fidelity: 'reconstructed',
-    cite: 'Salem Village Book of Record. Seating committees and their lists are documented throughout the 1680s–90s.',
+    cite: 'Salem Village Book of Record. Seating committees are documented throughout the 1680s–90s.',
     note: 'Status, priced. Nailed where everyone reads it twice a week.',
     original: [
-      'The Committee chosen to seat the meeting house, having',
-      'regard to age, to office, and to what each man payeth to',
-      'the rates, do order the seating as followeth:',
+      'The Committee chosen to seat',
+      'the meeting house, having',
+      'regard to age, to office, and',
+      'to what each man payeth to the',
+      'rates, do order as followeth:',
       '',
-      '  In the foremost seat        Capt. Jonathan Walcott    £2  4s',
-      '                              Mr Thomas Putnam          £2  1s',
-      '                              Mr Nathaniel Ingersoll    £1 18s',
-      '  In the second seat          Goodman Francis Nurse     £1  6s',
-      '                              Goodman Peter Cloyse      £1  2s',
-      '  In the third seat           Goodman John Willard         14s',
-      '  ...',
-      '  In the hindmost seat        Sarah Good                 —',
+      ' Foremost  Capt.Walcott £2 4s',
+      '           Mr T.Putnam  £2 1s',
+      ' Second    Goodm.Nurse  £1 6s',
+      ' […]',
+      ' Hindmost  Sarah Good       —',
     ],
     gloss: [
-      'A committee decided where every household in the village sat',
-      'in church, based on age, office, and — written right beside',
-      'each name — how much tax that household paid.',
+      'A committee ranked every household in church by what it paid in tax.',
       '',
-      'The wealthiest men sit at the front. Everyone else is placed',
-      'behind them in descending order of what they are worth.',
+      'Twice a Sunday the whole village sits down in the order of who matters.',
       '',
-      'The list is nailed to the wall by the door.',
-      '',
-      'Twice every Sunday, for hours, the entire village sits down',
-      'in the exact order of who matters. Nobody has to be told',
-      'where they stand.',
-      '',
-      'The last name on the list has no sum beside it at all.',
+      'The last name has no sum beside it at all.',
     ],
   },
 
@@ -2792,33 +2796,24 @@ const DOCUMENTS = {
     date: '1691–92',
     kind: 'A number',
     fidelity: 'reconstructed',
-    cite: 'Ordinary-keepers\' account books of the period; the Putnams\' extensive credit in the village is documented in Boyer & Nissenbaum, Salem Possessed.',
+    cite: 'Ordinary-keepers\' account books of the period; Putnam credit in the village is documented in Boyer & Nissenbaum, Salem Possessed.',
     note: 'Debt as a map of who cannot afford to disagree.',
     original: [
-      '            Dr.                                    Cr.',
-      '  Jno. Willard      for seed corn      1  4  0   Putnam',
-      '  Jos. Herrick      for timber         2 11  6   Putnam',
-      '  Wm. Sibley        cattle wintered    3  0  0   Putnam',
-      '  Sar. Bibber       for meal              9  0   Ingersoll',
-      '  Jno. Procter      for cider          1  2  0   Ingersoll',
-      '  Geo. Jacobs       for oxen hire      1 15  0   Putnam',
-      '  Isr. Porter       —                     —      —',
+      ' Debtor          £  s  d  Owed to',
+      ' Jno. Willard    1  4  0  Putnam',
+      ' Jos. Herrick    2 11  6  Putnam',
+      ' Wm. Sibley      3  0  0  Putnam',
+      ' Sar. Bibber        9  0  Ingersoll',
+      ' Jno. Procter    1  2  0  Ingersoll',
+      ' Geo. Jacobs     1 15  0  Putnam',
+      ' Isr. Porter        —     —',
     ],
     gloss: [
-      'Who owes what, and to whom.',
+      'Who owes what, and to whom. Read the right-hand column.',
       '',
-      'Read down the right-hand column — the people the money is owed',
-      'TO — and one surname keeps appearing. Seed corn, timber, cattle',
-      'wintered over, the hire of oxen.',
+      'When a Putnam says something in this village, a great many people have a financial reason not to contradict him.',
       '',
-      'This is not wickedness. It is what a large family with land and',
-      'money does in a small farming place.',
-      '',
-      'But it means that when a Putnam says something in this village,',
-      'a great many people have a concrete financial reason not to',
-      'contradict him.',
-      '',
-      'One name in this column owes them nothing: Porter.',
+      'One name here owes them nothing: Porter.',
     ],
   },
 
@@ -2833,38 +2828,28 @@ const DOCUMENTS = {
     original: [
       'To the Honoured Generall Court:',
       '',
-      'The humble petition of severall of the inhabitants of Salem',
-      'Village sheweth, that whereas the men of Topsfield have of',
-      'late yeares presumed to lay out and to fell timber upon lands',
-      'which were granted unto Salem long before Topsfield was a',
-      'towne, and have carried away the same,',
-      '',
-      'We pray this Honoured Court would settle the bounds,',
-      '',
-      '        Thomas Putnam        John Putnam',
-      '        Nathaniel Putnam     Edward Putnam',
-      '        Jonathan Walcott     ...',
+      'The humble petition of severall',
+      'inhabitants of Salem Village',
+      'sheweth, that the men of',
+      'Topsfield have presumed to fell',
+      'timber upon lands granted unto',
+      'Salem, and carried away the same.',
+      '[…]',
+      '  Thomas Putnam  John Putnam',
+      '  Nath. Putnam   Edw. Putnam',
       '',
       'Contra, for Topsfield:',
-      '        Jacob Towne          John Towne',
-      '        Isaac Easty          Joseph Towne',
+      '  Jacob Towne    John Towne',
+      '  Isaac Easty    Joseph Towne',
     ],
     gloss: [
-      'A land dispute between Salem Village and the neighbouring town',
-      'of Topsfield, over a boundary and the timber cut on it.',
+      'A boundary quarrel already thirty years old when this was written.',
       '',
-      'It had already been running for twenty years when this was',
-      'written, and it would run for twenty more.',
+      'Read the two lists of names. Putnams on one side. Townes and Eastys on the other.',
       '',
-      'Look at the two lists of names.',
+      'Rebecca Nurse was born a Towne. Mary Easty is her sister.',
       '',
-      'On one side, the Putnams.',
-      '',
-      'On the other, the Townes and the Eastys. Rebecca Nurse was born',
-      'a Towne. Mary Easty is her sister.',
-      '',
-      'In 1692, all three Towne sisters — Rebecca Nurse, Mary Easty,',
-      'and Sarah Cloyce — were accused of witchcraft.',
+      'In 1692 all three Towne sisters were accused.',
     ],
   },
 
@@ -2878,45 +2863,34 @@ const DOCUMENTS = {
     date: '23 March 1692',
     kind: 'A signature',
     fidelity: 'close',
-    cite: 'Warrant for the apprehension of Rebecca Nurse, 23 March 1692. Essex County Court Archives, Salem Witchcraft, vol. 1.',
+    cite: 'Warrant for the apprehension of Rebecca Nurse, 23 March 1692. Essex County Court Archives.',
     note: 'The machinery starting. It is a printed-form kind of document.',
     original: [
       'Salem, March the 23d, 1691/2',
       '',
-      'To the Marshall of Essex or his lawfull Deputie:',
+      'To the Marshall of Essex:',
       '',
-      'You are in theire Majest\'s names hereby required to bring',
-      'before us Rebekah Nurse the wife of Franc\'s Nurse of Salem',
-      'Village, tomorrow about eight of the clock in the forenoon,',
-      'at the house of Lt Nathaniell Ingersalls in s\'d Village,',
+      'You are hereby required to',
+      'bring before us Rebekah Nurse,',
+      'wife of Franc\'s Nurse, tomorrow',
+      'at the house of Lt Ingersalls,',
       '',
-      'who stands charged with haveing committed sundry acts of',
-      'Witchcraft, and thereby haveing done much hurt and injury',
-      'to the bodys of Ann Putnam the wife of Thomas Putnam of',
-      'Salem Village, Ann Putnam junr, and Abigail Williams &c.,',
-      '',
-      'and hereof faile not.',
-      '',
-      '                        John Hathorne  }  Assists',
-      '                        Jonathan Corwin }',
+      'who stands charged with sundry',
+      'acts of Witchcraft done to Ann',
+      'Putnam, Ann Putnam junr, and',
+      'Abigail Williams &c.',
+      '[…]',
+      '   John Hathorne   } Assists',
+      '   Jonathan Corwin }',
     ],
     gloss: [
       'An arrest warrant, issued the day before she was taken.',
       '',
-      'Notice where she is ordered to be brought: to Ingersoll\'s.',
-      'The tavern. There was nowhere else big enough.',
+      'Where is she to be brought? Ingersoll\'s. The tavern — there was nowhere else big enough.',
       '',
-      'Notice who is named as the injured party. Ann Putnam senior.',
-      'Ann Putnam junior. Abigail Williams. The "&c." at the end is',
-      'the clerk not bothering to list the rest.',
+      'The "&c." is the clerk not bothering to list the rest.',
       '',
-      'Notice the date written as "1691/2". England had not yet moved',
-      'the start of the year from March to January.',
-      '',
-      'Rebecca Nurse was seventy-one, ill in bed, and a covenanted',
-      'member of the church in Salem Town.',
-      '',
-      'She was arrested the next morning.',
+      'She was seventy-one and ill in bed.',
     ],
   },
 
@@ -2929,41 +2903,29 @@ const DOCUMENTS = {
     cite: 'Petition for Rebecca Nurse, 1692. Essex County Court Archives, Salem Witchcraft, vol. 1.',
     note: 'The whole village saying she is not a witch, and it not mattering.',
     original: [
-      'We whose names are here unto subscribed being desired by',
-      'Goodman Nurse to declare what we knowe concerning his wifes',
-      'conversation for time past, we can testifie to all whom it may',
-      'concerne, that we have knowne her for many yeares, and',
-      'accordinge to our observation her Life and conversation was',
-      'accordinge to her profession, and we never had any cause or',
-      'grounds to suspect her of any such thinge as she is nowe',
-      'accused of.',
+      'We whose names are here unto',
+      'subscribed can testifie that we',
+      'have knowne her for many yeares,',
+      'and accordinge to our',
+      'observation her Life was',
+      'accordinge to her profession,',
+      'and we never had any cause to',
+      'suspect her of any such thinge',
+      'as she is nowe accused of.',
       '',
-      '  Israel Porter          Elizabeth Porter',
-      '  Edward Bishop Sr       Hannah Bishop',
-      '  Joshua Rea             Sarah Rea',
-      '  Sarah Leach            John Putnam Sr',
-      '  Rebecca Putnam         Joseph Hutchinson',
-      '  ... and twenty-nine others',
+      '  Israel Porter  Eliz. Porter',
+      '  Joshua Rea     John Putnam Sr',
+      '  Sarah Leach    Rebecca Putnam',
+      '  […] and twenty-nine others',
     ],
     gloss: [
-      'Thirty-nine of her neighbours signed a statement saying they',
-      'had known this woman for years and had never seen anything in',
-      'her life to suggest she was what she was accused of being.',
+      'Thirty-nine neighbours signed to say they had known her for years and had never seen anything in it.',
       '',
-      'Read the names carefully.',
+      'Read the names. John Putnam Sr. Rebecca Putnam.',
       '',
-      'John Putnam Sr. Rebecca Putnam.',
+      'Even inside the family driving the accusations, people signed for her.',
       '',
-      'Even inside the family driving the accusations, people signed',
-      'for her. This was not a village united against an outcast.',
-      '',
-      'The jury acquitted her.',
-      '',
-      'The courtroom erupted. The judges asked the jury to reconsider',
-      'a phrase she had used. They went back out. They came back and',
-      'convicted her.',
-      '',
-      'She was hanged on 19 July 1692.',
+      'The jury acquitted her. The judges sent them back out. They convicted her.',
     ],
   },
 
@@ -2976,39 +2938,29 @@ const DOCUMENTS = {
     cite: 'Depositions of Ann Putnam Jr., 1692. Many surviving examples are in the hand of her father, Thomas Putnam.',
     note: 'Spectral evidence, sworn by a twelve-year-old. Look at the handwriting.',
     original: [
-      'The deposition of Ann Putnam junr who testifieth and saith:',
+      'The deposition of Ann Putnam',
+      'junr, who testifieth and saith:',
       '',
-      'That on the 13th of March 1692 I saw the Apperishtion of',
-      'Rebekah Nurse, and she did most greviously torment me by',
-      'pinching and pricking me most dreadfully,',
+      'That on the 13th of March 1692',
+      'I saw the Apperishtion of',
+      'Rebekah Nurse, and she did most',
+      'greviously torment me by',
+      'pinching and pricking me,',
       '',
-      'and so she hath severall times sence tortored me, urging me',
-      'vehemently to writ in her book,',
+      'urging me vehemently to writ in',
+      'her book. […]',
       '',
-      'and I veryly beleve in my heart that Rebekah Nurse is a',
-      'wicth and that she hath severall times afflected me.',
-      '',
-      '  Ann Putnam junr declared the above written evidence to be',
-      '  the truth upon her oath before the Jurors of Inquest.',
+      ' Sworn upon her oath before the',
+      ' Jurors of Inquest.',
     ],
     gloss: [
-      'Sworn testimony that the SHAPE of Rebecca Nurse — her spirit,',
-      'her apparition — came into a room and hurt a twelve-year-old.',
+      'Sworn testimony that the SHAPE of Rebecca Nurse came into a room and hurt a twelve-year-old.',
       '',
-      'Nobody else could see it. There was no possible way to disprove',
-      'it. This is spectral evidence, and the court accepted it.',
+      'Nobody else could see it. Nothing could disprove it. The court accepted it anyway.',
       '',
-      'Now look at the document itself rather than the words.',
-      '',
-      'Ann Putnam Jr. is twelve. She did not write this. A great many',
-      'of the depositions sworn by the afflicted girls survive in the',
-      'handwriting of one man — Thomas Putnam, Ann\'s father, who filed',
-      'more complaints than almost anyone in the county.',
+      'Now look at the document instead of the words. Ann is twelve. She did not write this — her father did.',
       '',
       'She swore to it. He wrote it.',
-      '',
-      'In 1706 she stood in the village church while her apology for',
-      'this was read aloud over her head.',
     ],
   },
 
@@ -3018,37 +2970,30 @@ const DOCUMENTS = {
     date: '1692',
     kind: 'A number',
     fidelity: 'reconstructed',
-    cite: 'Prison charges are documented in the 1692 accounts and in later restitution claims; see Rosenthal, Records of the Salem Witch-Hunt.',
+    cite: 'Prison charges appear in the 1692 accounts and in later restitution claims; see Rosenthal, Records of the Salem Witch-Hunt.',
     note: 'They were charged for their own imprisonment. Including the irons.',
     original: [
-      'The account of the keeper of their Majesties Gaol in Salem,',
-      'for the dyett and necessaries of persons committed upon',
+      'The account of the keeper of',
+      'their Majesties Gaol in Salem,',
+      'for persons committed upon',
       'suspicion of witchcraft:',
       '',
-      '  To dyett, 9 weeks, at 2s 6d the week          1  2  6',
-      '  To the chains and shackles                        6  8',
-      '  To fees at commitment                             2  0',
-      '  To fees at discharge                              2  0',
-      '  To the removing of the body                       5  0',
+      ' Dyett, 9 weeks     1  2  6',
+      ' Chains and shackles    6  8',
+      ' Fees at commitment     2  0',
+      ' Fees at discharge      2  0',
+      ' Removing of the body   5  0',
       '',
-      '  Note: no prisoner to be released until the said',
-      '  charges be satisfied, either by the prisoner or',
-      '  by their friends.',
+      ' No prisoner to be released',
+      ' until the charges be',
+      ' satisfied.',
     ],
     gloss: [
-      'Prison in 1692 was not free. The accused were billed for their',
-      'own food, their own fees, and — read it again — their own',
-      'chains.',
+      'Prison was not free. The accused were billed for their own food, their own fees, and — read it again — their own chains.',
       '',
-      'And nobody was released until the bill was paid. Several people',
-      'who were found not guilty stayed in jail for months afterwards',
-      'because their families could not settle the account.',
+      'Nobody was released until the bill was paid. People found not guilty stayed in jail for months.',
       '',
-      'The last line is a charge for moving a body.',
-      '',
-      'Sarah Good gave birth in this jail. The baby died there.',
-      '',
-      'Whatever else was going on in 1692, somebody was being paid.',
+      'The last charge is for moving a body.',
     ],
   },
 
@@ -3065,41 +3010,29 @@ const DOCUMENTS = {
     cite: 'Petition of Mary Easty to the Court, September 1692. Essex County Court Archives, Salem Witchcraft, vol. 2.',
     note: 'She is not asking for her life.',
     original: [
-      'The humble petition of Mary Easty unto his Excellencyes Sir',
-      'William Phipps, and to the honoured Judge and Bench now',
-      'sitting in Judicature in Salem:',
+      'To the honoured Judge now',
+      'sitting in Salem: […]',
+      'I petition to your honours',
+      'not for my own life, for I',
+      'know I must die, and my',
+      'appointed time is set,',
       '',
-      'I petition to your honours not for my own life, for I know I',
-      'must die, and my appointed time is set,',
+      'but that, if it be possible,',
+      'no more innocent blood may',
+      'be shed, which cannot be',
+      'avoyded in the way and',
+      'course you goe in. […]',
       '',
-      'but the Lord he knowes it is that, if it be possible, no more',
-      'innocent blood may be shed, which undoubtedly cannot be',
-      'avoyded in the way and course you goe in.',
-      '',
-      'I question not but your honours does to the utmost of your',
-      'powers in the discovery and detecting of witchcraft and',
-      'witches, and would not be gulty of innocent blood for the',
-      'world.',
-      '',
-      'But by my own innocency I know you are in the wrong way.',
+      'But by my own innocency I',
+      'know you are in the wrong',
+      'way.',
     ],
     gloss: [
-      'Mary Easty was Rebecca Nurse\'s sister. She was arrested,',
-      'released, and re-arrested after the afflicted girls insisted.',
+      'Rebecca Nurse\'s sister, writing when she knew she was going to be hanged.',
       '',
-      'She wrote this knowing she was going to be hanged.',
+      'Read what she asks for. Not her life. She asks the court to change its methods so it stops killing other people.',
       '',
-      'Read what she asks for. Not her life — she says plainly that',
-      'she knows she must die. She asks that the court change its',
-      'methods so that it stops killing other people.',
-      '',
-      'And read how she says it. She does not accuse the judges of',
-      'malice. She says she is sure they are doing their best and',
-      'would not shed innocent blood for the world.',
-      '',
-      'Then: "But by my own innocency I know you are in the wrong way."',
-      '',
-      'She was hanged on 22 September 1692.',
+      'And she does not accuse the judges of malice. She says they are doing their best.',
     ],
   },
 
@@ -3109,40 +3042,31 @@ const DOCUMENTS = {
     date: '19 September 1692',
     kind: 'A number',
     fidelity: 'reconstructed',
-    cite: 'The pressing of Giles Corey, 19 September 1692; recorded by Samuel Sewall in his diary and in the court records.',
+    cite: 'The pressing of Giles Corey, 19 September 1692; recorded by Samuel Sewall in his diary.',
     note: 'Two days. Follow the money.',
     original: [
-      'Giles Corey, being indicted for witchcraft, was this day',
-      'brought before the Court, and being called upon to plead',
-      'unto his indictment, refused to plead, standing mute.',
+      'Giles Corey, being indicted for',
+      'witchcraft, and called upon to',
+      'plead unto his indictment,',
+      'refused to plead, standing mute.',
       '',
-      'Being three times required to plead, and three times refusing,',
-      'sentence of peine forte et dure was passed upon him,',
+      'Being three times required, and',
+      'three times refusing, sentence',
+      'was passed that he be pressed',
+      'with weights until he plead or',
+      'die.',
       '',
-      'that he be pressed with weights until he plead or die.',
-      '',
-      '  Monday, Sept. 19, 1692. About noon, at Salem, Giles Corey',
-      '  was press\'d to death for standing Mute.',
-      '                                     — S. Sewall, his diary',
+      ' Sept. 19, 1692. About noon, at',
+      ' Salem, Giles Corey was press\'d',
+      ' to death for standing Mute.',
+      '        — S. Sewall, his diary',
     ],
     gloss: [
-      'Under English law, a trial could not proceed until the accused',
-      'entered a plea. If you refused to plead, the court could order',
-      'you crushed under stones until you did.',
+      'A trial could not begin until the accused entered a plea. Refuse, and the court could crush you under stones until you did.',
       '',
-      'Giles Corey was eighty-one. He refused three times. It took',
-      'two days.',
+      'He was eighty-one. It took two days.',
       '',
-      'Now the part that is not about courage.',
-      '',
-      'If you were tried and convicted of a felony, the Crown could',
-      'seize your estate. If you were never tried — because you never',
-      'pleaded — it could not.',
-      '',
-      'By refusing to plead, Giles Corey kept his farm out of the',
-      'sheriff\'s hands and left it to his sons-in-law.',
-      '',
-      'He worked out what it would cost him and he paid it.',
+      'Now the part that is not courage: convicted felons had their estates seized. Untried men did not. He kept the farm for his sons-in-law.',
     ],
   },
 
@@ -3155,35 +3079,28 @@ const DOCUMENTS = {
     cite: 'Seizures by Sheriff George Corwin are documented in later restitution petitions, 1710–11.',
     note: 'What the law took out of a household while the family was in jail.',
     original: [
-      'An account of what was seized and carried away by the Sheriff',
-      'from the house of a person condemned:',
+      'An account of what was seized',
+      'and carried away by the Sheriff',
+      'from the house of a person',
+      'condemned:',
       '',
-      '  5 cows                                    12  0  0',
-      '  a yoke of oxen                             8  0  0',
-      '  8 loads of English hay                     4  0  0',
-      '  a quantity of provisions, meat and corn     3 10  0',
-      '  brass and pewter out of the house           2  4  0',
-      '  the beds                                    1 16  0',
+      ' 5 cows              12  0  0',
+      ' a yoke of oxen       8  0  0',
+      ' 8 loads of hay       4  0  0',
+      ' provisions           3 10  0',
+      ' brass and pewter     2  4  0',
+      ' the beds             1 16  0',
       '',
-      '  Also, a barrel of cider carried away, and the',
-      '  wife left with nothing to keep the children.',
+      ' Also a barrel of cider, and',
+      ' the wife left with nothing to',
+      ' keep the children.',
     ],
     gloss: [
-      'When someone was convicted, the sheriff came to the house and',
-      'took what was in it.',
-      '',
-      'The cattle. The oxen — which is to say the ability to plough.',
-      'The hay that would have fed the animals through winter. The',
-      'food. The pewter. The beds.',
+      'The oxen — which is to say the ability to plough. The hay that would have fed the animals through winter. The beds.',
       '',
       'The family left behind was not accused of anything.',
       '',
-      'Twenty years later, survivors petitioned the government for',
-      'restitution. Some got money. Some did not. Several of the',
-      'petitions describe a household that never recovered.',
-      '',
-      'When you are working out what caused 1692, this is one of the',
-      'things you have to weigh: some people ended up better off.',
+      'Working out what caused 1692 means weighing this: some people ended up better off.',
     ],
   },
 
@@ -3196,32 +3113,29 @@ const DOCUMENTS = {
     cite: 'Execution returns, September 1692. Eight people were hanged on 22 September, the last executions of the episode.',
     note: 'Eight people. One line each.',
     original: [
-      'According to the within written precept, I have taken the',
-      'bodyes of the persons within named and caused them to be',
-      'hanged by the neck untill they were dead,',
+      'According to the within written',
+      'precept, I have taken the bodyes',
+      'of the persons within named and',
+      'caused them to be hanged by the',
+      'neck untill they were dead,',
       '',
-      '  Martha Corey            Mary Easty',
-      '  Alice Parker            Mary Parker',
-      '  Ann Pudeator            Wilmot Redd',
-      '  Margaret Scott          Samuel Wardwell',
+      ' Martha Corey    Mary Easty',
+      ' Alice Parker    Mary Parker',
+      ' Ann Pudeator    Wilmot Redd',
+      ' Margaret Scott  Sam. Wardwell',
       '',
       'and have made return hereof.',
       '',
-      '                        George Corwin, Sheriff',
+      '     George Corwin, Sheriff',
     ],
     gloss: [
       'Eight people, on one morning, on a ledge above the town.',
       '',
-      'This is the paperwork afterwards. A sheriff confirming to a',
-      'court that an instruction has been carried out. The form is',
-      'the same form used for any writ.',
+      'This is only the paperwork afterwards — a sheriff confirming an instruction was carried out, on the same form used for any writ.',
       '',
-      'Nobody knew it at the time, but these were the last executions.',
-      'Within weeks the court had been dissolved. Within months',
-      'spectral evidence was disallowed. Within five years people who',
-      'had taken part were apologising in public.',
+      'Nobody knew it yet, but these were the last executions.',
       '',
-      'Read the eight names again, and then go and look at the benches.',
+      'Read the names again, then go and look at the benches.',
     ],
   },
 
@@ -3238,54 +3152,27 @@ const DOCUMENTS = {
     cite: 'Ann Putnam Jr.\'s confession, read aloud in Salem Village church by Rev. Joseph Green, 1706.',
     note: 'She was twelve when you met her. She is twenty-six here.',
     original: [
-      'I desire to be humbled before God for that sad and humbling',
-      'providence that befell my father\'s family in the year about',
-      'ninety-two;',
+      'I desire to be humbled before',
+      'God for that sad providence',
+      'that befell my family. […]',
       '',
-      'that I, then being in my childhood, should, by such a',
-      'providence of God, be made an instrument for the accusing of',
-      'several persons of a grievous crime, whereby their lives were',
-      'taken away from them, whom now I have just grounds and good',
-      'reason to believe they were innocent persons;',
+      'that I, in my childhood,',
+      'should be made an instrument',
+      'for the accusing of several',
+      'persons, whereby their lives',
+      'were taken away, whom now I',
+      'believe were innocent. […]',
       '',
-      'and that it was a great delusion of Satan that deceived me in',
-      'that sad time, whereby I justly fear I have been instrumental,',
-      'with others, though ignorantly and unwittingly, to bring upon',
-      'myself and this land the guilt of innocent blood;',
-      '',
-      'though what was said or done by me against any person I can',
-      'truly and uprightly say, before God and man, I did it not out',
-      'of any anger, malice, or ill-will to any person, for I had no',
-      'such thing against one of them; but what I did was ignorantly,',
-      'being deluded of Satan.',
-      '',
-      'And particularly, as I was a chief instrument of accusing of',
-      'Goodwife Nurse and her two sisters, I desire to lie in the',
-      'dust, and to be humbled for it, in that I was a cause, with',
-      'others, of so sad a calamity to them and their families.',
+      'And particularly, as I was a',
+      'chief instrument of accusing',
+      'Goodwife Nurse and her two',
+      'sisters, I desire to lie in',
+      'the dust.',
     ],
     gloss: [
-      'Fourteen years later, Ann Putnam Jr. stood in the meeting house',
-      'in Salem Village while the minister read this out over her head',
-      'in front of the congregation.',
+      'Fourteen years on, she stood in the village meeting house while the minister read this out over her head. She is the only one of the girls who ever did.',
       '',
-      'She is the only one of the afflicted girls who ever did this.',
-      '',
-      'Read what she does and does not say. She says she was wrong.',
-      'She says the people she accused were innocent. She names',
-      'Rebecca Nurse specifically, and her sisters.',
-      '',
-      'She also says she was deluded by Satan, and that she bore no',
-      'malice to any of them. Whether you believe that part is a',
-      'genuine historical question, and historians disagree about it.',
-      '',
-      'She never married. She raised her younger siblings after both',
-      'her parents died within two weeks of each other in 1699.',
-      '',
-      'She died at thirty-seven and is buried in an unmarked grave.',
-      '',
-      'You met her when she was twelve, mending something by a window,',
-      'complaining that people came to stare.',
+      'She names Rebecca Nurse. She also says she bore nobody any malice — and whether you believe that is a real historical argument.',
     ],
   },
 
@@ -3295,43 +3182,31 @@ const DOCUMENTS = {
     date: '14 January 1697',
     kind: 'A signature',
     fidelity: 'close',
-    cite: 'Samuel Sewall\'s bill of apology, read at Old South Church, Boston, 14 January 1697, by Rev. Samuel Willard.',
+    cite: 'Samuel Sewall\'s bill, read at Old South Church, Boston, 14 January 1697, by Rev. Samuel Willard.',
     note: 'One judge out of nine.',
     original: [
-      'Samuel Sewall, sensible of the reiterated strokes of God upon',
-      'himself and family, and being sensible that as to the guilt',
-      'contracted upon the opening of the late commission of Oyer and',
+      'Samuel Sewall, sensible of the',
+      'reiterated strokes of God upon',
+      'himself and family, and being',
+      'sensible that as to the guilt',
+      'contracted upon the opening of',
+      'the late commission of Oyer and',
       'Terminer at Salem,',
       '',
-      'he is, upon many accounts, more concerned than any that he',
+      'he is, upon many accounts, more',
+      'concerned than any that he',
       'knows of,',
       '',
-      'desires to take the blame and shame of it, asking pardon of',
-      'men, and especially desiring prayers that God, who has an',
-      'unlimited authority, would pardon that sin and all other his',
-      'sins.',
+      'desires to take the blame and',
+      'shame of it, asking pardon of',
+      'men. […]',
     ],
     gloss: [
-      'Five years after the trials, one of the judges stood up in a',
-      'church in Boston on a public fast day while the minister read',
-      'this aloud, and he stood the whole time.',
+      'Five years on, one of the judges stood in a Boston church while this was read aloud. He stood the whole time.',
       '',
-      'He kept a fast day for it every year for the rest of his life.',
-      'He later wrote one of the first anti-slavery tracts published',
-      'in America.',
+      'Now the other half of this document, which does not exist: the chief justice, William Stoughton, never apologised.',
       '',
-      'Now the other half of this document, which is not written down',
-      'anywhere because it never happened:',
-      '',
-      'William Stoughton was the chief justice. He was the one who',
-      'admitted spectral evidence in the first place, and the one who',
-      'sent the jury back out when they acquitted Rebecca Nurse.',
-      '',
-      'He never apologised, never expressed a doubt, and was angry',
-      'when the trials were stopped.',
-      '',
-      'He became governor of Massachusetts. There is a county named',
-      'after him.',
+      'He became governor. There is a county named after him.',
     ],
   },
 
@@ -3341,36 +3216,30 @@ const DOCUMENTS = {
     date: '2022',
     kind: 'A signature',
     fidelity: 'close',
-    cite: 'Massachusetts Session Laws, 2022. Added as an amendment to the state budget after a campaign by an eighth-grade civics class in North Andover.',
+    cite: 'Massachusetts Session Laws, 2022. Passed after a campaign by an eighth-grade class in North Andover.',
     note: 'Written by thirteen-year-olds.',
     original: [
-      'SECTION —.  The conviction and sentence of Elizabeth Johnson,',
-      'Jr., of the crime of witchcraft in the year sixteen hundred',
-      'and ninety-three are hereby declared null and void.',
+      'SECTION —.  The conviction and',
+      'sentence of Elizabeth Johnson,',
+      'Jr., of the crime of witchcraft',
+      'in the year sixteen hundred and',
+      'ninety-three are hereby',
+      'declared null and void.',
       '',
-      'The names of all persons convicted of witchcraft in the years',
-      'sixteen hundred and ninety-two and sixteen hundred and ninety-',
-      'three, and their heirs, are hereby declared free from any and',
-      'all disgrace or cause of distress.',
+      'The names of all persons',
+      'convicted of witchcraft in the',
+      'years sixteen hundred and',
+      'ninety-two and ninety-three,',
+      'and their heirs, are hereby',
+      'declared free from any and all',
+      'disgrace or cause of distress.',
     ],
     gloss: [
-      'Elizabeth Johnson Jr. was convicted, sentenced to hang, and',
-      'never executed. Then she was simply forgotten.',
+      'Massachusetts cleared the others in stages — 1711, 1957, 1992, 2001 — and each time she was left off the list. She had no descendants to be annoyed about it.',
       '',
-      'Massachusetts cleared the others in stages — 1711, 1957, 1992,',
-      '2001 — and each time she was left off the list. She had no',
-      'descendants, so nobody was left to be annoyed about it.',
+      'She stayed a convicted witch for 329 years.',
       '',
-      'She stayed a convicted witch for three hundred and twenty-nine',
-      'years.',
-      '',
-      'In 2021 an eighth-grade civics class in North Andover found',
-      'out. They did the research, drafted the bill, and persuaded a',
-      'state senator to file it. It passed as an amendment to the',
-      'state budget in 2022.',
-      '',
-      'This is the most recent document in this game, and the people',
-      'who wrote it were younger than you are.',
+      'In 2021 an eighth-grade class found out, did the research, and drafted this bill.',
     ],
   },
 };
@@ -7297,84 +7166,158 @@ function drawReader(g, view, s, doc, fidelityLabel, scroll, copied) {
   g.fillStyle = 'rgba(10,10,13,0.9)';
   g.fillRect(view.x, view.y, view.w, view.h);
 
-  const bx = view.x + 12 * s, by = view.y + 12 * s;
-  const bw = view.w - 24 * s, bh = view.h - 24 * s;
+  // Panel chrome is kept deliberately mean. Every unit spent on margins,
+  // header and citation is a unit of document the student has to scroll
+  // for, and scrolling is what turns reading a source into skimming one.
+  const bx = view.x + 8 * s, by = view.y + 8 * s;
+  const bw = view.w - 16 * s, bh = view.h - 16 * s;
+  const pad = 12 * s;
   panel(g, bx, by, bw, bh, s);
 
   g.textAlign = 'left';
   g.textBaseline = 'top';
 
   // --- header ---------------------------------------------------------
-  g.font = `700 ${13 * s}px Georgia, serif`;
+  g.font = `700 ${12 * s}px Georgia, serif`;
   g.fillStyle = P.boxInk;
-  g.fillText(doc.title, bx + 16 * s, by + 12 * s);
+  g.fillText(doc.title, bx + pad, by + 8 * s);
 
-  g.font = `${8.5 * s}px system-ui, sans-serif`;
+  g.font = `${8 * s}px system-ui, sans-serif`;
   g.fillStyle = P.boxDim;
-  g.fillText(`${doc.date}  ·  ${doc.kind}`, bx + 16 * s, by + 30 * s);
+  g.fillText(`${doc.date}  ·  ${doc.kind}`, bx + pad, by + 24 * s);
 
   g.textAlign = 'right';
   g.fillStyle = '#5d7a4a';
-  g.fillText('✓ copied into your notebook', bx + bw - 16 * s, by + 30 * s);
+  g.fillText('✓ copied into your notebook', bx + bw - pad, by + 24 * s);
   g.textAlign = 'left';
 
-  const ruleY = by + 44 * s;
+  const ruleY = by + 36 * s;
   g.strokeStyle = 'rgba(58,54,48,0.4)';
   g.lineWidth = 1;
-  g.beginPath(); g.moveTo(bx + 16 * s, ruleY); g.lineTo(bx + bw - 16 * s, ruleY); g.stroke();
+  g.beginPath(); g.moveTo(bx + pad, ruleY); g.lineTo(bx + bw - pad, ruleY); g.stroke();
+
+  // --- footer, measured first ------------------------------------------
+  // The citation wraps to a variable number of lines, so how much room the
+  // columns actually have is not known until it has been measured. Laying
+  // the text out first and discovering the footer afterwards is what let
+  // documents run underneath their own citation.
+  g.font = `${6.5 * s}px system-ui, sans-serif`;
+  const foot = `${fidelityLabel}  ·  ${doc.cite}`;
+  const footLines = wrapText(g, foot, bw - 2 * pad - 6 * s);
+  const footTop = by + bh - 9 * s - footLines.length * 8 * s;
 
   // --- two columns ----------------------------------------------------
-  const colGap = 18 * s;
-  const colW = (bw - 32 * s - colGap) / 2;
-  const leftX = bx + 16 * s;
+  const colGap = 14 * s;
+  const colW = (bw - 2 * pad - colGap) / 2;
+  const leftX = bx + pad;
   const rightX = leftX + colW + colGap;
-  const top = ruleY + 12 * s;
-  const bottom = by + bh - 26 * s;
+  const top = ruleY + 15 * s;
+  const bottom = footTop - 8 * s;
+  const colH = bottom - top;
+
+  // Column labels. Worth the eight pixels: a student needs to know that the
+  // left side is the actual thing and the right side is a translation, and
+  // "the original spelling" is doing the work of explaining why the left
+  // column looks misspelt.
+  g.font = `${6.5 * s}px system-ui, sans-serif`;
+  g.fillStyle = P.boxDim;
+  g.fillText('THE DOCUMENT · ORIGINAL SPELLING', leftX, ruleY + 4 * s);
+  g.fillText('IN PLAIN ENGLISH', rightX, ruleY + 4 * s);
+
+  // Original: monospaced, because the layout of a ledger or a warrant is
+  // part of what it is saying — but wrapped to the column, because a line
+  // of a warrant is longer than half this panel and running it into the
+  // translation makes both unreadable.
+  //
+  // Wrapped continuations are indented so a ledger row or an address line
+  // still reads as one entry rather than as two.
+  const monoH = 8.5 * s;
+  g.font = `${7 * s}px ui-monospace, Menlo, Consolas, monospace`;
+  const monoLines = [];
+  for (const line of doc.original) {
+    if (!line) { monoLines.push(''); continue; }
+    // Keep leading whitespace: in the ledger and the seating list, the
+    // indentation IS the document.
+    const lead = line.match(/^\s*/)[0];
+    const wrapped = wrapText(g, line, colW - g.measureText(lead).width);
+    wrapped.forEach((l, i) => monoLines.push(i === 0 ? lead + l : lead + '  ' + l));
+  }
+
+  // Gloss: serif, plain modern English, wrapped.
+  g.font = `${9.5 * s}px Georgia, serif`;
+  const glossH = 11.5 * s;
+  // Paragraph breaks cost half a line rather than a whole one — at a full
+  // line the white space was eating a third of the column.
+  const glossLines = [];
+  for (const para of doc.gloss) {
+    if (!para) { glossLines.push(null); continue; }
+    for (const l of wrapText(g, para, colW)) glossLines.push(l);
+  }
+  const glossY = [];
+  let gy = 0;
+  for (const l of glossLines) { glossY.push(gy); gy += l === null ? glossH * 0.5 : glossH; }
+
+  const contentH = Math.max(monoLines.length * monoH, gy);
+  const maxScroll = Math.max(0, Math.ceil(contentH - colH));
+
+  // Reported so tools/check-fit.mjs can ask the real layout how a document
+  // measured instead of reimplementing this arithmetic and drifting from it.
+  drawReader.metrics = {
+    monoLines: monoLines.length, monoFits: Math.floor(colH / monoH),
+    glossLines: gy / glossH, glossFits: Math.floor(colH / glossH),
+    citeLines: footLines.length, colW, colH, overflow: maxScroll,
+  };
 
   g.save();
   g.beginPath();
-  g.rect(bx + 8 * s, top - 6 * s, bw - 16 * s, bottom - top + 6 * s);
+  g.rect(leftX - 4 * s, top - 4 * s, colW + 8 * s, colH + 8 * s);
   g.clip();
-
-  // Original: monospaced, because the layout of a ledger or a warrant is
-  // part of what it is saying.
-  const monoH = 10 * s;
-  g.font = `${7.5 * s}px ui-monospace, Menlo, Consolas, monospace`;
+  g.font = `${7 * s}px ui-monospace, Menlo, Consolas, monospace`;
   g.fillStyle = '#3f3a32';
-  let ly = top - scroll;
-  for (const line of doc.original) { g.fillText(line, leftX, ly); ly += monoH; }
-
-  // Gloss: serif, plain modern English, wrapped.
-  g.font = `${10 * s}px Georgia, serif`;
-  g.fillStyle = P.boxInk;
-  let ry = top - scroll;
-  for (const para of doc.gloss) {
-    if (!para) { ry += 8 * s; continue; }
-    for (const l of wrapText(g, para, colW)) { g.fillText(l, rightX, ry); ry += 13 * s; }
-  }
+  monoLines.forEach((l, i) => { if (l) g.fillText(l, leftX, top - scroll + i * monoH); });
   g.restore();
 
-  const contentH = Math.max(doc.original.length * monoH, ry + scroll - top);
-  const maxScroll = Math.max(0, contentH - (bottom - top));
+  g.save();
+  g.beginPath();
+  g.rect(rightX - 4 * s, top - 4 * s, colW + 8 * s, colH + 8 * s);
+  g.clip();
+  g.font = `${9.5 * s}px Georgia, serif`;
+  g.fillStyle = P.boxInk;
+  glossLines.forEach((l, i) => { if (l) g.fillText(l, rightX, top - scroll + glossY[i]); });
+  g.restore();
+
+  // A hairline between the columns, so the source and the translation read
+  // as two things rather than one ragged block.
+  g.strokeStyle = 'rgba(58,54,48,0.22)';
+  const midX = Math.round(leftX + colW + colGap / 2) + 0.5;
+  g.beginPath(); g.moveTo(midX, top); g.lineTo(midX, bottom); g.stroke();
 
   // --- footer ---------------------------------------------------------
   g.font = `${7 * s}px system-ui, sans-serif`;
   g.fillStyle = P.boxDim;
-  const foot = `${fidelityLabel}  ·  ${doc.cite}`;
-  const footLines = wrapText(g, foot, bw - 32 * s);
-  let fy = by + bh - 12 * s - footLines.length * 9 * s;
-  g.beginPath(); g.moveTo(bx + 16 * s, fy - 6 * s); g.lineTo(bx + bw - 16 * s, fy - 6 * s); g.stroke();
-  for (const l of footLines) { g.fillText(l, bx + 16 * s, fy); fy += 9 * s; }
+  let fy = footTop;
+  g.strokeStyle = 'rgba(58,54,48,0.4)';
+  g.beginPath(); g.moveTo(bx + pad, fy - 5 * s); g.lineTo(bx + bw - pad, fy - 5 * s); g.stroke();
+  for (const l of footLines) { g.fillText(l, bx + pad, fy); fy += 8 * s; }
 
+  // Scroll hint sits just above the citation rule, inside the column area,
+  // rather than on top of the citation itself.
   if (maxScroll > 0) {
     g.textAlign = 'right';
     g.fillStyle = P.accent;
-    g.fillText(scroll < maxScroll - 1 ? '↓ more' : '↑ back to the top', bx + bw - 16 * s, by + bh - 12 * s - 9 * s);
+    g.font = `${7 * s}px system-ui, sans-serif`;
+    g.fillText(scroll < maxScroll - 1 ? '↓ more' : '↑ back to the top',
+      bx + bw - pad, bottom + 2 * s);
     g.textAlign = 'left';
   }
+  // Right-aligned on the title line — printed at the left it sat directly
+  // on top of the document's own title.
   g.font = `${7 * s}px system-ui, sans-serif`;
   g.fillStyle = P.boxDim;
-  g.fillText('Z or X to close', bx + 16 * s, by + 12 * s + 2 * s);
+  g.textAlign = 'right';
+  g.fillText(maxScroll > 0 ? '↑↓ scroll · Z or X to close' : 'Z or X to close',
+    bx + bw - pad, by + 10 * s);
+  g.textAlign = 'left';
 
   return maxScroll;
 }
@@ -8387,7 +8330,11 @@ class Game {
       drawAnswer(g, v, s, this.answerText, (Date.now() % 1000) < 500);
     }
 
-    if (this.toast.t > 0) drawToast(g, v, s, this.toast.text, Math.min(1, this.toast.t));
+    // Not over the reader: it lands squarely on the document's title, and
+    // the reader's own header already says the same thing in green.
+    if (this.toast.t > 0 && this.mode !== 'reader') {
+      drawToast(g, v, s, this.toast.text, Math.min(1, this.toast.t));
+    }
   }
 
   openAnswer() {
@@ -8466,6 +8413,13 @@ class Game {
 const canvas = document.getElementById('screen');
 const game = new Game(canvas);
 window.__salem = game;   // handy in a console during development
+// Exposed for tools/fit checks: the reader's layout is only trustworthy when
+// measured with the real fonts, so the checker borrows these rather than
+// reimplementing the wrapping and getting a different answer.
+window.__wrapText = wrapText;
+window.__DOCUMENTS = DOCUMENTS;
+window.__FIDELITY = FIDELITY_LABEL;
+window.__readerMetrics = () => drawReader.metrics;
 
 const pad = document.getElementById('touch');
 if (pad) {

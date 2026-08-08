@@ -14,6 +14,7 @@ import { buildActor, buildPortrait, PLAYER_SPEC, SPR_H } from './engine/art-acto
 import {
   dialogueLayout, drawDialogue, drawChoices, drawNotebook, drawTitle, drawToast,
   drawObjective, drawReader, drawDocTab, drawNotebookTabs, drawAnswer, drawPrompt, drawWayfinder,
+  wrapText,
 } from './engine/ui.js';
 import { Audio } from './engine/audio.js';
 import { currentStep, progress, STANDING, chapterComplete, remainingIn } from './content/objectives.js';
@@ -743,7 +744,11 @@ class Game {
       drawAnswer(g, v, s, this.answerText, (Date.now() % 1000) < 500);
     }
 
-    if (this.toast.t > 0) drawToast(g, v, s, this.toast.text, Math.min(1, this.toast.t));
+    // Not over the reader: it lands squarely on the document's title, and
+    // the reader's own header already says the same thing in green.
+    if (this.toast.t > 0 && this.mode !== 'reader') {
+      drawToast(g, v, s, this.toast.text, Math.min(1, this.toast.t));
+    }
   }
 
   openAnswer() {
@@ -822,6 +827,13 @@ class Game {
 const canvas = document.getElementById('screen');
 const game = new Game(canvas);
 window.__salem = game;   // handy in a console during development
+// Exposed for tools/fit checks: the reader's layout is only trustworthy when
+// measured with the real fonts, so the checker borrows these rather than
+// reimplementing the wrapping and getting a different answer.
+window.__wrapText = wrapText;
+window.__DOCUMENTS = DOCUMENTS;
+window.__FIDELITY = FIDELITY_LABEL;
+window.__readerMetrics = () => drawReader.metrics;
 
 const pad = document.getElementById('touch');
 if (pad) {

@@ -80,6 +80,16 @@ specific sheet. That distinction is shown to the player on purpose — a
 student noticing that some sources are transcriptions and some are
 reconstructions is a student doing source criticism.
 
+**Every document is an excerpt that fits one screen with no scrolling.** A
+source a student scrolls through is a source a student skims, and fifteen of
+them at three screens apiece is longer than the rest of the game put
+together. Anything cut is marked `[…]` — silently trimming a document and
+still calling it the document would teach exactly the wrong habit here.
+
+`node tools/check-fit.mjs` measures all fifteen against the real column box
+with the real fonts and fails if any of them overflow. Run it after editing
+`src/content/documents.js`; it needs the game served locally.
+
 > **Before this goes in front of a class**, check every transcription against
 > Rosenthal's *Records of the Salem Witch-Hunt* and the Salem Witch Trials
 > Documentary Archive. Both are cited on screen.

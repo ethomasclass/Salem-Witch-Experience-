@@ -16,9 +16,15 @@ press **Z**, read the lines. It records itself. You will see *"Noted in your
 notebook"* in the top-left. **There is nothing further to do with it.**
 
 **READ** — the fifteen papers, and only the papers. Press **Z** once and a
-full-screen reader opens: original text on the left, plain modern English on
-the right, citation at the bottom. **Opening it copies it** — there is no
-second key. Z or X closes it again.
+full-screen reader opens: the document in its original spelling on the left,
+plain modern English on the right, citation at the bottom. **Opening it
+copies it** — there is no second key. Z or X closes it again.
+
+Each one is an excerpt sized to fit the page with **no scrolling**, so a
+student can read the whole thing without hunting for a scrollbar. Where text
+has been cut you will see `[…]` — worth pointing out to a class, because
+noticing that a source has been edited is the skill the whole game is
+teaching.
 
 **The game now tells you which is which.** Stand facing anything you can
 interact with and a small yellow prompt appears over your head:

@@ -376,84 +376,158 @@ export function drawReader(g, view, s, doc, fidelityLabel, scroll, copied) {
   g.fillStyle = 'rgba(10,10,13,0.9)';
   g.fillRect(view.x, view.y, view.w, view.h);
 
-  const bx = view.x + 12 * s, by = view.y + 12 * s;
-  const bw = view.w - 24 * s, bh = view.h - 24 * s;
+  // Panel chrome is kept deliberately mean. Every unit spent on margins,
+  // header and citation is a unit of document the student has to scroll
+  // for, and scrolling is what turns reading a source into skimming one.
+  const bx = view.x + 8 * s, by = view.y + 8 * s;
+  const bw = view.w - 16 * s, bh = view.h - 16 * s;
+  const pad = 12 * s;
   panel(g, bx, by, bw, bh, s);
 
   g.textAlign = 'left';
   g.textBaseline = 'top';
 
   // --- header ---------------------------------------------------------
-  g.font = `700 ${13 * s}px Georgia, serif`;
+  g.font = `700 ${12 * s}px Georgia, serif`;
   g.fillStyle = P.boxInk;
-  g.fillText(doc.title, bx + 16 * s, by + 12 * s);
+  g.fillText(doc.title, bx + pad, by + 8 * s);
 
-  g.font = `${8.5 * s}px system-ui, sans-serif`;
+  g.font = `${8 * s}px system-ui, sans-serif`;
   g.fillStyle = P.boxDim;
-  g.fillText(`${doc.date}  ·  ${doc.kind}`, bx + 16 * s, by + 30 * s);
+  g.fillText(`${doc.date}  ·  ${doc.kind}`, bx + pad, by + 24 * s);
 
   g.textAlign = 'right';
   g.fillStyle = '#5d7a4a';
-  g.fillText('✓ copied into your notebook', bx + bw - 16 * s, by + 30 * s);
+  g.fillText('✓ copied into your notebook', bx + bw - pad, by + 24 * s);
   g.textAlign = 'left';
 
-  const ruleY = by + 44 * s;
+  const ruleY = by + 36 * s;
   g.strokeStyle = 'rgba(58,54,48,0.4)';
   g.lineWidth = 1;
-  g.beginPath(); g.moveTo(bx + 16 * s, ruleY); g.lineTo(bx + bw - 16 * s, ruleY); g.stroke();
+  g.beginPath(); g.moveTo(bx + pad, ruleY); g.lineTo(bx + bw - pad, ruleY); g.stroke();
+
+  // --- footer, measured first ------------------------------------------
+  // The citation wraps to a variable number of lines, so how much room the
+  // columns actually have is not known until it has been measured. Laying
+  // the text out first and discovering the footer afterwards is what let
+  // documents run underneath their own citation.
+  g.font = `${6.5 * s}px system-ui, sans-serif`;
+  const foot = `${fidelityLabel}  ·  ${doc.cite}`;
+  const footLines = wrapText(g, foot, bw - 2 * pad - 6 * s);
+  const footTop = by + bh - 9 * s - footLines.length * 8 * s;
 
   // --- two columns ----------------------------------------------------
-  const colGap = 18 * s;
-  const colW = (bw - 32 * s - colGap) / 2;
-  const leftX = bx + 16 * s;
+  const colGap = 14 * s;
+  const colW = (bw - 2 * pad - colGap) / 2;
+  const leftX = bx + pad;
   const rightX = leftX + colW + colGap;
-  const top = ruleY + 12 * s;
-  const bottom = by + bh - 26 * s;
+  const top = ruleY + 15 * s;
+  const bottom = footTop - 8 * s;
+  const colH = bottom - top;
+
+  // Column labels. Worth the eight pixels: a student needs to know that the
+  // left side is the actual thing and the right side is a translation, and
+  // "the original spelling" is doing the work of explaining why the left
+  // column looks misspelt.
+  g.font = `${6.5 * s}px system-ui, sans-serif`;
+  g.fillStyle = P.boxDim;
+  g.fillText('THE DOCUMENT · ORIGINAL SPELLING', leftX, ruleY + 4 * s);
+  g.fillText('IN PLAIN ENGLISH', rightX, ruleY + 4 * s);
+
+  // Original: monospaced, because the layout of a ledger or a warrant is
+  // part of what it is saying — but wrapped to the column, because a line
+  // of a warrant is longer than half this panel and running it into the
+  // translation makes both unreadable.
+  //
+  // Wrapped continuations are indented so a ledger row or an address line
+  // still reads as one entry rather than as two.
+  const monoH = 8.5 * s;
+  g.font = `${7 * s}px ui-monospace, Menlo, Consolas, monospace`;
+  const monoLines = [];
+  for (const line of doc.original) {
+    if (!line) { monoLines.push(''); continue; }
+    // Keep leading whitespace: in the ledger and the seating list, the
+    // indentation IS the document.
+    const lead = line.match(/^\s*/)[0];
+    const wrapped = wrapText(g, line, colW - g.measureText(lead).width);
+    wrapped.forEach((l, i) => monoLines.push(i === 0 ? lead + l : lead + '  ' + l));
+  }
+
+  // Gloss: serif, plain modern English, wrapped.
+  g.font = `${9.5 * s}px Georgia, serif`;
+  const glossH = 11.5 * s;
+  // Paragraph breaks cost half a line rather than a whole one — at a full
+  // line the white space was eating a third of the column.
+  const glossLines = [];
+  for (const para of doc.gloss) {
+    if (!para) { glossLines.push(null); continue; }
+    for (const l of wrapText(g, para, colW)) glossLines.push(l);
+  }
+  const glossY = [];
+  let gy = 0;
+  for (const l of glossLines) { glossY.push(gy); gy += l === null ? glossH * 0.5 : glossH; }
+
+  const contentH = Math.max(monoLines.length * monoH, gy);
+  const maxScroll = Math.max(0, Math.ceil(contentH - colH));
+
+  // Reported so tools/check-fit.mjs can ask the real layout how a document
+  // measured instead of reimplementing this arithmetic and drifting from it.
+  drawReader.metrics = {
+    monoLines: monoLines.length, monoFits: Math.floor(colH / monoH),
+    glossLines: gy / glossH, glossFits: Math.floor(colH / glossH),
+    citeLines: footLines.length, colW, colH, overflow: maxScroll,
+  };
 
   g.save();
   g.beginPath();
-  g.rect(bx + 8 * s, top - 6 * s, bw - 16 * s, bottom - top + 6 * s);
+  g.rect(leftX - 4 * s, top - 4 * s, colW + 8 * s, colH + 8 * s);
   g.clip();
-
-  // Original: monospaced, because the layout of a ledger or a warrant is
-  // part of what it is saying.
-  const monoH = 10 * s;
-  g.font = `${7.5 * s}px ui-monospace, Menlo, Consolas, monospace`;
+  g.font = `${7 * s}px ui-monospace, Menlo, Consolas, monospace`;
   g.fillStyle = '#3f3a32';
-  let ly = top - scroll;
-  for (const line of doc.original) { g.fillText(line, leftX, ly); ly += monoH; }
-
-  // Gloss: serif, plain modern English, wrapped.
-  g.font = `${10 * s}px Georgia, serif`;
-  g.fillStyle = P.boxInk;
-  let ry = top - scroll;
-  for (const para of doc.gloss) {
-    if (!para) { ry += 8 * s; continue; }
-    for (const l of wrapText(g, para, colW)) { g.fillText(l, rightX, ry); ry += 13 * s; }
-  }
+  monoLines.forEach((l, i) => { if (l) g.fillText(l, leftX, top - scroll + i * monoH); });
   g.restore();
 
-  const contentH = Math.max(doc.original.length * monoH, ry + scroll - top);
-  const maxScroll = Math.max(0, contentH - (bottom - top));
+  g.save();
+  g.beginPath();
+  g.rect(rightX - 4 * s, top - 4 * s, colW + 8 * s, colH + 8 * s);
+  g.clip();
+  g.font = `${9.5 * s}px Georgia, serif`;
+  g.fillStyle = P.boxInk;
+  glossLines.forEach((l, i) => { if (l) g.fillText(l, rightX, top - scroll + glossY[i]); });
+  g.restore();
+
+  // A hairline between the columns, so the source and the translation read
+  // as two things rather than one ragged block.
+  g.strokeStyle = 'rgba(58,54,48,0.22)';
+  const midX = Math.round(leftX + colW + colGap / 2) + 0.5;
+  g.beginPath(); g.moveTo(midX, top); g.lineTo(midX, bottom); g.stroke();
 
   // --- footer ---------------------------------------------------------
   g.font = `${7 * s}px system-ui, sans-serif`;
   g.fillStyle = P.boxDim;
-  const foot = `${fidelityLabel}  ·  ${doc.cite}`;
-  const footLines = wrapText(g, foot, bw - 32 * s);
-  let fy = by + bh - 12 * s - footLines.length * 9 * s;
-  g.beginPath(); g.moveTo(bx + 16 * s, fy - 6 * s); g.lineTo(bx + bw - 16 * s, fy - 6 * s); g.stroke();
-  for (const l of footLines) { g.fillText(l, bx + 16 * s, fy); fy += 9 * s; }
+  let fy = footTop;
+  g.strokeStyle = 'rgba(58,54,48,0.4)';
+  g.beginPath(); g.moveTo(bx + pad, fy - 5 * s); g.lineTo(bx + bw - pad, fy - 5 * s); g.stroke();
+  for (const l of footLines) { g.fillText(l, bx + pad, fy); fy += 8 * s; }
 
+  // Scroll hint sits just above the citation rule, inside the column area,
+  // rather than on top of the citation itself.
   if (maxScroll > 0) {
     g.textAlign = 'right';
     g.fillStyle = P.accent;
-    g.fillText(scroll < maxScroll - 1 ? '↓ more' : '↑ back to the top', bx + bw - 16 * s, by + bh - 12 * s - 9 * s);
+    g.font = `${7 * s}px system-ui, sans-serif`;
+    g.fillText(scroll < maxScroll - 1 ? '↓ more' : '↑ back to the top',
+      bx + bw - pad, bottom + 2 * s);
     g.textAlign = 'left';
   }
+  // Right-aligned on the title line — printed at the left it sat directly
+  // on top of the document's own title.
   g.font = `${7 * s}px system-ui, sans-serif`;
   g.fillStyle = P.boxDim;
-  g.fillText('Z or X to close', bx + 16 * s, by + 12 * s + 2 * s);
+  g.textAlign = 'right';
+  g.fillText(maxScroll > 0 ? '↑↓ scroll · Z or X to close' : 'Z or X to close',
+    bx + bw - pad, by + 10 * s);
+  g.textAlign = 'left';
 
   return maxScroll;
 }
