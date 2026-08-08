@@ -393,9 +393,8 @@ export function drawReader(g, view, s, doc, fidelityLabel, scroll, copied) {
   g.fillText(`${doc.date}  ·  ${doc.kind}`, bx + 16 * s, by + 30 * s);
 
   g.textAlign = 'right';
-  g.fillStyle = copied ? '#5d7a4a' : P.accent;
-  g.fillText(copied ? 'copied into your notebook' : 'Z to copy this down',
-             bx + bw - 16 * s, by + 30 * s);
+  g.fillStyle = '#5d7a4a';
+  g.fillText('✓ copied into your notebook', bx + bw - 16 * s, by + 30 * s);
   g.textAlign = 'left';
 
   const ruleY = by + 44 * s;
@@ -454,7 +453,7 @@ export function drawReader(g, view, s, doc, fidelityLabel, scroll, copied) {
   }
   g.font = `${7 * s}px system-ui, sans-serif`;
   g.fillStyle = P.boxDim;
-  g.fillText('X to close', bx + 16 * s, by + 12 * s + 2 * s);
+  g.fillText('Z or X to close', bx + 16 * s, by + 12 * s + 2 * s);
 
   return maxScroll;
 }

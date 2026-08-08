@@ -131,10 +131,9 @@ Any static host works for a shared link. GitHub Pages is the obvious one.
 | Close a reader, back out of a conversation | X or Esc |
 | Notebook | N — then ← → to switch tabs |
 
-**Two systems worth telling students apart.** *Examining* a thing you can see
-(a stone, a woodpile, a chart) records it straight into the notebook — one
-press of Z and it is done. *Documents* are different: Z opens a full-screen
-reader, and a second Z copies it down. The notebook has a tab for each.
+**Everything is one press of Z.** Examining a thing you can see (a stone, a
+woodpile, a chart) records it. Opening a document copies it. The notebook has
+a tab for each, switched with the arrow keys.
 
 On a touchscreen Chromebook or tablet, on-screen controls appear
 automatically.

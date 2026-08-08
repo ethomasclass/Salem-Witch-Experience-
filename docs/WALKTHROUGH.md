@@ -15,19 +15,21 @@ chart, the account book, a bench, a threshold. Stand next to it, face it,
 press **Z**, read the lines. It records itself. You will see *"Noted in your
 notebook"* in the top-left. **There is nothing further to do with it.**
 
-**COPY** — the fifteen papers, and only the papers. Press **Z** and a
+**READ** — the fifteen papers, and only the papers. Press **Z** once and a
 full-screen reader opens: original text on the left, plain modern English on
-the right, citation at the bottom. Press **Z** again to copy it into the
-notebook, then **X** to close.
+the right, citation at the bottom. **Opening it copies it** — there is no
+second key. Z or X closes it again.
 
 **The game now tells you which is which.** Stand facing anything you can
 interact with and a small yellow prompt appears over your head:
 
 - **`Z · talk`** — a person
 - **`Z · look`** — something you examine. One press and it is recorded.
-- **`Z · read`** — a document. Press Z to open the reader, **Z again to copy**,
-  then X to close.
-- **`Z · read again`** — a document you have already copied.
+- **`Z · read`** — a document. One press opens it and copies it.
+- **`Z · read again`** — a document already in your notebook.
+
+If a paper is still locked the prompt says **`Z · look`**, not `read` — and
+pressing Z tells you exactly what to go and do first.
 
 If no prompt appears, there is nothing in front of you. Turn, or step closer.
 

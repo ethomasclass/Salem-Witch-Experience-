@@ -367,7 +367,7 @@ export const PARSONAGE = {
   interact: [
     { id: 'parsonageHearth', x: 4, y: 1, w: 3, h: 2 },
     { doc: 'parrisAgreement', x: 2, y: 5, w: 2, h: 1, require: ['clue.woodpile'],
-      locked: 'A paper on the table, face down. You have no reason to turn it over yet.' },
+      locked: 'A folded paper on the table, covered in sums. It is some kind of agreement, and it will mean nothing to you until you have seen what the village actually gave him. The woodpile is outside the front door.' },
   ],
   npcs: [
     { id: 'tituba', x: 3, y: 3, dir: 'down' },
@@ -395,7 +395,7 @@ export const MEETINGHOUSE = {
     { id: 'pews', x: 2, y: 5, w: 3, h: 1 },
     { id: 'pews', x: 8, y: 7, w: 3, h: 1 },
     { doc: 'seatingList', x: 7, y: 1, w: 1, h: 2, require: ['clue.seating'],
-      locked: 'There is a second sheet pinned beside the chart. Look at the chart first.' },
+      locked: 'A second sheet is pinned up beside the seating chart. Look at the chart itself first — this one is only the working.' },
   ],
   npcs: [],
   byChapter: {
@@ -440,7 +440,7 @@ export const TAVERN = {
   interact: [
     { id: 'accountBook', x: 2, y: 3, w: 2, h: 1 },
     { doc: 'accountBookPage', x: 2, y: 6, w: 2, h: 1, require: ['clue.accounts'],
-      locked: 'More of the same book, further down the table. Read the open page first.' },
+      locked: 'More pages of the same ledger, further down the table. Read the page Ingersoll has open first.' },
   ],
   npcs: [
     { id: 'ingersoll', x: 6, y: 4, dir: 'left' },
@@ -512,7 +512,7 @@ export const PUTNAMHOUSE = {
   ],
   interact: [
     { doc: 'topsfieldPetition', x: 2, y: 4, w: 2, h: 1, require: ['clue.marker'],
-      locked: 'Papers on the table, in more than one hand. They mean nothing to you yet.' },
+      locked: 'Papers on the table in several different hands, arguing about a boundary line. You would have to have seen that boundary for any of this to mean anything. There is a stone somewhere in the woods north of the village.' },
   ],
   npcs: [{ id: 'annjr', x: 3, y: 3, dir: 'down' }],
   byChapter: {

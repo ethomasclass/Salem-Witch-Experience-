@@ -326,7 +326,12 @@ class Game {
     }
     const spot = interactAt(map, fx, fy);
     if (!spot) return null;
-    if (spot.doc) return this.state.hasDoc(spot.doc) ? 'read again' : 'read';
+    if (spot.doc) {
+      // Never promise "read" on a locked document. Saying "read" and then
+      // doing nothing is indistinguishable from the game being broken.
+      if (spot.require && !this.state.knowsAll(spot.require)) return 'look';
+      return this.state.hasDoc(spot.doc) ? 'read again' : 'read';
+    }
     if (spot.bench || CLUES[spot.id]) return 'look';
     return null;
   }
@@ -390,7 +395,15 @@ class Game {
     this.reader = doc;
     this.docScroll = 0;
     this.mode = 'reader';
-    this.audio.menuPick();
+    // Opening it IS copying it. The second keypress was never discoverable,
+    // and a player who has the document open in front of them has done the
+    // only thing the game was ever asking for.
+    if (this.state.copyDoc(id)) {
+      this.showToast('Copied into your notebook');
+      this.save();
+    } else {
+      this.audio.menuPick();
+    }
   }
 
   /** Watch for a completed objective so it can be announced once. */
@@ -524,15 +537,8 @@ class Game {
       if (inp.justPressed('cancel') || inp.justPressed('notebook')) {
         this.mode = 'play'; this.reader = null; return;
       }
-      if (inp.justPressed('confirm')) {
-        if (this.state.copyDoc(this.reader.id)) {
-          this.showToast('Copied into your notebook');
-          this.save();
-        } else {
-          this.mode = 'play'; this.reader = null;
-        }
-        return;
-      }
+      // Z and X both close it now that opening does the copying.
+      if (inp.justPressed('confirm')) { this.mode = 'play'; this.reader = null; return; }
       if (inp.isDown('down')) this.docScroll += 320 * dt;
       if (inp.isDown('up')) this.docScroll -= 320 * dt;
       this.docScroll = Math.max(0, Math.min(this.docScroll, this.docMax || 0));
