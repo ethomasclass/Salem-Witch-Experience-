@@ -427,6 +427,13 @@ export const MEETINGHOUSE = {
   ground: rows(room(13, 10, 6)),
   props: [
     { kind: 'seatingchart', x: 5, y: 1 },
+    // The seating list itself. Its own locked message says "a second sheet
+    // is pinned up beside the seating chart" — and for the whole life of
+    // this map there was no sheet there to see. The interactable existed,
+    // was reachable, and was completely invisible, so a player examined the
+    // chart, found nothing else, walked out, and watched the goal counter
+    // sit at two of four forever.
+    { kind: 'paper', x: 7, y: 1 },
     ...[2, 3, 4, 8, 9, 10].map((x) => ({ kind: 'pew', x, y: 5 })),
     ...[2, 3, 4, 8, 9, 10].map((x) => ({ kind: 'pew', x, y: 7 })),
   ],
@@ -476,6 +483,11 @@ export const TAVERN = {
     { kind: 'table', x: 2, y: 3 },
     { kind: 'accountbook', x: 2, y: 3 },
     { kind: 'table', x: 2, y: 6 },
+    // The loose pages further down the table. Same bug as the seating list:
+    // the document was reachable and invisible, so the player saw a bare
+    // table. June happened to escape it only because the Nurse warrant adds
+    // its own sheet to the same table three months later.
+    { kind: 'paper', x: 2, y: 6 },
   ],
   warps: [{ x: 5, y: 8, to: 'village', tx: 33, ty: 17, dir: 'down' }],
   interact: [

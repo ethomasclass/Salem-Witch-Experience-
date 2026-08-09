@@ -137,6 +137,11 @@ still calling it the document would teach exactly the wrong habit here.
 with the real fonts and fails if any of them overflow. Run it after editing
 `src/content/documents.js`; it needs the game served locally.
 
+`node tools/check-maps.mjs` checks that every document has a paper sprite a
+player can actually see, and that everything can be walked to. It exists
+because two documents shipped correctly defined, correctly gated, reachable
+— and invisible, standing on empty tiles.
+
 > **Before this goes in front of a class**, check every transcription against
 > Rosenthal's *Records of the Salem Witch-Hunt* and the Salem Witch Trials
 > Documentary Archive. Both are cited on screen.
