@@ -215,6 +215,26 @@ export const NPCS = {
         ],
       },
       {
+        // She is one of the three. Nobody in the game is better placed to
+        // say what the three of them had in common, and she says it flatly,
+        // as a description of her own position rather than as a thesis.
+        id: 'accused', label: 'Who have the girls named?',
+        require: ['fact.girls'],
+        lines: [
+          'Three, so far.',
+          'Sarah Good, who has no house. She goes from door to door with her child and asks, and when she is turned away she says things under her breath. People have called her a nuisance for years. It is not a long walk from nuisance to witch.',
+          { learn: ['fact.good'] },
+          'Sarah Osborne, who went to law against her own sons over her first husband\'s land, and then married the man she had bought out of service. She has not been to meeting in above a year.',
+          { learn: ['fact.osborne'] },
+          { say: 'She stops.', who: null },
+          'And me.',
+          { learn: ['fact.firstthree'] },
+          { say: 'She lets that sit for a moment before she goes on.', who: null },
+          'Look at the three of us and tell me what we have between us. Not one of us has a man who will stand up in that meeting house and say it is a lie.',
+          'That is the whole of it. They did not begin with the difficult ones. They began with the ones nobody would miss.',
+        ],
+      },
+      {
         id: 'self', label: 'Ask about her.',
         require: ['fact.tituba'],
         lines: [
@@ -666,6 +686,32 @@ export const NPCS = {
         ],
       },
       {
+        // Norton's argument, from the inside, by somebody who would not
+        // recognise it as an argument. She is not making a case about
+        // causes. She is describing where the refugee girls ended up living.
+        id: 'others', chapter: 'march', label: 'Are there others like you here?',
+        require: ['fact.mercymaine'],
+        lines: [
+          'Some.',
+          { say: 'She counts, and it does not take her long.', who: null },
+          'There is a girl over at Topsfield who was at Casco when I was. There are two more in the town. And there is one in this village who came down from Falmouth, though she does not speak of it and neither will I.',
+          'We are servants, mostly. That is what happens to a girl with no family left — somebody takes her in and she works.',
+          { learn: ['fact.maine_refugees'] },
+          { say: 'She shifts the bucket to the other hand.', who: null },
+          'And here is a thing I have noticed and would rather not have noticed.',
+          'The houses that took us in are the houses where the girls are crying out.',
+          {
+            if: { spokenTo: ['annjr'] },
+            then: [
+              'I sleep in the same room as Ann Putnam. She has grown up hearing her mother count the dead. I lie down next to her having seen mine.',
+              { say: 'She looks north again.', who: null },
+              'I do not know what to make of that. I only know it is true of both of us.',
+            ],
+            else: ['I sleep in the Putnam house. You should go and see who else sleeps in it.'],
+          },
+        ],
+      },
+      {
         id: 'putnams', chapter: 'march', label: 'What is it like in that house?',
         require: ['fact.annsr'],
         lines: [
@@ -763,6 +809,22 @@ export const NPCS = {
           { say: 'She goes back to the mending.', who: null },
           'If you want the whole of it, it is written down. There is a petition on the Putnams\' own table with my neighbours\' names on it, and not one of them ours.',
           { learn: 'paper.topsfield' },
+        ],
+      },
+      {
+        id: 'property', label: 'You hold land in your own name.',
+        require: ['fact.nurseland'],
+        lines: [
+          { say: 'She looks up from the mending.', who: null },
+          'I do. The farm is in both our names and it will go to our children, and I have had a hand in every decision about it for forty years.',
+          'That is not usual and I know it is not usual.',
+          { say: 'She thinks about how much to say, and says it.', who: null },
+          'There is a kind of woman this village is uneasy about, and I will tell you what she looks like, because I have watched it my whole life.',
+          'She is past her childbearing. She has land, or she stands to get land, and there is no son or brother it would more naturally have gone to. She has been to law at least once, and won.',
+          { learn: ['fact.womenproperty'] },
+          'Goodwife Osborne was that woman. She went to law against her own sons over her husband\'s ground and she was not forgiven it.',
+          { say: 'She goes back to the mending, and her hands are steady.', who: null },
+          'And I am that woman. I would be a fool not to have noticed.',
         ],
       },
       {
@@ -1144,6 +1206,8 @@ export const NPCS = {
         else: [
           'We keep a watch through the night, and have since the autumn.',
           'There is fighting up the eastward — the Maine country. It has not come near us. That is not the same as nobody being afraid of it.',
+          { learn: ['fact.maine_fear'] },
+          'Fifty miles. Men in this village have gone up there and not all of them came back, and we have had families come down with what they could carry. You do not keep a watch through the winter for a thing you think is finished.',
           { learn: 'fact.factions' },
         ],
       },
@@ -1848,6 +1912,49 @@ export const NPCS = {
           'So the court built a machine in which the honest were killed and the liars survived, and then treated the resulting confessions as proof that the whole thing was real.',
           'Fifty-odd people confessed. Every confession made the next accusation easier to believe.',
           'If you want one sentence for what went wrong here, it is that: the court could not tell the difference between evidence and the incentive it had created.',
+        ],
+      },
+      {
+        // The war argument, named and attributed, and immediately given the
+        // same treatment every other single-cause answer gets in this room.
+        // She is the only character permitted to cite a historian, and she
+        // does it to show the player that these are positions people hold
+        // rather than facts the game is withholding.
+        id: 'war', label: 'Did the war have anything to do with it?',
+        require: ['fact.mercymaine'],
+        lines: [
+          { say: 'She sits forward.', who: null },
+          'You met somebody from the eastward, then. Good. That is not an accident of the record — it is the record.',
+          'The colony had been at war on its northern frontier for four years. Whole settlements burned. Survivors came south with nothing, and a great many of them were girls who went into service in exactly the households that produced the accusations.',
+          { learn: ['fact.maine_refugees'] },
+          { say: 'She counts it off on her fingers, and it is clearly a thing she has said before.', who: null },
+          'And several of the men who sat as magistrates in 1692 had carried responsibility for defending that frontier. It had gone very badly. Some of them had a great deal to answer for and no way to answer it.',
+          { learn: ['fact.maine_magistrates'] },
+          'Mary Beth Norton made that case in 2002 and it changed the field. Her argument is that these people were not imagining an invisible enemy out of nothing — there was a visible one fifty miles north that they had already failed to stop.',
+          { say: 'And then, because she cannot help herself:', who: null },
+          'It is a strong argument. It is also not a complete one.',
+          'It does not explain why the first three accused were a beggar, a woman who had gone to law against her sons, and an enslaved woman — none of whom had anything to do with Maine.',
+          'Every one of the four cases does that. Explains a great deal, and then stops.',
+        ],
+      },
+      {
+        id: 'women', label: 'Was there a pattern in who got accused?',
+        lines: [
+          'Yes. And it is the least comfortable of the four, so people skip it.',
+          'The overwhelming majority of the accused were women. That much is not in dispute.',
+          'What Carol Karlsen showed in 1987 is that a striking number of them were women who held property, or stood to inherit it, in a line where there was no son or brother it would otherwise have gone to. Widows without heirs. Daughters without brothers. Women who had already been to court, and won.',
+          { learn: ['fact.womenproperty'] },
+          {
+            if: { knows: ['fact.nurseland'] },
+            then: [
+              { say: 'She raises an eyebrow.', who: null },
+              'You have been to the Nurse farm. Then you have stood in a house held by a woman in exactly that position, and you can decide for yourself how much it explains.',
+            ],
+            else: [],
+          },
+          'The argument is not that anybody sat down and planned to seize an estate. It is quieter than that: a society uneasy about women outside the ordinary line of inheritance had a word ready for them, and in 1692 that word became actionable.',
+          { say: 'She shrugs.', who: null },
+          'And then it does what all four of them do. It stops. It does not explain Giles Corey, who was a man of eighty-one, or George Burroughs, who was a minister.',
         ],
       },
       {

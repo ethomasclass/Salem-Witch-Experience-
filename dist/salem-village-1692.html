@@ -2210,6 +2210,12 @@ class GameState {
     // exported notes can be an argument rather than an inventory.
     this.disputesSeen = new Set();   // dispute ids already announced
     this.positions = new Map();      // dispute id -> 'a' | 'b' | 'unsure'
+
+    // Which of the four cases the player has filed each piece of evidence
+    // under. Theirs, not the game's: nothing in the game says which theory a
+    // fact supports, because deciding that is the whole skill. Unscored,
+    // optional, and several facts can reasonably go under more than one.
+    this.filed = new Map();          // flag -> Set of theory ids
   }
 
   /** Record a piece of knowledge. `source` is an npc id, a prop id, or
@@ -2285,6 +2291,17 @@ class GameState {
     return true;
   }
 
+  /** File or unfile a piece of evidence under one of the four cases. */
+  toggleFiled(flag, theoryId) {
+    if (!this.filed.has(flag)) this.filed.set(flag, new Set());
+    const set = this.filed.get(flag);
+    if (set.has(theoryId)) set.delete(theoryId); else set.add(theoryId);
+    if (!set.size) this.filed.delete(flag);
+    return set.has(theoryId);
+  }
+
+  filedUnder(flag) { return this.filed.get(flag) || new Set(); }
+
   /** Record, clear, or read which side the player finds more credible. */
   setPosition(id, side) {
     if (side === null) this.positions.delete(id);
@@ -2316,6 +2333,7 @@ class GameState {
       finalAnswer: this.finalAnswer,
       disputesSeen: [...this.disputesSeen],
       positions: [...this.positions.entries()],
+      filed: [...this.filed.entries()].map(([f, set]) => [f, [...set]]),
       player: player ? { map: player.map, x: player.tx, y: player.ty, dir: player.dir } : null,
     });
   }
@@ -2352,6 +2370,7 @@ class GameState {
     s.finalAnswer = data.finalAnswer || '';
     s.disputesSeen = new Set(data.disputesSeen || []);
     s.positions = new Map(data.positions || []);
+    s.filed = new Map((data.filed || []).map(([f, ids]) => [f, new Set(ids)]));
 
     // Repair saves written while the memorial exit was missing its
     // setChapter. Those players walked into 1692 with the chapter still on
@@ -2579,10 +2598,14 @@ const KEYMAP = {
   KeyX: 'cancel', Escape: 'cancel', Backspace: 'cancel',
   KeyN: 'notebook', Tab: 'notebook',
   ShiftLeft: 'run', ShiftRight: 'run',
-  // Taking a position on a disputed claim, in the notebook.
+  // Taking a position on a disputed claim, and filing evidence under one of
+  // the four cases. Same keys, different tab — both are "this number applies
+  // to whatever the cursor is on", which is the one interaction idiom the
+  // notebook uses everywhere.
   Digit1: 'pos1', Numpad1: 'pos1',
   Digit2: 'pos2', Numpad2: 'pos2',
   Digit3: 'pos3', Numpad3: 'pos3',
+  Digit4: 'pos4', Numpad4: 'pos4',
 };
 class Input {
   constructor() {
@@ -2656,6 +2679,7 @@ class Input {
 //     room of thirty Chromebooks is a game a teacher turns off.
 //   - The mute state is remembered. One toggle, honoured forever.
 
+const SOUND_KEY = 'salem1692.sound';
 const MUTE_KEY = 'salem1692.muted';
 class Audio {
   constructor() {
@@ -2666,6 +2690,18 @@ class Audio {
     this.muted = false;
     try { this.muted = localStorage.getItem(MUTE_KEY) === '1'; } catch { /* private mode */ }
     this.pendingAmbience = null;
+    this.pendingMusic = null;
+    this.music = null;          // { name, timer, step }
+    // Three settings, not two. A teacher who wants the room quieter usually
+    // wants the tune off and the footsteps and dialogue blips left alone —
+    // those are feedback, not atmosphere. 'all' | 'quiet' | 'off'.
+    this.sound = 'all';
+    try {
+      const saved = localStorage.getItem(SOUND_KEY);
+      if (saved === 'all' || saved === 'quiet' || saved === 'off') this.sound = saved;
+      else if (this.muted) this.sound = 'off';
+    } catch { /* private mode */ }
+    this.muted = this.sound === 'off';
   }
 
   /** Called from the first real input event. Safe to call repeatedly. */
@@ -2680,6 +2716,16 @@ class Audio {
     this.ambientGain = this.ctx.createGain();
     this.ambientGain.gain.value = 0.35;
     this.ambientGain.connect(this.master);
+    // Music sits on its own bus so it can be silenced without touching the
+    // footsteps, and ducked under dialogue without ducking anything else.
+    this.musicGain = this.ctx.createGain();
+    this.musicGain.gain.value = this.sound === 'all' ? 1 : 0;
+    this.musicGain.connect(this.master);
+    if (this.pendingMusic) {
+      const m = this.pendingMusic;
+      this.pendingMusic = null;
+      this.setMusic(m);
+    }
     if (this.pendingAmbience) {
       const a = this.pendingAmbience;
       this.pendingAmbience = null;
@@ -2696,6 +2742,23 @@ class Audio {
   }
 
   toggleMute() { this.setMuted(!this.muted); return this.muted; }
+
+  /** Cycle all -> quiet (no music) -> off -> all. */
+  cycleSound() {
+    this.sound = this.sound === 'all' ? 'quiet' : this.sound === 'quiet' ? 'off' : 'all';
+    try { localStorage.setItem(SOUND_KEY, this.sound); } catch { /* nothing to do */ }
+    this.setMuted(this.sound === 'off');
+    if (this.musicGain && this.ctx) {
+      this.musicGain.gain.setTargetAtTime(this.sound === 'all' ? 1 : 0, this.ctx.currentTime, 0.4);
+    }
+    return this.sound;
+  }
+
+  /** Pull the tune down under a conversation without touching anything else. */
+  duckMusic(on) {
+    if (!this.musicGain || !this.ctx || this.sound !== 'all') return;
+    this.musicGain.gain.setTargetAtTime(on ? 0.35 : 1, this.ctx.currentTime, 0.35);
+  }
 
   /* ---- building blocks ------------------------------------------------ */
 
@@ -2891,6 +2954,148 @@ class Audio {
     this.burst({ freq: 300, dur: 2.2, gain: 0.045, q: 0.5, type: 'lowpass' });
   }
 
+  /* ---- music ----------------------------------------------------------- *
+   *
+   * What music can this game honestly have?
+   *
+   * Almost none, which turns out to be the interesting answer. Puritan New
+   * England permitted singing in worship and essentially nothing else: no
+   * instruments in the meetinghouse, no organ, no part-singing. What a person
+   * in Salem Village actually heard was the Bay Psalm Book, unaccompanied, in
+   * a handful of common tunes — Old Hundredth, Windsor, Martyrs, York — sung
+   * slowly and in unison by a congregation, most of whom could not read music
+   * and were following a deacon lining the psalm out one phrase at a time.
+   *
+   * So the tunes below are not quotations. They are built out of the shapes
+   * those melodies are made of: stepwise motion inside a minor-ish mode,
+   * phrases that fall to the tonic, no leading tone, no ornament, and a
+   * ceiling of about a sixth. Played on square and triangle waves at a fifth
+   * of the volume of everything else, which is what makes it a chip tune
+   * rather than a hymn.
+   *
+   * AND IT THINS OUT. The same material loses notes across the year: the
+   * March tune is a whole phrase, June drops the answering half, and by
+   * September it is three notes and a lot of silence. The village has lost a
+   * fifth of its households by then, and the wind was already doing this — a
+   * place that empty should not sound like the one the player walked through
+   * in March. The present day gets no melody at all, because a memorial beside
+   * a working street is not scored.
+   *
+   * Scale degrees, not frequencies, so the same phrase can be transposed and
+   * so the shapes are readable as shapes. 0 is the tonic; null is a rest.
+   */
+  static get MODE() {
+    // Aeolian on D, two octaves. The flat seventh is the point: a leading
+    // tone would make this sound like the eighteenth century.
+    return [146.83, 164.81, 174.61, 196.00, 220.00, 233.08, 261.63,
+            293.66, 329.63, 349.23, 392.00, 440.00, 466.16, 523.25];
+  }
+
+  static get TUNES() {
+    return {
+      // Outdoors, March. A full psalm phrase and its answer.
+      '1692': {
+        beat: 0.62, gain: 0.030, type: 'triangle',
+        notes: [0, 2, 4, 3, 2, null, 1, 0, null, 3, 4, 5, 4, 3, 2, null, 1, 0, null, null],
+      },
+      // June. The answering half is gone; what is left circles.
+      '1692-june': {
+        beat: 0.70, gain: 0.027, type: 'triangle',
+        notes: [0, 2, 4, 3, null, 2, 1, null, 0, null, null, 2, 1, null, 0, null, null, null],
+      },
+      // September. Three notes and a great deal of nothing.
+      '1692-late': {
+        beat: 0.86, gain: 0.024, type: 'triangle',
+        notes: [0, null, null, 2, null, null, null, 1, null, null, null, null,
+                0, null, null, null, null, null, null, null],
+      },
+      // Under a roof: lower, slower, barely a tune. A drone with a memory.
+      indoor: {
+        beat: 0.95, gain: 0.022, type: 'sine', octave: -1,
+        notes: [0, null, null, null, 2, null, null, null, 1, null, null, null,
+                0, null, null, null, null, null],
+      },
+      // The meetinghouse. The only room in the village where this music was
+      // ever actually sung, so here it is nearly four-square and in unison.
+      meetinghouse: {
+        beat: 0.66, gain: 0.032, type: 'square', fifth: true,
+        notes: [0, 0, 1, 2, 2, 1, 0, null, 3, 3, 2, 1, 1, 0, null, null],
+      },
+      // The jail. One note, low, at long intervals. Not a tune at all.
+      jail: {
+        beat: 1.35, gain: 0.024, type: 'sine', octave: -1,
+        notes: [0, null, null, null, null, 1, null, null, null, null, null, null],
+      },
+      // The archive: a reading room in the present. Neutral, almost still.
+      archive: {
+        beat: 1.10, gain: 0.018, type: 'sine',
+        notes: [4, null, null, 3, null, null, null, 2, null, null, null, null],
+      },
+    };
+  }
+
+  /**
+   * Start a tune, or stop everything with a falsy name.
+   *
+   * Scheduled note by note on a timer rather than as one long buffer, so the
+   * tune can be swapped the instant the player walks through a door, and so
+   * a thirty-two minute session never builds up anything to leak.
+   */
+  setMusic(name) {
+    if (!this.ctx) { this.pendingMusic = name; return; }
+    if (this.music && this.music.name === name) return;
+    this.stopMusic();
+    if (!name) return;
+    const tune = Audio.TUNES[name];
+    if (!tune) return;
+
+    const scale = Audio.MODE;
+    const base = 3 + (tune.octave || 0) * 7;   // start a fourth up the table
+    let step = 0;
+    const play = () => {
+      if (!this.ctx || this.muted || this.sound !== 'all') return;
+      const n = tune.notes[step % tune.notes.length];
+      step += 1;
+      if (n === null || n === undefined) return;
+      const freq = scale[Math.max(0, Math.min(scale.length - 1, base + n))];
+      const t = this.ctx.currentTime;
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = tune.type;
+      o.frequency.setValueAtTime(freq, t);
+      // Slow attack and a long tail: a sung note, not a blip. Sharing the
+      // envelope shape with the UI beeps is what would make this sound like
+      // a menu instead of a room.
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(tune.gain, t + 0.09);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + tune.beat * 1.55);
+      o.connect(g); g.connect(this.musicGain);
+      o.start(t); o.stop(t + tune.beat * 1.6);
+
+      // A bare fifth underneath — the one bit of harmony this music is
+      // allowed, and the interval that makes it sound like a congregation
+      // rather than a solo.
+      if (tune.fifth && step % 4 === 1) {
+        const o2 = this.ctx.createOscillator();
+        const g2 = this.ctx.createGain();
+        o2.type = 'triangle';
+        o2.frequency.setValueAtTime(freq / 2 * 1.5, t);
+        g2.gain.setValueAtTime(0.0001, t);
+        g2.gain.linearRampToValueAtTime(tune.gain * 0.55, t + 0.12);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t + tune.beat * 1.8);
+        o2.connect(g2); g2.connect(this.musicGain);
+        o2.start(t); o2.stop(t + tune.beat * 1.9);
+      }
+    };
+    play();
+    this.music = { name, timer: setInterval(play, tune.beat * 1000) };
+  }
+
+  stopMusic() {
+    if (this.music) clearInterval(this.music.timer);
+    this.music = null;
+  }
+
   stopAmbience() {
     clearInterval(this._punct);
     if (!this.ambient) return;
@@ -3071,6 +3276,7 @@ function sideSourceOf(state, key) {
 //      not sound disappointed.
 
 
+
 /** People, not papers: how many living sources actually told this player
  *  something. 'observed' is the player's own eyes and does not count. */
 function voices(state) {
@@ -3168,6 +3374,33 @@ function reckoningScript(state) {
   // --- the descendant ---------------------------------------------------
   if (state.knows('reck.bothsides')) {
     say('The woman on the bench has an ancestor who was hanged and an ancestor who signed the complaint against her. Half of Essex County is in the same position, and most of them have never looked.');
+  }
+
+  // --- how they sorted it ------------------------------------------------
+  //
+  // The one place the filing is read back. It reports the shape of what they
+  // built and nothing else: no comment on whether the balance is right, no
+  // note about the case they left empty, and above all no correction. A
+  // student who put everything under one heading has taken a position, and
+  // taking a position is what the screen after this one asks for.
+  const counts = filedCounts(state);
+  const filedTotal = Object.values(counts).reduce((n, c) => n + c, 0);
+  if (filedTotal) {
+    const ranked = THEORIES
+      .map((t) => ({ t, n: counts[t.id] }))
+      .filter((r) => r.n > 0)
+      .sort((a, b) => b.n - a.n);
+    say(`You sorted ${filedTotal} ${filedTotal === 1 ? 'piece' : 'pieces'} of what you found into the four cases.`);
+    if (ranked.length === 1) {
+      say(`All of it went under ${lower(ranked[0].t.short)}. That is a position, and it is one several historians hold.`);
+    } else {
+      const most = ranked[0], least = ranked[ranked.length - 1];
+      say(`Most of it went under ${lower(most.t.short)}. The least went under ${lower(least.t.short)}.`);
+      const shared = [...state.filed.values()].filter((set) => set.size > 1).length;
+      if (shared) {
+        say(`And ${shared} ${shared === 1 ? 'item' : 'items'} you put under more than one. That is the most honest thing you could have done with them — the same ledger really is evidence for a quarrel about land and for who had the standing to be believed.`);
+      }
+    }
   }
 
   // --- handover ---------------------------------------------------------
@@ -3894,6 +4127,21 @@ const KNOWLEDGE = {
   'fact.parris_deed':'Parris was given the parsonage and its land outright — a thing no previous minister here got, and a thing his opponents have not forgiven.',
   'fact.strangers':  'People are coming in from other towns to look at the afflicted girls.',
   'fact.annsr':      'Ann Putnam Sr. has buried several children. Her grief is a fact everyone in the village knows and steps around.',
+
+  // --- the war to the eastward -------------------------------------------
+  //
+  // The thinnest of the four cases before this. Mercy Lewis was in the game
+  // as a person the war had happened to, but nothing connected that to the
+  // accusations, which is the whole of the argument.
+  'fact.maine_refugees': 'Several of the afflicted girls came out of the Maine fighting. Mercy Lewis lost her family at Falmouth and went into service with the Putnams. She is not the only one — the households doing most of the accusing are the households that took in the refugees.',
+  'fact.maine_magistrates': 'Some of the men who sat as magistrates in 1692 had held responsibility for defending the eastward frontier, and it had gone badly. This is the sharpest version of the war argument: the court trying witches contained men who had already failed to stop something.',
+  'fact.maine_fear': 'Salem Village has kept a night watch since the autumn. The fighting is fifty miles off and nobody here believes that is far enough.',
+
+  // --- who was accused, and what they had in common ----------------------
+  'fact.firstthree': 'The first three accused were Sarah Good, who begged door to door; Sarah Osborne, who had fought her own sons over an estate and married her servant; and Tituba, who is enslaved. Three women, and not one of them with anybody to speak for her.',
+  'fact.good':       'Sarah Good had no house. She went door to door with a child, asking, and muttered when she was turned away. People had been calling her a nuisance for years before anyone called her a witch.',
+  'fact.osborne':    'Sarah Osborne went to law against her own sons over her first husband\'s estate, then married the servant she had bought out of indenture. She had not been to meeting in over a year. She died in the jail in May, before any trial.',
+  'fact.womenproperty': 'The pattern historians point to: a striking number of the accused women stood to inherit, or already held, property that would otherwise have gone to a man — widows with no surviving sons, daughters with no brothers.',
 
   // --- papers somebody pointed me at -------------------------------------
   //
@@ -4623,6 +4871,122 @@ function pointerFor(state, npcId, key) {
   if (state.knows(`pointed.${npcId}.${key}`)) return null;
   const v = set[key];
   return typeof v === 'string' ? v : (v[state.chapter] || null);
+}
+
+/* ===== src/content/theories.js ===== */
+// The four cases historians actually argue, and the evidence a student can
+// file under them.
+//
+// ---------------------------------------------------------------------
+// THE ONE RULE THIS FILE EXISTS TO ENFORCE
+//
+// Nothing here says which theory a piece of evidence supports.
+//
+// That was the fork, and it matters more than it looks. The game could tag
+// every fact with its cause and present four ready-made arguments, and a
+// student who rushed would still see them. But deciding that Ingersoll's
+// ledger is evidence about land and money — and noticing that it is *also*
+// evidence about who had the standing to accuse whom — is the entire
+// historical skill this game exists to practise. A game that files the
+// evidence has done the reading for them and left them the typing.
+//
+// So the four cases are stated, the evidence is marked as arguable, and the
+// filing is the player's. It is unscored, it is optional, a student who
+// files nothing still finishes, and whatever they do file goes into the
+// export as their own argument rather than the game's.
+//
+// ---------------------------------------------------------------------
+// WHICH ENTRIES ARE FILABLE
+//
+// Not all of them. A finished notebook holds about ninety entries and most
+// are texture — what a room smelled like, who was standing where. Asking a
+// class to sort ninety items in a thirty-minute period would turn the best
+// idea in the game into data entry.
+//
+// `ARGUABLE` is the subset a historian would actually cite in an argument
+// about causes: roughly a third. Marking an entry arguable says "this is
+// evidence about why", which is a different and much weaker claim than
+// saying which why it is evidence for.
+// ---------------------------------------------------------------------
+const THEORIES = [
+  {
+    id: 'land',
+    short: 'Land and money',
+    title: 'LAND AND MONEY',
+    blurb: 'A village split into two factions, feuding families, a disputed boundary, and a pattern in who accused whom.',
+    // Named so a student can look the argument up afterwards. Deliberately
+    // not presented as the answer — each of these historians is arguing
+    // against the others.
+    cite: 'Paul Boyer and Stephen Nissenbaum, Salem Possessed (1974)',
+  },
+  {
+    id: 'war',
+    short: 'The frontier war',
+    title: 'THE WAR',
+    blurb: 'A brutal war to the north, and refugees from it living in the very households that did most of the accusing.',
+    cite: 'Mary Beth Norton, In the Devil\'s Snare (2002)',
+  },
+  {
+    id: 'women',
+    short: 'Who was accused',
+    title: 'WHO WAS ACCUSED',
+    blurb: 'Mostly women — and often women who stood to inherit property, or who had already been difficult in public.',
+    cite: 'Carol Karlsen, The Devil in the Shape of a Woman (1987)',
+  },
+  {
+    id: 'law',
+    short: 'The law itself',
+    title: 'THE LAW ITSELF',
+    blurb: 'Spectral evidence, no defence counsel, a colony that had lost its charter, and a religion in which confessing was the only way to live.',
+    cite: 'Bernard Rosenthal, Salem Story (1993)',
+  },
+];
+const THEORY_IDS = THEORIES.map((t) => t.id);
+
+/**
+ * Knowledge flags that are evidence about causes rather than texture.
+ *
+ * Adding a flag here is a claim that a historian could build an argument on
+ * it — NOT a claim about which argument. Several of these are cited by more
+ * than one of the four, which is the point: the same ledger is evidence for
+ * a village quarrel and for who had the standing to be believed.
+ */
+const ARGUABLE = new Set([
+  // the village, its money, and its quarrels
+  'fact.factions', 'fact.salary', 'fact.parris_deed', 'fact.topsfield',
+  'fact.nurseland', 'clue.woodpile', 'clue.seating', 'clue.accounts',
+  'clue.marker', 'clue.road',
+
+  // the war to the north
+  'fact.mercymaine', 'fact.maine_refugees', 'fact.maine_magistrates',
+  'fact.maine_fear',
+
+  // who was accused, and what they had in common
+  'fact.tituba', 'fact.firstthree', 'fact.osborne', 'fact.good',
+  'fact.womenproperty', 'fact.annsr', 'june.spectral', 'june.fatherwrites',
+
+  // how the sickness started, and the bodily explanations
+  'fact.girls', 'fact.griggs', 'fact.witchcake',
+  'fact.wetyear', 'fact.spurredrye', 'fact.atetherye', 'fact.cattle',
+
+  // the court
+  'law.spectral', 'law.nocounsel', 'law.charter', 'law.confession',
+  'law.ergot_rebut', 'sept.forfeiture', 'june.irons',
+]);
+
+/** Every filable entry the player currently holds. */
+function filableEntries(state, KNOWLEDGE) {
+  return state.knowledgeLog()
+    .filter((e) => ARGUABLE.has(e.flag) && KNOWLEDGE[e.flag])
+    .map((e) => ({ flag: e.flag, text: KNOWLEDGE[e.flag], source: e.source }));
+}
+
+/** How many pieces of evidence the player has filed under each theory. */
+function filedCounts(state) {
+  const counts = {};
+  for (const t of THEORY_IDS) counts[t] = 0;
+  for (const [, set] of state.filed) for (const id of set) if (counts[id] !== undefined) counts[id] += 1;
+  return counts;
 }
 
 /* ===== src/content/clues.js ===== */
@@ -5380,6 +5744,26 @@ const NPCS = {
         ],
       },
       {
+        // She is one of the three. Nobody in the game is better placed to
+        // say what the three of them had in common, and she says it flatly,
+        // as a description of her own position rather than as a thesis.
+        id: 'accused', label: 'Who have the girls named?',
+        require: ['fact.girls'],
+        lines: [
+          'Three, so far.',
+          'Sarah Good, who has no house. She goes from door to door with her child and asks, and when she is turned away she says things under her breath. People have called her a nuisance for years. It is not a long walk from nuisance to witch.',
+          { learn: ['fact.good'] },
+          'Sarah Osborne, who went to law against her own sons over her first husband\'s land, and then married the man she had bought out of service. She has not been to meeting in above a year.',
+          { learn: ['fact.osborne'] },
+          { say: 'She stops.', who: null },
+          'And me.',
+          { learn: ['fact.firstthree'] },
+          { say: 'She lets that sit for a moment before she goes on.', who: null },
+          'Look at the three of us and tell me what we have between us. Not one of us has a man who will stand up in that meeting house and say it is a lie.',
+          'That is the whole of it. They did not begin with the difficult ones. They began with the ones nobody would miss.',
+        ],
+      },
+      {
         id: 'self', label: 'Ask about her.',
         require: ['fact.tituba'],
         lines: [
@@ -5831,6 +6215,32 @@ const NPCS = {
         ],
       },
       {
+        // Norton's argument, from the inside, by somebody who would not
+        // recognise it as an argument. She is not making a case about
+        // causes. She is describing where the refugee girls ended up living.
+        id: 'others', chapter: 'march', label: 'Are there others like you here?',
+        require: ['fact.mercymaine'],
+        lines: [
+          'Some.',
+          { say: 'She counts, and it does not take her long.', who: null },
+          'There is a girl over at Topsfield who was at Casco when I was. There are two more in the town. And there is one in this village who came down from Falmouth, though she does not speak of it and neither will I.',
+          'We are servants, mostly. That is what happens to a girl with no family left — somebody takes her in and she works.',
+          { learn: ['fact.maine_refugees'] },
+          { say: 'She shifts the bucket to the other hand.', who: null },
+          'And here is a thing I have noticed and would rather not have noticed.',
+          'The houses that took us in are the houses where the girls are crying out.',
+          {
+            if: { spokenTo: ['annjr'] },
+            then: [
+              'I sleep in the same room as Ann Putnam. She has grown up hearing her mother count the dead. I lie down next to her having seen mine.',
+              { say: 'She looks north again.', who: null },
+              'I do not know what to make of that. I only know it is true of both of us.',
+            ],
+            else: ['I sleep in the Putnam house. You should go and see who else sleeps in it.'],
+          },
+        ],
+      },
+      {
         id: 'putnams', chapter: 'march', label: 'What is it like in that house?',
         require: ['fact.annsr'],
         lines: [
@@ -5928,6 +6338,22 @@ const NPCS = {
           { say: 'She goes back to the mending.', who: null },
           'If you want the whole of it, it is written down. There is a petition on the Putnams\' own table with my neighbours\' names on it, and not one of them ours.',
           { learn: 'paper.topsfield' },
+        ],
+      },
+      {
+        id: 'property', label: 'You hold land in your own name.',
+        require: ['fact.nurseland'],
+        lines: [
+          { say: 'She looks up from the mending.', who: null },
+          'I do. The farm is in both our names and it will go to our children, and I have had a hand in every decision about it for forty years.',
+          'That is not usual and I know it is not usual.',
+          { say: 'She thinks about how much to say, and says it.', who: null },
+          'There is a kind of woman this village is uneasy about, and I will tell you what she looks like, because I have watched it my whole life.',
+          'She is past her childbearing. She has land, or she stands to get land, and there is no son or brother it would more naturally have gone to. She has been to law at least once, and won.',
+          { learn: ['fact.womenproperty'] },
+          'Goodwife Osborne was that woman. She went to law against her own sons over her husband\'s ground and she was not forgiven it.',
+          { say: 'She goes back to the mending, and her hands are steady.', who: null },
+          'And I am that woman. I would be a fool not to have noticed.',
         ],
       },
       {
@@ -6309,6 +6735,8 @@ const NPCS = {
         else: [
           'We keep a watch through the night, and have since the autumn.',
           'There is fighting up the eastward — the Maine country. It has not come near us. That is not the same as nobody being afraid of it.',
+          { learn: ['fact.maine_fear'] },
+          'Fifty miles. Men in this village have gone up there and not all of them came back, and we have had families come down with what they could carry. You do not keep a watch through the winter for a thing you think is finished.',
           { learn: 'fact.factions' },
         ],
       },
@@ -7013,6 +7441,49 @@ const NPCS = {
           'So the court built a machine in which the honest were killed and the liars survived, and then treated the resulting confessions as proof that the whole thing was real.',
           'Fifty-odd people confessed. Every confession made the next accusation easier to believe.',
           'If you want one sentence for what went wrong here, it is that: the court could not tell the difference between evidence and the incentive it had created.',
+        ],
+      },
+      {
+        // The war argument, named and attributed, and immediately given the
+        // same treatment every other single-cause answer gets in this room.
+        // She is the only character permitted to cite a historian, and she
+        // does it to show the player that these are positions people hold
+        // rather than facts the game is withholding.
+        id: 'war', label: 'Did the war have anything to do with it?',
+        require: ['fact.mercymaine'],
+        lines: [
+          { say: 'She sits forward.', who: null },
+          'You met somebody from the eastward, then. Good. That is not an accident of the record — it is the record.',
+          'The colony had been at war on its northern frontier for four years. Whole settlements burned. Survivors came south with nothing, and a great many of them were girls who went into service in exactly the households that produced the accusations.',
+          { learn: ['fact.maine_refugees'] },
+          { say: 'She counts it off on her fingers, and it is clearly a thing she has said before.', who: null },
+          'And several of the men who sat as magistrates in 1692 had carried responsibility for defending that frontier. It had gone very badly. Some of them had a great deal to answer for and no way to answer it.',
+          { learn: ['fact.maine_magistrates'] },
+          'Mary Beth Norton made that case in 2002 and it changed the field. Her argument is that these people were not imagining an invisible enemy out of nothing — there was a visible one fifty miles north that they had already failed to stop.',
+          { say: 'And then, because she cannot help herself:', who: null },
+          'It is a strong argument. It is also not a complete one.',
+          'It does not explain why the first three accused were a beggar, a woman who had gone to law against her sons, and an enslaved woman — none of whom had anything to do with Maine.',
+          'Every one of the four cases does that. Explains a great deal, and then stops.',
+        ],
+      },
+      {
+        id: 'women', label: 'Was there a pattern in who got accused?',
+        lines: [
+          'Yes. And it is the least comfortable of the four, so people skip it.',
+          'The overwhelming majority of the accused were women. That much is not in dispute.',
+          'What Carol Karlsen showed in 1987 is that a striking number of them were women who held property, or stood to inherit it, in a line where there was no son or brother it would otherwise have gone to. Widows without heirs. Daughters without brothers. Women who had already been to court, and won.',
+          { learn: ['fact.womenproperty'] },
+          {
+            if: { knows: ['fact.nurseland'] },
+            then: [
+              { say: 'She raises an eyebrow.', who: null },
+              'You have been to the Nurse farm. Then you have stood in a house held by a woman in exactly that position, and you can decide for yourself how much it explains.',
+            ],
+            else: [],
+          },
+          'The argument is not that anybody sat down and planned to seize an estate. It is quieter than that: a society uneasy about women outside the ordinary line of inheritance had a word ready for them, and in 1692 that word became actionable.',
+          { say: 'She shrugs.', who: null },
+          'And then it does what all four of them do. It stops. It does not explain Giles Corey, who was a man of eighty-one, or George Burroughs, who was a minister.',
         ],
       },
       {
@@ -9423,6 +9894,147 @@ function drawDocGrid(g, view, s, order, owned, docs, sel, scroll) {
 }
 
 /**
+ * The fourth tab: the four cases, and the player's own filing of evidence
+ * under them.
+ *
+ * The game never says which case a fact supports. It marks a fact as being
+ * evidence about causes — a much weaker claim — and the sorting is the
+ * player's, unscored and optional. Deciding that Ingersoll's ledger is
+ * evidence about land and money, and noticing that it is also evidence about
+ * who had the standing to be believed, is the whole historical skill this
+ * game exists to practise. A version that filed the evidence would have done
+ * the reading and left the student the typing.
+ *
+ * Interaction is the disputes tab's: a cursor, and number keys that apply to
+ * whatever it is on. Pressing a number twice takes it back off.
+ *
+ * @param cases  true to show the four arguments and who makes them instead
+ *               of the evidence list
+ */
+function drawTheoryTab(g, view, s, theories, counts, items, state, sel, scroll, cases) {
+  const bx = view.x + 20 * s, by = view.y + 20 * s;
+  const bw = view.w - 40 * s, bh = view.h - 40 * s;
+  const top = by + 46 * s;
+  const bottom = by + bh - 20 * s;
+
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+
+  if (cases) {
+    // Two by two, not a list. Four cases with a real sentence each and the
+    // historian who makes it does not fit in one column at any font size
+    // that is still readable on a classroom projector — and a student cannot
+    // sort evidence into cases they have to scroll to remember.
+    g.save();
+    g.beginPath();
+    g.rect(bx + 8 * s, top - 6 * s, bw - 16 * s, bottom - top + 6 * s);
+    g.clip();
+    const cw = (bw - 52 * s) / 2;
+    const chh = (bottom - top - 14 * s) / 2;
+    theories.forEach((t, i) => {
+      const cx = bx + 24 * s + (i % 2) * (cw + 12 * s);
+      let y = top + Math.floor(i / 2) * (chh + 12 * s);
+
+      g.font = `700 ${9 * s}px Georgia, serif`;
+      g.fillStyle = P.boxInk;
+      g.fillText(`${i + 1}.  ${t.title}`, cx, y);
+      y += 15 * s;
+
+      g.font = `${7.5 * s}px Georgia, serif`;
+      g.fillStyle = 'rgba(58,54,48,0.82)';
+      for (const l of wrapText(g, t.blurb, cw)) { g.fillText(l, cx, y); y += 9.5 * s; }
+      y += 3 * s;
+
+      g.font = `italic ${7 * s}px Georgia, serif`;
+      g.fillStyle = P.boxDim;
+      for (const l of wrapText(g, t.cite, cw)) { g.fillText(l, cx, y); y += 8.5 * s; }
+    });
+    g.restore();
+    // No summary line under the grid: it lands on the key help, and the
+    // memorial panel has already said it in full.
+    return 0;
+  }
+
+  // The four cases, one line each, with how much the player has put under
+  // each of them. This is the only scoreboard in the game and it is not one:
+  // an empty case is a legitimate position and nothing anywhere says so.
+  let y = top;
+  theories.forEach((t, i) => {
+    g.font = `600 ${9.5 * s}px Georgia, serif`;
+    g.fillStyle = P.boxInk;
+    g.fillText(`${i + 1}`, bx + 22 * s, y);
+    g.fillText(t.title, bx + 36 * s, y);
+    g.font = `${9 * s}px system-ui, sans-serif`;
+    g.fillStyle = counts[t.id] ? P.accent : P.boxDim;
+    g.textAlign = 'right';
+    g.fillText(String(counts[t.id]), bx + bw - 24 * s, y + 1 * s);
+    g.textAlign = 'left';
+    y += 14 * s;
+  });
+
+  y += 4 * s;
+  g.strokeStyle = 'rgba(58,54,48,0.35)';
+  g.lineWidth = 1;
+  g.beginPath();
+  g.moveTo(bx + 18 * s, y);
+  g.lineTo(bx + bw - 18 * s, y);
+  g.stroke();
+  const listTop = y + 8 * s;
+
+  if (!items.length) {
+    g.font = `italic ${10 * s}px Georgia, serif`;
+    g.fillStyle = P.boxDim;
+    g.fillText('Nothing to sort yet. Evidence about causes will collect here.',
+               bx + 22 * s, listTop + 6 * s);
+    return 0;
+  }
+
+  g.save();
+  g.beginPath();
+  g.rect(bx + 8 * s, listTop - 4 * s, bw - 16 * s, bottom - listTop + 4 * s);
+  g.clip();
+
+  const textW = bw - 96 * s;
+  const lineH = 11.5 * s;
+  let ly = listTop - scroll;
+  let contentH = 0;
+
+  items.forEach((item, i) => {
+    g.font = `${9 * s}px Georgia, serif`;
+    const lines = wrapText(g, item.text, textW);
+    const blockH = lines.length * lineH + 9 * s;
+
+    if (ly + blockH > listTop - 30 * s && ly < bottom + 30 * s) {
+      if (i === sel) {
+        g.fillStyle = 'rgba(232,196,106,0.18)';
+        g.fillRect(bx + 14 * s, ly - 4 * s, bw - 28 * s, blockH);
+      }
+      const under = state.filedUnder(item.flag);
+      // Filed evidence carries the numbers it was filed under, so a student
+      // scanning the list can see their own argument taking shape.
+      g.font = `700 ${8.5 * s}px system-ui, sans-serif`;
+      let tx = bx + 22 * s;
+      theories.forEach((t, n) => {
+        const on = under.has(t.id);
+        g.fillStyle = on ? P.accent : 'rgba(90,84,74,0.25)';
+        g.fillText(String(n + 1), tx, ly + 1 * s);
+        tx += 9 * s;
+      });
+
+      g.font = `${9 * s}px Georgia, serif`;
+      g.fillStyle = i === sel ? P.boxInk : 'rgba(58,54,48,0.72)';
+      let ty = ly;
+      for (const l of lines) { g.fillText(l, bx + 62 * s, ty); ty += lineH; }
+    }
+    ly += blockH;
+    contentH += blockH;
+  });
+  g.restore();
+
+  return Math.max(0, contentH - (bottom - listTop));
+}
+
+/**
  * The disputes tab: where the sources disagree, and what the player makes
  * of it.
  *
@@ -9547,13 +10159,17 @@ function sideSourceOfSafe(state, key) {
 }
 
 /** The tabs across the top of the notebook. */
-function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount, help) {
+function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount, help, filedCount) {
   const bx = view.x + 20 * s, by = view.y + 20 * s;
   const bh = view.h - 40 * s;
+  // Four labels have to share one panel width, so they are shorter than they
+  // would ideally be. The auto-fit below shrinks the type rather than
+  // truncating, because a truncated tab label is worse than a small one.
   const labels = [
     'What I was told',
-    `What I copied down   ${docCount}/${docTotal}`,
-    disputeCount ? `Where they disagree  ${disputeCount}` : 'Where they disagree',
+    `Papers  ${docCount}/${docTotal}`,
+    disputeCount ? `Disagreements  ${disputeCount}` : 'Disagreements',
+    filedCount ? `Why it happened  ${filedCount}` : 'Why it happened',
   ];
   // Three tabs have to fit inside the panel. Close the gaps first, then
   // shrink the type, and measure rather than guessing — the labels carry
@@ -9900,6 +10516,7 @@ function drawIntro(g, view, s, card, t) {
 
 
 
+
 // Which chapters wear the hardened faces. March is the only time the player
 // meets these people before anything has happened to them.
 const HARD_CHAPTERS = new Set(['june', 'archive', 'september', 'reckoning']);
@@ -9972,6 +10589,8 @@ class Game {
     this.noteOpen = new Set();  // which people's headings are expanded
     this.docSel = 0;            // cursor in the document collection
     this.readerFrom = 'world';  // where the reader was opened from
+    this.theorySel = 0;         // cursor in the evidence-sorting tab
+    this.theoryCases = false;   // showing the four arguments rather than the list
     this.stalled = 0;           // conversations since the goal last moved
     this.goalAtTalk = null;
     this.convNpc = null;
@@ -10010,6 +10629,30 @@ class Game {
     const m = this.mapFor(this.player.map);
     const outdoor1692 = this.state.chapter === 'september' ? '1692-late' : '1692';
     this.audio.setAmbience(m.indoor ? 'indoor' : (m.era === 'present' ? 'present' : outdoor1692));
+    this.audio.setMusic(this.musicFor(m));
+  }
+
+  /**
+   * Which tune belongs to where the player is standing.
+   *
+   * Rooms first, because two of them earn their own: the meetinghouse is the
+   * only place in the village where this music was ever actually sung, and
+   * the jail should barely have any. Then the year, because the outdoor tune
+   * loses notes as the village empties — March has the phrase and its answer,
+   * June has lost the answer, September is three notes and silence.
+   *
+   * The present day gets nothing at all. A memorial beside a working street
+   * is not scored, and the silence is what makes the first step into 1692
+   * land.
+   */
+  musicFor(m) {
+    if (m.era === 'present') return m.id === 'archive' ? 'archive' : null;
+    if (m.id === 'meetinghouse') return 'meetinghouse';
+    if (m.id === 'jail') return 'jail';
+    if (m.indoor) return 'indoor';
+    if (this.state.chapter === 'september') return '1692-late';
+    if (this.state.chapter === 'june') return '1692-june';
+    return '1692';
   }
 
   mapFor(id, chapter = this.state.chapter) {
@@ -10184,6 +10827,7 @@ class Game {
   /* ---------------- dialogue plumbing ---------------- */
 
   startScript(script, speaker, onEnd = null) {
+    this.audio.duckMusic(true);
     this.mode = 'dialogue';
     this.choiceIndex = 0;
     this.runner.start(script, speaker, onEnd || (() => { this.endConversation(); }));
@@ -10303,6 +10947,7 @@ class Game {
   }
 
   finishConversation() {
+    this.audio.duckMusic(false);
     const npc = this.convNpc;
     // Did this conversation move the player forward? If the goal is the same
     // one they walked in with, they are that much closer to being lost.
@@ -10533,6 +11178,7 @@ class Game {
   showToast(text) { this.toast = { text, t: 2.6 }; this.audio.noted(); }
 
   openReader(id) {
+    this.audio.duckMusic(true);
     const doc = DOCUMENTS[id];
     if (!doc) { this.mode = 'play'; this.dlg = null; return; }
     this.reader = doc;
@@ -10721,6 +11367,7 @@ class Game {
       // the Topsfield petition from the collection to check a date should
       // land back in the collection, not in a room three chapters away.
       const back = () => {
+        this.audio.duckMusic(false);
         this.mode = this.readerFrom === 'notebook' ? 'notebook' : 'play';
         this.reader = null;
         this.readerFrom = 'world';
@@ -10739,12 +11386,12 @@ class Game {
     if (this.mode === 'notebook') {
       if (inp.justPressed('cancel') || inp.justPressed('notebook')) this.mode = 'play';
       if (inp.justPressed('left')) {
-        this.notebookTab = (this.notebookTab + 2) % 3;
+        this.notebookTab = (this.notebookTab + 3) % 4;
         this.notebookScroll = 0;
         this.audio.menuMove();
       }
       if (inp.justPressed('right')) {
-        this.notebookTab = (this.notebookTab + 1) % 3;
+        this.notebookTab = (this.notebookTab + 1) % 4;
         this.notebookScroll = 0;
         this.audio.menuMove();
       }
@@ -10797,6 +11444,38 @@ class Game {
         if (row * rowH - this.notebookScroll > 120 * this.scale) this.notebookScroll = row * rowH - 120 * this.scale;
         if (row * rowH < this.notebookScroll) this.notebookScroll = row * rowH;
         this.notebookScroll = Math.max(0, Math.min(this.notebookScroll, this.notebookMax || 0));
+        return;
+      }
+
+      // Tab 3: the four cases. Same shape as the disputes tab — a cursor,
+      // and number keys that apply to whatever it is on. Z flips to the four
+      // arguments themselves, with the historians who make them, because a
+      // student cannot sort evidence into four buckets they have only seen
+      // named once, on a panel, twenty minutes ago.
+      if (this.notebookTab === 3) {
+        if (inp.justPressed('confirm')) { this.theoryCases = !this.theoryCases; this.audio.menuPick(); return; }
+        if (this.theoryCases) return;
+        const items = filableEntries(this.state, KNOWLEDGE);
+        if (items.length) {
+          this.theorySel = Math.min(this.theorySel, items.length - 1);
+          if (inp.justPressed('down')) { this.theorySel = Math.min(items.length - 1, this.theorySel + 1); this.audio.menuMove(); }
+          if (inp.justPressed('up')) { this.theorySel = Math.max(0, this.theorySel - 1); this.audio.menuMove(); }
+          const item = items[Math.min(this.theorySel, items.length - 1)];
+          const file = (n) => {
+            this.state.toggleFiled(item.flag, THEORY_IDS[n]);
+            this.audio.menuPick();
+            this.save();
+          };
+          if (inp.justPressed('pos1')) file(0);
+          if (inp.justPressed('pos2')) file(1);
+          if (inp.justPressed('pos3')) file(2);
+          if (inp.justPressed('pos4')) file(3);
+          const approx = this.theorySel * 32 * this.scale;
+          const window = 150 * this.scale;
+          if (approx - this.notebookScroll > window) this.notebookScroll = approx - window;
+          if (approx < this.notebookScroll) this.notebookScroll = approx;
+          this.notebookScroll = Math.max(0, Math.min(this.notebookScroll, this.notebookMax || 0));
+        }
         return;
       }
 
@@ -11000,8 +11679,18 @@ class Game {
       }
     }
 
-    // Objective HUD, above everything except the notebook.
-    if (this.mode !== 'notebook') {
+    // Objective HUD.
+    //
+    // Only while the player is actually walking around. It used to draw over
+    // conversations and over open documents, which meant a student could read
+    // what to do next in the middle of somebody telling them something —
+    // there is no version of that where the goal does not win, because it is
+    // yellow, it is short, and it is the only thing on screen that is an
+    // instruction. Reading a primary source has the same problem.
+    //
+    // It comes back the moment the conversation ends, so nothing is lost;
+    // it just stops competing.
+    if (this.mode === 'play') {
       const step = currentStep(this.state);
       drawObjective(g, v, s, {
         step,
@@ -11042,6 +11731,13 @@ class Game {
         this.notebookMax = drawDocGrid(
           g, v, s, Object.keys(DOCUMENTS), this.state.docs, DOCUMENTS,
           this.docSel, this.notebookScroll) || 0;
+      } else if (this.notebookTab === 3) {
+        drawNotebook(g, v, s, null, 0, sourceName,
+                     this.theoryCases ? 'The four cases' : 'Why it happened');
+        this.notebookMax = drawTheoryTab(
+          g, v, s, THEORIES, filedCounts(this.state),
+          filableEntries(this.state, KNOWLEDGE), this.state,
+          this.theorySel, this.notebookScroll, this.theoryCases) || 0;
       } else {
         const list = activeDisputes(this.state);
         this.disputeSel = Math.min(this.disputeSel, Math.max(0, list.length - 1));
@@ -11052,9 +11748,13 @@ class Game {
         '↑ ↓ move  ·  Z open a heading  ·  ← → tabs  ·  X close',
         '↑ ↓ move  ·  Z read it again  ·  ← → tabs  ·  X close',
         '↑ ↓ move  ·  1 2 3 take a position  ·  ← → tabs  ·  X close',
+        this.theoryCases
+          ? 'Z back to the evidence  ·  ← → tabs  ·  X close'
+          : '↑ ↓ move  ·  1 2 3 4 file it under a case  ·  Z what these mean  ·  X close',
       ];
       drawNotebookTabs(g, v, s, this.notebookTab, this.state.docs.size, DOC_COUNT,
-                       activeDisputes(this.state).length, HELP[this.notebookTab]);
+                       activeDisputes(this.state).length, HELP[this.notebookTab],
+                       this.state.filed.size);
     }
 
     if (this.mode === 'reader' && this.reader) {
@@ -11165,6 +11865,25 @@ class Game {
       });
     }
 
+    // What they made of it. Their filing, in their order, with nothing said
+    // about whether it is the right shape.
+    const filed = filedCounts(this.state);
+    const filedTotal = Object.values(filed).reduce((n, c) => n + c, 0);
+    if (filedTotal) {
+      lines.push('---------------------------------------------', '');
+      lines.push('HOW I SORTED THE EVIDENCE', '');
+      for (const t of THEORIES) {
+        lines.push(`${t.title}  (${filed[t.id]})`);
+        lines.push(`   ${t.blurb}`);
+        lines.push(`   ${t.cite}`);
+        const mine = filableEntries(this.state, KNOWLEDGE)
+          .filter((e) => this.state.filedUnder(e.flag).has(t.id));
+        if (!mine.length) lines.push('   (I did not put anything under this one.)');
+        for (const e of mine) lines.push(`   - ${e.text}`);
+        lines.push('');
+      }
+    }
+
     const disputes = activeDisputes(this.state);
     if (disputes.length) {
       lines.push('---------------------------------------------', '');
@@ -11222,6 +11941,7 @@ window.__objectives = { currentStep, stepText, outstanding, outstandingKey, STEP
 window.__directions = { DIRECTIONS, pointerFor };
 window.__objectives.outstandingMap = outstandingMap;
 window.__directions.withinSight = withinSight;
+window.__theories = { THEORIES, THEORY_IDS, ARGUABLE, filableEntries, filedCounts };
 window.__GameState = GameState;
 window.__KNOWLEDGE = KNOWLEDGE;
 window.__NPCS = NPCS;
@@ -11256,13 +11976,18 @@ document.getElementById('copy')?.addEventListener('click', async (e) => {
 });
 
 const soundBtn = document.getElementById('sound');
+// Three settings, not two. A teacher who wants a room of thirty quieter
+// almost always wants the tune gone and the footsteps and dialogue blips
+// left alone — those are feedback about what the game is doing, and losing
+// them makes it harder to play, not calmer.
+const SOUND_LABEL = { all: 'Sound: on', quiet: 'Sound: no music', off: 'Sound: off' };
 function paintSoundBtn() {
-  if (soundBtn) soundBtn.textContent = game.audio.muted ? 'Sound: off' : 'Sound: on';
+  if (soundBtn) soundBtn.textContent = SOUND_LABEL[game.audio.sound] || 'Sound: on';
 }
 paintSoundBtn();
 soundBtn?.addEventListener('click', () => {
   game.audio.unlock();
-  game.audio.toggleMute();
+  game.audio.cycleSound();
   paintSoundBtn();
   canvas.focus();
 });

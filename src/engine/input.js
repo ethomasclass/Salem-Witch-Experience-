@@ -11,10 +11,14 @@ const KEYMAP = {
   KeyX: 'cancel', Escape: 'cancel', Backspace: 'cancel',
   KeyN: 'notebook', Tab: 'notebook',
   ShiftLeft: 'run', ShiftRight: 'run',
-  // Taking a position on a disputed claim, in the notebook.
+  // Taking a position on a disputed claim, and filing evidence under one of
+  // the four cases. Same keys, different tab — both are "this number applies
+  // to whatever the cursor is on", which is the one interaction idiom the
+  // notebook uses everywhere.
   Digit1: 'pos1', Numpad1: 'pos1',
   Digit2: 'pos2', Numpad2: 'pos2',
   Digit3: 'pos3', Numpad3: 'pos3',
+  Digit4: 'pos4', Numpad4: 'pos4',
 };
 
 export class Input {

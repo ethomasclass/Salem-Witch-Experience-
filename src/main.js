@@ -14,7 +14,7 @@ import { buildActor, buildPortrait, PLAYER_SPEC, SPR_H } from './engine/art-acto
 import {
   dialogueLayout, drawDialogue, drawChoices, drawNotebook, drawTitle, drawToast,
   drawObjective, drawReader, drawNotebookTabs, drawAnswer, drawPrompt, drawWayfinder,
-  drawDisputeTab, drawIntro, drawGroupedNotebook, drawDocGrid,
+  drawDisputeTab, drawIntro, drawGroupedNotebook, drawDocGrid, drawTheoryTab,
   wrapText,
 } from './engine/ui.js';
 import { Audio } from './engine/audio.js';
@@ -30,6 +30,7 @@ import { notebookEntries, notebookGroups, sourceName, shortSourceName, KNOWLEDGE
 import { PORTRAIT_ART } from './content/portraits.js';
 import { DISPUTES, activeDisputes, disputeCompletedBy, sideSourceOf } from './content/disputes.js';
 import { reckoningScript } from './content/reckoning.js';
+import { THEORIES, THEORY_IDS, ARGUABLE, filableEntries, filedCounts } from './content/theories.js';
 
 // Which chapters wear the hardened faces. March is the only time the player
 // meets these people before anything has happened to them.
@@ -103,6 +104,8 @@ class Game {
     this.noteOpen = new Set();  // which people's headings are expanded
     this.docSel = 0;            // cursor in the document collection
     this.readerFrom = 'world';  // where the reader was opened from
+    this.theorySel = 0;         // cursor in the evidence-sorting tab
+    this.theoryCases = false;   // showing the four arguments rather than the list
     this.stalled = 0;           // conversations since the goal last moved
     this.goalAtTalk = null;
     this.convNpc = null;
@@ -141,6 +144,30 @@ class Game {
     const m = this.mapFor(this.player.map);
     const outdoor1692 = this.state.chapter === 'september' ? '1692-late' : '1692';
     this.audio.setAmbience(m.indoor ? 'indoor' : (m.era === 'present' ? 'present' : outdoor1692));
+    this.audio.setMusic(this.musicFor(m));
+  }
+
+  /**
+   * Which tune belongs to where the player is standing.
+   *
+   * Rooms first, because two of them earn their own: the meetinghouse is the
+   * only place in the village where this music was ever actually sung, and
+   * the jail should barely have any. Then the year, because the outdoor tune
+   * loses notes as the village empties — March has the phrase and its answer,
+   * June has lost the answer, September is three notes and silence.
+   *
+   * The present day gets nothing at all. A memorial beside a working street
+   * is not scored, and the silence is what makes the first step into 1692
+   * land.
+   */
+  musicFor(m) {
+    if (m.era === 'present') return m.id === 'archive' ? 'archive' : null;
+    if (m.id === 'meetinghouse') return 'meetinghouse';
+    if (m.id === 'jail') return 'jail';
+    if (m.indoor) return 'indoor';
+    if (this.state.chapter === 'september') return '1692-late';
+    if (this.state.chapter === 'june') return '1692-june';
+    return '1692';
   }
 
   mapFor(id, chapter = this.state.chapter) {
@@ -315,6 +342,7 @@ class Game {
   /* ---------------- dialogue plumbing ---------------- */
 
   startScript(script, speaker, onEnd = null) {
+    this.audio.duckMusic(true);
     this.mode = 'dialogue';
     this.choiceIndex = 0;
     this.runner.start(script, speaker, onEnd || (() => { this.endConversation(); }));
@@ -434,6 +462,7 @@ class Game {
   }
 
   finishConversation() {
+    this.audio.duckMusic(false);
     const npc = this.convNpc;
     // Did this conversation move the player forward? If the goal is the same
     // one they walked in with, they are that much closer to being lost.
@@ -664,6 +693,7 @@ class Game {
   showToast(text) { this.toast = { text, t: 2.6 }; this.audio.noted(); }
 
   openReader(id) {
+    this.audio.duckMusic(true);
     const doc = DOCUMENTS[id];
     if (!doc) { this.mode = 'play'; this.dlg = null; return; }
     this.reader = doc;
@@ -852,6 +882,7 @@ class Game {
       // the Topsfield petition from the collection to check a date should
       // land back in the collection, not in a room three chapters away.
       const back = () => {
+        this.audio.duckMusic(false);
         this.mode = this.readerFrom === 'notebook' ? 'notebook' : 'play';
         this.reader = null;
         this.readerFrom = 'world';
@@ -870,12 +901,12 @@ class Game {
     if (this.mode === 'notebook') {
       if (inp.justPressed('cancel') || inp.justPressed('notebook')) this.mode = 'play';
       if (inp.justPressed('left')) {
-        this.notebookTab = (this.notebookTab + 2) % 3;
+        this.notebookTab = (this.notebookTab + 3) % 4;
         this.notebookScroll = 0;
         this.audio.menuMove();
       }
       if (inp.justPressed('right')) {
-        this.notebookTab = (this.notebookTab + 1) % 3;
+        this.notebookTab = (this.notebookTab + 1) % 4;
         this.notebookScroll = 0;
         this.audio.menuMove();
       }
@@ -928,6 +959,38 @@ class Game {
         if (row * rowH - this.notebookScroll > 120 * this.scale) this.notebookScroll = row * rowH - 120 * this.scale;
         if (row * rowH < this.notebookScroll) this.notebookScroll = row * rowH;
         this.notebookScroll = Math.max(0, Math.min(this.notebookScroll, this.notebookMax || 0));
+        return;
+      }
+
+      // Tab 3: the four cases. Same shape as the disputes tab — a cursor,
+      // and number keys that apply to whatever it is on. Z flips to the four
+      // arguments themselves, with the historians who make them, because a
+      // student cannot sort evidence into four buckets they have only seen
+      // named once, on a panel, twenty minutes ago.
+      if (this.notebookTab === 3) {
+        if (inp.justPressed('confirm')) { this.theoryCases = !this.theoryCases; this.audio.menuPick(); return; }
+        if (this.theoryCases) return;
+        const items = filableEntries(this.state, KNOWLEDGE);
+        if (items.length) {
+          this.theorySel = Math.min(this.theorySel, items.length - 1);
+          if (inp.justPressed('down')) { this.theorySel = Math.min(items.length - 1, this.theorySel + 1); this.audio.menuMove(); }
+          if (inp.justPressed('up')) { this.theorySel = Math.max(0, this.theorySel - 1); this.audio.menuMove(); }
+          const item = items[Math.min(this.theorySel, items.length - 1)];
+          const file = (n) => {
+            this.state.toggleFiled(item.flag, THEORY_IDS[n]);
+            this.audio.menuPick();
+            this.save();
+          };
+          if (inp.justPressed('pos1')) file(0);
+          if (inp.justPressed('pos2')) file(1);
+          if (inp.justPressed('pos3')) file(2);
+          if (inp.justPressed('pos4')) file(3);
+          const approx = this.theorySel * 32 * this.scale;
+          const window = 150 * this.scale;
+          if (approx - this.notebookScroll > window) this.notebookScroll = approx - window;
+          if (approx < this.notebookScroll) this.notebookScroll = approx;
+          this.notebookScroll = Math.max(0, Math.min(this.notebookScroll, this.notebookMax || 0));
+        }
         return;
       }
 
@@ -1131,8 +1194,18 @@ class Game {
       }
     }
 
-    // Objective HUD, above everything except the notebook.
-    if (this.mode !== 'notebook') {
+    // Objective HUD.
+    //
+    // Only while the player is actually walking around. It used to draw over
+    // conversations and over open documents, which meant a student could read
+    // what to do next in the middle of somebody telling them something —
+    // there is no version of that where the goal does not win, because it is
+    // yellow, it is short, and it is the only thing on screen that is an
+    // instruction. Reading a primary source has the same problem.
+    //
+    // It comes back the moment the conversation ends, so nothing is lost;
+    // it just stops competing.
+    if (this.mode === 'play') {
       const step = currentStep(this.state);
       drawObjective(g, v, s, {
         step,
@@ -1173,6 +1246,13 @@ class Game {
         this.notebookMax = drawDocGrid(
           g, v, s, Object.keys(DOCUMENTS), this.state.docs, DOCUMENTS,
           this.docSel, this.notebookScroll) || 0;
+      } else if (this.notebookTab === 3) {
+        drawNotebook(g, v, s, null, 0, sourceName,
+                     this.theoryCases ? 'The four cases' : 'Why it happened');
+        this.notebookMax = drawTheoryTab(
+          g, v, s, THEORIES, filedCounts(this.state),
+          filableEntries(this.state, KNOWLEDGE), this.state,
+          this.theorySel, this.notebookScroll, this.theoryCases) || 0;
       } else {
         const list = activeDisputes(this.state);
         this.disputeSel = Math.min(this.disputeSel, Math.max(0, list.length - 1));
@@ -1183,9 +1263,13 @@ class Game {
         '↑ ↓ move  ·  Z open a heading  ·  ← → tabs  ·  X close',
         '↑ ↓ move  ·  Z read it again  ·  ← → tabs  ·  X close',
         '↑ ↓ move  ·  1 2 3 take a position  ·  ← → tabs  ·  X close',
+        this.theoryCases
+          ? 'Z back to the evidence  ·  ← → tabs  ·  X close'
+          : '↑ ↓ move  ·  1 2 3 4 file it under a case  ·  Z what these mean  ·  X close',
       ];
       drawNotebookTabs(g, v, s, this.notebookTab, this.state.docs.size, DOC_COUNT,
-                       activeDisputes(this.state).length, HELP[this.notebookTab]);
+                       activeDisputes(this.state).length, HELP[this.notebookTab],
+                       this.state.filed.size);
     }
 
     if (this.mode === 'reader' && this.reader) {
@@ -1296,6 +1380,25 @@ class Game {
       });
     }
 
+    // What they made of it. Their filing, in their order, with nothing said
+    // about whether it is the right shape.
+    const filed = filedCounts(this.state);
+    const filedTotal = Object.values(filed).reduce((n, c) => n + c, 0);
+    if (filedTotal) {
+      lines.push('---------------------------------------------', '');
+      lines.push('HOW I SORTED THE EVIDENCE', '');
+      for (const t of THEORIES) {
+        lines.push(`${t.title}  (${filed[t.id]})`);
+        lines.push(`   ${t.blurb}`);
+        lines.push(`   ${t.cite}`);
+        const mine = filableEntries(this.state, KNOWLEDGE)
+          .filter((e) => this.state.filedUnder(e.flag).has(t.id));
+        if (!mine.length) lines.push('   (I did not put anything under this one.)');
+        for (const e of mine) lines.push(`   - ${e.text}`);
+        lines.push('');
+      }
+    }
+
     const disputes = activeDisputes(this.state);
     if (disputes.length) {
       lines.push('---------------------------------------------', '');
@@ -1353,6 +1456,7 @@ window.__objectives = { currentStep, stepText, outstanding, outstandingKey, STEP
 window.__directions = { DIRECTIONS, pointerFor };
 window.__objectives.outstandingMap = outstandingMap;
 window.__directions.withinSight = withinSight;
+window.__theories = { THEORIES, THEORY_IDS, ARGUABLE, filableEntries, filedCounts };
 window.__GameState = GameState;
 window.__KNOWLEDGE = KNOWLEDGE;
 window.__NPCS = NPCS;
@@ -1387,13 +1491,18 @@ document.getElementById('copy')?.addEventListener('click', async (e) => {
 });
 
 const soundBtn = document.getElementById('sound');
+// Three settings, not two. A teacher who wants a room of thirty quieter
+// almost always wants the tune gone and the footsteps and dialogue blips
+// left alone — those are feedback about what the game is doing, and losing
+// them makes it harder to play, not calmer.
+const SOUND_LABEL = { all: 'Sound: on', quiet: 'Sound: no music', off: 'Sound: off' };
 function paintSoundBtn() {
-  if (soundBtn) soundBtn.textContent = game.audio.muted ? 'Sound: off' : 'Sound: on';
+  if (soundBtn) soundBtn.textContent = SOUND_LABEL[game.audio.sound] || 'Sound: on';
 }
 paintSoundBtn();
 soundBtn?.addEventListener('click', () => {
   game.audio.unlock();
-  game.audio.toggleMute();
+  game.audio.cycleSound();
   paintSoundBtn();
   canvas.focus();
 });

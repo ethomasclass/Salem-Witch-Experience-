@@ -43,6 +43,12 @@ export class GameState {
     // exported notes can be an argument rather than an inventory.
     this.disputesSeen = new Set();   // dispute ids already announced
     this.positions = new Map();      // dispute id -> 'a' | 'b' | 'unsure'
+
+    // Which of the four cases the player has filed each piece of evidence
+    // under. Theirs, not the game's: nothing in the game says which theory a
+    // fact supports, because deciding that is the whole skill. Unscored,
+    // optional, and several facts can reasonably go under more than one.
+    this.filed = new Map();          // flag -> Set of theory ids
   }
 
   /** Record a piece of knowledge. `source` is an npc id, a prop id, or
@@ -118,6 +124,17 @@ export class GameState {
     return true;
   }
 
+  /** File or unfile a piece of evidence under one of the four cases. */
+  toggleFiled(flag, theoryId) {
+    if (!this.filed.has(flag)) this.filed.set(flag, new Set());
+    const set = this.filed.get(flag);
+    if (set.has(theoryId)) set.delete(theoryId); else set.add(theoryId);
+    if (!set.size) this.filed.delete(flag);
+    return set.has(theoryId);
+  }
+
+  filedUnder(flag) { return this.filed.get(flag) || new Set(); }
+
   /** Record, clear, or read which side the player finds more credible. */
   setPosition(id, side) {
     if (side === null) this.positions.delete(id);
@@ -149,6 +166,7 @@ export class GameState {
       finalAnswer: this.finalAnswer,
       disputesSeen: [...this.disputesSeen],
       positions: [...this.positions.entries()],
+      filed: [...this.filed.entries()].map(([f, set]) => [f, [...set]]),
       player: player ? { map: player.map, x: player.tx, y: player.ty, dir: player.dir } : null,
     });
   }
@@ -185,6 +203,7 @@ export class GameState {
     s.finalAnswer = data.finalAnswer || '';
     s.disputesSeen = new Set(data.disputesSeen || []);
     s.positions = new Map(data.positions || []);
+    s.filed = new Map((data.filed || []).map(([f, ids]) => [f, new Set(ids)]));
 
     // Repair saves written while the memorial exit was missing its
     // setChapter. Those players walked into 1692 with the chapter still on

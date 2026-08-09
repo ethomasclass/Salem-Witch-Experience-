@@ -108,11 +108,37 @@ September 1692, and back to the memorial.
   into the memorial cold reads twenty bench names as decoration.
 - **A title screen that is a picture of the place**, not a gradient — the
   memorial itself, drifting slowly, with Nora already sitting on the wall.
+- **Four cases, and the student does the sorting.** A fourth notebook tab
+  states the arguments historians actually make — land and money, the
+  frontier war, who was accused, the law itself — with the historian who
+  makes each one. About a third of what the player collects is marked as
+  evidence *about causes*, and they file it under one or more cases with the
+  number keys. **Nothing in the game says which case a fact supports.** That
+  was the fork and it matters: deciding that Ingersoll's ledger is evidence
+  about a quarrel over land, and noticing it is also evidence about who had
+  the standing to be believed, is the entire skill. A version that filed the
+  evidence would have done the reading and left the student the typing.
+  Unscored, optional, read back by the ending, and carried into the export as
+  their argument rather than the game's.
+- **A soundtrack that could have existed.** Puritan New England allowed
+  singing in worship and essentially nothing else — no instruments in the
+  meetinghouse, no organ, no parts. So the music is built from the shapes of
+  the Bay Psalm Book tunes: stepwise motion in a minor mode, phrases falling
+  to the tonic, no leading tone, nothing ornamented, on square and triangle
+  waves at a fifth of everything else's volume. **And it thins as the village
+  empties** — March has a phrase and its answer, June has lost the answer,
+  September is three notes and a lot of silence. The meetinghouse gets the
+  only harmony in the game, a bare fifth. The jail gets one low note at long
+  intervals. The present day gets no melody at all, which is what makes the
+  first step into 1692 land. The Sound button cycles all / no music / off.
 - **A goal tracker** in the corner that asks for **one thing at a time**, with
   a progress count and the standing question underneath. A four-part goal
   names only the part still outstanding, and it takes that line from the same
   waypoint the edge chevron points at, so the arrow and the words cannot
-  disagree.
+  disagree. **It is only on screen while the player is walking around** — it
+  used to draw over conversations and over open documents, and there is no
+  version of that where the goal does not win: it is yellow, it is short, and
+  it is the only thing on screen that is an instruction.
 - **People who tell you where to go — but only when you are stuck.** If a
   student has ended two conversations without the goal moving, the next
   person who has something useful to say about it volunteers it as the last
@@ -248,7 +274,7 @@ estimates.
 ### For a classroom — the single file
 
 **[`dist/salem-village-1692.html`](dist/salem-village-1692.html)** is the whole
-game in one self-contained file, about 551 KB. Download it and double-click
+game in one self-contained file, about 587 KB. Download it and double-click
 it. No server, no install, no network. Email it, put it on a shared drive, or
 upload it to Canvas or Google Classroom as a file.
 
@@ -382,6 +408,7 @@ src/
     knowledge.js      flag -> plain English, for the notebook and export
     objectives.js     the goal tracker, and the standing question
     directions.js     what each character says about where to go next
+    theories.js       the four cases, and which facts are arguable evidence
     disputes.js       the contradiction pairs the notebook tracks
     reckoning.js      the closing scene, assembled from what you did
     portraits.js      drawn faces, embedded as data URIs

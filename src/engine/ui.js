@@ -791,6 +791,147 @@ export function drawDocGrid(g, view, s, order, owned, docs, sel, scroll) {
 }
 
 /**
+ * The fourth tab: the four cases, and the player's own filing of evidence
+ * under them.
+ *
+ * The game never says which case a fact supports. It marks a fact as being
+ * evidence about causes — a much weaker claim — and the sorting is the
+ * player's, unscored and optional. Deciding that Ingersoll's ledger is
+ * evidence about land and money, and noticing that it is also evidence about
+ * who had the standing to be believed, is the whole historical skill this
+ * game exists to practise. A version that filed the evidence would have done
+ * the reading and left the student the typing.
+ *
+ * Interaction is the disputes tab's: a cursor, and number keys that apply to
+ * whatever it is on. Pressing a number twice takes it back off.
+ *
+ * @param cases  true to show the four arguments and who makes them instead
+ *               of the evidence list
+ */
+export function drawTheoryTab(g, view, s, theories, counts, items, state, sel, scroll, cases) {
+  const bx = view.x + 20 * s, by = view.y + 20 * s;
+  const bw = view.w - 40 * s, bh = view.h - 40 * s;
+  const top = by + 46 * s;
+  const bottom = by + bh - 20 * s;
+
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+
+  if (cases) {
+    // Two by two, not a list. Four cases with a real sentence each and the
+    // historian who makes it does not fit in one column at any font size
+    // that is still readable on a classroom projector — and a student cannot
+    // sort evidence into cases they have to scroll to remember.
+    g.save();
+    g.beginPath();
+    g.rect(bx + 8 * s, top - 6 * s, bw - 16 * s, bottom - top + 6 * s);
+    g.clip();
+    const cw = (bw - 52 * s) / 2;
+    const chh = (bottom - top - 14 * s) / 2;
+    theories.forEach((t, i) => {
+      const cx = bx + 24 * s + (i % 2) * (cw + 12 * s);
+      let y = top + Math.floor(i / 2) * (chh + 12 * s);
+
+      g.font = `700 ${9 * s}px Georgia, serif`;
+      g.fillStyle = P.boxInk;
+      g.fillText(`${i + 1}.  ${t.title}`, cx, y);
+      y += 15 * s;
+
+      g.font = `${7.5 * s}px Georgia, serif`;
+      g.fillStyle = 'rgba(58,54,48,0.82)';
+      for (const l of wrapText(g, t.blurb, cw)) { g.fillText(l, cx, y); y += 9.5 * s; }
+      y += 3 * s;
+
+      g.font = `italic ${7 * s}px Georgia, serif`;
+      g.fillStyle = P.boxDim;
+      for (const l of wrapText(g, t.cite, cw)) { g.fillText(l, cx, y); y += 8.5 * s; }
+    });
+    g.restore();
+    // No summary line under the grid: it lands on the key help, and the
+    // memorial panel has already said it in full.
+    return 0;
+  }
+
+  // The four cases, one line each, with how much the player has put under
+  // each of them. This is the only scoreboard in the game and it is not one:
+  // an empty case is a legitimate position and nothing anywhere says so.
+  let y = top;
+  theories.forEach((t, i) => {
+    g.font = `600 ${9.5 * s}px Georgia, serif`;
+    g.fillStyle = P.boxInk;
+    g.fillText(`${i + 1}`, bx + 22 * s, y);
+    g.fillText(t.title, bx + 36 * s, y);
+    g.font = `${9 * s}px system-ui, sans-serif`;
+    g.fillStyle = counts[t.id] ? P.accent : P.boxDim;
+    g.textAlign = 'right';
+    g.fillText(String(counts[t.id]), bx + bw - 24 * s, y + 1 * s);
+    g.textAlign = 'left';
+    y += 14 * s;
+  });
+
+  y += 4 * s;
+  g.strokeStyle = 'rgba(58,54,48,0.35)';
+  g.lineWidth = 1;
+  g.beginPath();
+  g.moveTo(bx + 18 * s, y);
+  g.lineTo(bx + bw - 18 * s, y);
+  g.stroke();
+  const listTop = y + 8 * s;
+
+  if (!items.length) {
+    g.font = `italic ${10 * s}px Georgia, serif`;
+    g.fillStyle = P.boxDim;
+    g.fillText('Nothing to sort yet. Evidence about causes will collect here.',
+               bx + 22 * s, listTop + 6 * s);
+    return 0;
+  }
+
+  g.save();
+  g.beginPath();
+  g.rect(bx + 8 * s, listTop - 4 * s, bw - 16 * s, bottom - listTop + 4 * s);
+  g.clip();
+
+  const textW = bw - 96 * s;
+  const lineH = 11.5 * s;
+  let ly = listTop - scroll;
+  let contentH = 0;
+
+  items.forEach((item, i) => {
+    g.font = `${9 * s}px Georgia, serif`;
+    const lines = wrapText(g, item.text, textW);
+    const blockH = lines.length * lineH + 9 * s;
+
+    if (ly + blockH > listTop - 30 * s && ly < bottom + 30 * s) {
+      if (i === sel) {
+        g.fillStyle = 'rgba(232,196,106,0.18)';
+        g.fillRect(bx + 14 * s, ly - 4 * s, bw - 28 * s, blockH);
+      }
+      const under = state.filedUnder(item.flag);
+      // Filed evidence carries the numbers it was filed under, so a student
+      // scanning the list can see their own argument taking shape.
+      g.font = `700 ${8.5 * s}px system-ui, sans-serif`;
+      let tx = bx + 22 * s;
+      theories.forEach((t, n) => {
+        const on = under.has(t.id);
+        g.fillStyle = on ? P.accent : 'rgba(90,84,74,0.25)';
+        g.fillText(String(n + 1), tx, ly + 1 * s);
+        tx += 9 * s;
+      });
+
+      g.font = `${9 * s}px Georgia, serif`;
+      g.fillStyle = i === sel ? P.boxInk : 'rgba(58,54,48,0.72)';
+      let ty = ly;
+      for (const l of lines) { g.fillText(l, bx + 62 * s, ty); ty += lineH; }
+    }
+    ly += blockH;
+    contentH += blockH;
+  });
+  g.restore();
+
+  return Math.max(0, contentH - (bottom - listTop));
+}
+
+/**
  * The disputes tab: where the sources disagree, and what the player makes
  * of it.
  *
@@ -915,13 +1056,17 @@ function sideSourceOfSafe(state, key) {
 }
 
 /** The tabs across the top of the notebook. */
-export function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount, help) {
+export function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount, help, filedCount) {
   const bx = view.x + 20 * s, by = view.y + 20 * s;
   const bh = view.h - 40 * s;
+  // Four labels have to share one panel width, so they are shorter than they
+  // would ideally be. The auto-fit below shrinks the type rather than
+  // truncating, because a truncated tab label is worse than a small one.
   const labels = [
     'What I was told',
-    `What I copied down   ${docCount}/${docTotal}`,
-    disputeCount ? `Where they disagree  ${disputeCount}` : 'Where they disagree',
+    `Papers  ${docCount}/${docTotal}`,
+    disputeCount ? `Disagreements  ${disputeCount}` : 'Disagreements',
+    filedCount ? `Why it happened  ${filedCount}` : 'Why it happened',
   ];
   // Three tabs have to fit inside the panel. Close the gaps first, then
   // shrink the type, and measure rather than guessing — the labels carry

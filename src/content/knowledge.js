@@ -117,6 +117,21 @@ export const KNOWLEDGE = {
   'fact.strangers':  'People are coming in from other towns to look at the afflicted girls.',
   'fact.annsr':      'Ann Putnam Sr. has buried several children. Her grief is a fact everyone in the village knows and steps around.',
 
+  // --- the war to the eastward -------------------------------------------
+  //
+  // The thinnest of the four cases before this. Mercy Lewis was in the game
+  // as a person the war had happened to, but nothing connected that to the
+  // accusations, which is the whole of the argument.
+  'fact.maine_refugees': 'Several of the afflicted girls came out of the Maine fighting. Mercy Lewis lost her family at Falmouth and went into service with the Putnams. She is not the only one — the households doing most of the accusing are the households that took in the refugees.',
+  'fact.maine_magistrates': 'Some of the men who sat as magistrates in 1692 had held responsibility for defending the eastward frontier, and it had gone badly. This is the sharpest version of the war argument: the court trying witches contained men who had already failed to stop something.',
+  'fact.maine_fear': 'Salem Village has kept a night watch since the autumn. The fighting is fifty miles off and nobody here believes that is far enough.',
+
+  // --- who was accused, and what they had in common ----------------------
+  'fact.firstthree': 'The first three accused were Sarah Good, who begged door to door; Sarah Osborne, who had fought her own sons over an estate and married her servant; and Tituba, who is enslaved. Three women, and not one of them with anybody to speak for her.',
+  'fact.good':       'Sarah Good had no house. She went door to door with a child, asking, and muttered when she was turned away. People had been calling her a nuisance for years before anyone called her a witch.',
+  'fact.osborne':    'Sarah Osborne went to law against her own sons over her first husband\'s estate, then married the servant she had bought out of indenture. She had not been to meeting in over a year. She died in the jail in May, before any trial.',
+  'fact.womenproperty': 'The pattern historians point to: a striking number of the accused women stood to inherit, or already held, property that would otherwise have gone to a man — widows with no surviving sons, daughters with no brothers.',
+
   // --- papers somebody pointed me at -------------------------------------
   //
   // These are in the notebook rather than being silent bookkeeping, because

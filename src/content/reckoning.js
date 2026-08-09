@@ -21,6 +21,7 @@
 //      not sound disappointed.
 
 import { DISPUTES, activeDisputes } from './disputes.js';
+import { THEORIES, filedCounts } from './theories.js';
 import { shortSourceName } from './knowledge.js';
 
 /** People, not papers: how many living sources actually told this player
@@ -121,6 +122,33 @@ export function reckoningScript(state) {
   // --- the descendant ---------------------------------------------------
   if (state.knows('reck.bothsides')) {
     say('The woman on the bench has an ancestor who was hanged and an ancestor who signed the complaint against her. Half of Essex County is in the same position, and most of them have never looked.');
+  }
+
+  // --- how they sorted it ------------------------------------------------
+  //
+  // The one place the filing is read back. It reports the shape of what they
+  // built and nothing else: no comment on whether the balance is right, no
+  // note about the case they left empty, and above all no correction. A
+  // student who put everything under one heading has taken a position, and
+  // taking a position is what the screen after this one asks for.
+  const counts = filedCounts(state);
+  const filedTotal = Object.values(counts).reduce((n, c) => n + c, 0);
+  if (filedTotal) {
+    const ranked = THEORIES
+      .map((t) => ({ t, n: counts[t.id] }))
+      .filter((r) => r.n > 0)
+      .sort((a, b) => b.n - a.n);
+    say(`You sorted ${filedTotal} ${filedTotal === 1 ? 'piece' : 'pieces'} of what you found into the four cases.`);
+    if (ranked.length === 1) {
+      say(`All of it went under ${lower(ranked[0].t.short)}. That is a position, and it is one several historians hold.`);
+    } else {
+      const most = ranked[0], least = ranked[ranked.length - 1];
+      say(`Most of it went under ${lower(most.t.short)}. The least went under ${lower(least.t.short)}.`);
+      const shared = [...state.filed.values()].filter((set) => set.size > 1).length;
+      if (shared) {
+        say(`And ${shared} ${shared === 1 ? 'item' : 'items'} you put under more than one. That is the most honest thing you could have done with them — the same ledger really is evidence for a quarrel about land and for who had the standing to be believed.`);
+      }
+    }
   }
 
   // --- handover ---------------------------------------------------------

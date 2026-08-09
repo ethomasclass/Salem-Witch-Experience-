@@ -34,6 +34,7 @@ const ORDER = [
   'src/content/knowledge.js',
   'src/content/objectives.js',
   'src/content/directions.js',
+  'src/content/theories.js',
   'src/content/clues.js',
   'src/content/npcs.js',
   'src/content/maps.js',

@@ -134,11 +134,42 @@ const report = await page.evaluate(() => {
       docsTotal: docSpots.length,
     });
   }
-  return out;
+  // --- can every piece of "arguable" evidence actually be got? ----------
+  //
+  // The four-cases tab only offers flags listed as arguable. A flag listed
+  // there that nothing teaches, or that has no notebook text, is a silent
+  // hole: the tab simply never shows it, and nothing anywhere reports that
+  // a case is missing a third of its evidence.
+  const orphanArguable = [];
+  const everTaught = new Set();
+  const collect = (node) => {
+    if (!node) return;
+    if (Array.isArray(node)) { node.forEach(collect); return; }
+    if (typeof node !== 'object') return;
+    if (node.learn) [].concat(node.learn).forEach((f) => everTaught.add(f));
+    for (const k of ['then', 'else', 'lines', 'greet', 'topics', 'farewell', 'default']) collect(node[k]);
+    if (node.cases) Object.values(node.cases).forEach(collect);
+    if (node.options) node.options.forEach((o) => collect(o.then));
+  };
+  Object.values(window.__NPCS).forEach(collect);
+  Object.values(window.__CLUES).forEach(collect);
+  for (const flag of window.__theories.ARGUABLE) {
+    if (!window.__KNOWLEDGE[flag]) orphanArguable.push(`${flag} has no notebook text`);
+    else if (!everTaught.has(flag)) orphanArguable.push(`${flag} is never taught by anything`);
+  }
+
+  return { chapters: out, orphanArguable };
 });
 
 let bad = 0;
-for (const r of report) {
+if (report.orphanArguable.length) {
+  bad += report.orphanArguable.length;
+  console.log(`FAIL evidence offered for sorting that the player can never get  (${report.orphanArguable.length})`);
+  for (const x of report.orphanArguable) console.log(`       ${x}`);
+} else {
+  console.log('ok   every piece of sortable evidence can actually be collected');
+}
+for (const r of report.chapters) {
   const docs = `${r.docs}/${r.docsTotal} documents`;
   if (r.complete) {
     console.log(`ok   ${r.chapter.padEnd(10)} finishable   (${docs})`);
