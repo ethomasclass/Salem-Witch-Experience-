@@ -370,7 +370,8 @@ export const CLUES = {
     { say: 'A stone post, about knee height, set into the ground where the trees thin out.', who: null },
     { say: 'There is a notch cut into one face. It has been recut at least once — the newer cut is a little off the old one.', who: null },
     { learn: 'clue.marker', source: 'observed' },
-    { say: 'It marks a line. Somebody thought it was worth walking out here to cut it again.', who: null },
+    { say: 'The line it marks runs down to the brook and follows it. That is how boundaries were drawn out here — you cannot argue with water.', who: null },
+    { say: 'Except that somebody has, twice. Somebody thought it was worth walking all the way out here to cut that notch again.', who: null },
   ],
 
   /* The meetinghouse seating chart. A literal map of who matters, seen by

@@ -6,7 +6,7 @@ import { GameState } from './engine/state.js';
 import { Input } from './engine/input.js';
 import { DialogueRunner, buildTopicMenu } from './engine/dialogue.js';
 import {
-  buildMap, renderMap, computeCamera, isSolid, warpAt, interactAt, triggerAt,
+  buildMap, renderMap, computeCamera, isSolid, warpAt, interactAt, triggerAt, updateCritters,
   terrainAt, DIR_VEC, DIR_INDEX, VIEW_W, VIEW_H, initArt,
 } from './engine/world.js';
 import { TS } from './engine/art-ground.js';
@@ -624,6 +624,26 @@ class Game {
   update(dt) {
     const inp = this.input;
 
+    // The village keeps going while you are reading. Freezing the animals
+    // during dialogue would make every conversation feel like a cutscene,
+    // and this game is nothing but conversations.
+    this.clock = (this.clock || 0) + dt;
+    if (this.mode !== 'title') {
+      const here = this.mapFor(this.player.map);
+      updateCritters(here, dt, this.clock);
+
+      // Villagers who are doing a job loop two frames on the spot. Actors
+      // already carry three frames per direction and nothing had ever
+      // cycled them while standing still, which is the difference between
+      // a village and a diorama. Offset per character so the well and the
+      // woodpile are not in time with each other.
+      for (const a of here.actors || []) {
+        if (!a.def || !a.def.busy) continue;
+        const off = (a.tx * 3 + a.ty) * 0.37;
+        a.animFrame = Math.floor(this.clock * 1.7 + off) % 2;
+      }
+    }
+
     if (this.toast.t > 0) this.toast.t -= dt;
     if (this.objFlash > 0) this.objFlash = Math.max(0, this.objFlash - dt);
     if (this.fade > 0) this.fade = Math.max(0, this.fade - dt);
@@ -787,7 +807,7 @@ class Game {
     const map = this.mapFor(this.player.map);
     const cam = computeCamera(map, this.player.px, this.player.py);
     const actors = [this.player, ...map.actors];
-    renderMap(this.bg, map, cam, actors);
+    renderMap(this.bg, map, cam, actors, this.clock || 0);
 
     g.imageSmoothingEnabled = false;
     g.drawImage(this.buf, v.x, v.y, v.w, v.h);
@@ -1017,6 +1037,8 @@ window.__benchScript = benchScript;
 window.__DISPUTES = DISPUTES;
 window.__MAPS = MAPS;
 window.__currentStep = currentStep;
+window.__updateCritters = updateCritters;
+window.__isSolid = isSolid;
 window.__activeDisputes = activeDisputes;
 
 const pad = document.getElementById('touch');

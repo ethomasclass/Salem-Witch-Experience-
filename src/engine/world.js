@@ -8,6 +8,7 @@
 // apart instantly and the whole village reads as a flat diagram.
 
 import { TS, buildGroundTiles, variantFor, EDGE_BITS } from './art-ground.js';
+import { hash } from './pixels.js';
 import {
   buildHouse, buildMeetinghouse, buildPine, buildBareTree, buildFence,
   buildWoodpile, buildMarker, buildWell, buildSeatingChart, buildHearth,
@@ -54,7 +55,7 @@ const SOLID_GROUND = new Set(['water', 'void', 'wall']);
  * ---------------------------------------------------------------------- */
 
 export const PROPS = {
-  house:        { w: 6, h: 5, build: (o) => buildHouse(o.w || 6, o.h || 5, o), sized: true },
+  house:        { w: 6, h: 5, build: (o) => buildHouse(o.w || 6, o.h || 5, o), sized: true, smokes: true },
   meetinghouse: { w: 9, h: 6, build: (o) => buildMeetinghouse(o.w || 9, o.h || 6), sized: true },
   pine:         { w: 2, h: 3, build: () => buildPine(), solidRows: 1 },
   baretree:     { w: 3, h: 4, build: () => buildBareTree(), solidRows: 1 },
@@ -124,6 +125,9 @@ function propImage(prop) {
  * cast, a different name. Everything not overridden is shared, which is the
  * whole reason one village map can carry March, June and September.
  */
+// Kinds that walk about instead of standing still.
+const LIVESTOCK = new Set(['pig', 'cow', 'sheep', 'chicken']);
+
 export function buildMap(def, chapter = 'march') {
   const over = (def.byChapter && def.byChapter[chapter]) || {};
   def = {
@@ -161,8 +165,33 @@ export function buildMap(def, chapter = 'march') {
     }
   }
 
+  // Livestock are not furniture. They come out of the prop list and into a
+  // list that gets a position update every frame, because a village where
+  // the animals are nailed down reads as a diorama — and because the swine
+  // wandering off the road and into a neighbour's field is the exact
+  // grievance Rebecca Nurse describes. Static pigs cannot trespass.
+  const critters = [];
+  const isLivestock = (kind) => LIVESTOCK.has(kind);
+
   const talkThrough = new Set();
-  const props = (def.props || []).map((p) => {
+  const props = (def.props || []).filter((p) => {
+    if (!isLivestock(p.kind)) return true;
+    critters.push({
+      kind: p.kind,
+      tx: p.x, ty: p.y, px: p.x * TS, py: p.y * TS,
+      fromX: p.x, fromY: p.y,
+      // Where it started, and how far it is allowed to get. A pure random
+      // walk has no home: over half an hour the herd diffuses across the
+      // whole map and the village ends up empty. The tether is loose enough
+      // to cross a boundary wall — which is the entire point of the swine —
+      // and tight enough that they are still there when the player returns.
+      homeX: p.x, homeY: p.y,
+      moving: false, t: 0, dir: 0,
+      // Staggered so twelve animals do not step in unison like a chorus.
+      wait: 0.6 + ((p.x * 7 + p.y * 13) % 40) / 10,
+    });
+    return false;
+  }).map((p) => {
     const d = PROPS[p.kind];
     if (!d) throw new Error(`unknown prop kind: ${p.kind}`);
     if (d.talkThrough) {
@@ -219,7 +248,7 @@ export function buildMap(def, chapter = 'march') {
   return {
     id: def.id, name: def.name, indoor: !!def.indoor,
     era: def.era || '1692', chapter,
-    w, h, terrain, solid, props, warps, interact, triggers, talkThrough,
+    w, h, terrain, solid, props, critters, warps, interact, triggers, talkThrough,
     npcs: [], def,
   };
 }
@@ -284,7 +313,118 @@ export function computeCamera(map, focusPx, focusPy) {
   return { x: cx, y: cy };
 }
 
-export function renderMap(g, map, cam, actors) {
+/**
+ * Move the livestock.
+ *
+ * A slow, aimless, tile-by-tile wander with long pauses. Deliberately not a
+ * pathfinder and deliberately not fast: an animal that moves with intent
+ * reads as a character, and these are scenery that happens to be alive.
+ *
+ * They walk onto anything the player could walk onto, which is what lets the
+ * pigs end up in a field they have no business in.
+ */
+export function updateCritters(map, dt, now) {
+  const list = map.critters;
+  if (!list || !list.length) return;
+
+  for (const c of list) {
+    if (c.moving) {
+      c.t += dt / CRITTER_STEP;
+      if (c.t >= 1) {
+        c.t = 0; c.moving = false;
+        c.px = c.tx * TS; c.py = c.ty * TS;
+        c.wait = 1.2 + hash(c.tx, c.ty, Math.floor(now)) * 5;
+      } else {
+        c.px = (c.fromX + (c.tx - c.fromX) * c.t) * TS;
+        c.py = (c.fromY + (c.ty - c.fromY) * c.t) * TS;
+      }
+      continue;
+    }
+
+    c.wait -= dt;
+    if (c.wait > 0) continue;
+
+    // Seeded on the animal's own position and the clock, so the herd does
+    // not share a random stream and drift into formation.
+    const r = hash(c.tx * 31 + 7, c.ty * 17 + 3, Math.floor(now * 3));
+    const d = Math.floor(r * 4);
+    const [dx, dy] = [[0, -1], [1, 0], [0, 1], [-1, 0]][d];
+    const nx = c.tx + dx, ny = c.ty + dy;
+
+    const strayed = Math.abs(nx - c.homeX) + Math.abs(ny - c.homeY) > CRITTER_RANGE;
+    if (strayed || nx < 0 || ny < 0 || nx >= map.w || ny >= map.h || isSolid(map, nx, ny)) {
+      c.wait = 0.8 + r * 2;      // blocked or too far: pause and try again
+      continue;
+    }
+    c.fromX = c.tx; c.fromY = c.ty;
+    c.tx = nx; c.ty = ny;
+    c.dir = dx < 0 ? 3 : dx > 0 ? 1 : dy < 0 ? 0 : 2;
+    c.moving = true;
+  }
+}
+
+const CRITTER_STEP = 0.85;      // seconds per tile. They are not in a hurry.
+const CRITTER_RANGE = 6;        // tiles from where it started, Manhattan
+
+/**
+ * Smoke from the chimneys.
+ *
+ * Drawn rather than stored: every puff is a function of the clock and the
+ * chimney's own coordinates, so there is no particle state to keep, nothing
+ * to save, and nothing to desynchronise.
+ *
+ * It also carries a clue the game otherwise only states. `clue.hearth` reads
+ * "The parsonage fire is banked low even in March. This house is cold." So
+ * every chimney in the village smokes except that one, which barely does —
+ * and a student who notices has found the salary dispute without reading a
+ * word about it.
+ */
+function drawSmoke(g, map, cam, clock, VW, VH) {
+  // September has lost a fifth of its households. Fewer fires lit.
+  const thin = map.chapter === 'september';
+
+  for (const p of map.props) {
+    const d = PROPS[p.kind];
+    if (!d || !d.smokes || p.smoke === 'none') continue;
+    if (thin && p.smoke !== 'lit') continue;
+
+    const W = p.w * TS;
+    const chim = p.chimney === undefined ? 'center' : p.chimney;
+    if (!chim) continue;
+    const cw = 10;
+    const cx = chim === 'center' ? Math.round(W / 2 - cw / 2)
+             : chim === 'left' ? Math.round(W * 0.24)
+             : Math.round(W * 0.72);
+
+    const img = propImage(p);
+    const ox = p.x * TS - cam.x + cx + cw / 2;
+    const oy = (p.y + p.h) * TS - img.h - cam.y + (d.sized ? 6 : 0) + 2;
+    if (ox < -20 || ox > VW + 20 || oy < -40 || oy > VH + 20) continue;
+
+    // A banked fire gives two thin puffs; a working one gives five.
+    const faint = p.smoke === 'faint';
+    const count = faint ? 3 : 7;
+    const rise = faint ? 13 : 30;
+    const speed = faint ? 0.20 : 0.34;
+
+    for (let i = 0; i < count; i++) {
+      const seed = p.x * 71 + p.y * 37 + i * 13;
+      const phase = (clock * speed + hash(seed, i, 5)) % 1;
+      const y = oy - phase * rise;
+      // Drifts as it climbs, and thins out at the top.
+      const drift = Math.sin(phase * 3.1 + hash(seed, i, 9) * 6) * (2 + phase * 4);
+      const x = ox + drift;
+      const a = (1 - phase) * (faint ? 0.34 : 0.62);
+      if (a <= 0.03) continue;
+      // Grows as it cools and spreads.
+      const r = phase < 0.25 ? 1 : phase < 0.6 ? 2 : 3;
+      g.fillStyle = `rgba(214,214,210,${a.toFixed(3)})`;
+      g.fillRect(Math.round(x), Math.round(y), r, r);
+    }
+  }
+}
+
+export function renderMap(g, map, cam, actors, clock = 0) {
   initArt();
 
   const z = zoomFor(map);
@@ -325,6 +465,16 @@ export function renderMap(g, map, cam, actors) {
     draws.push({ img: img.canvas, dx, dy, base: (p.y + p.h) * TS });
   }
 
+  // Livestock: same sort as everything else, so a cow in front of a barn
+  // occludes it and a cow behind it does not.
+  for (const c of map.critters || []) {
+    const img = propImage({ kind: c.kind, w: PROPS[c.kind].w, h: PROPS[c.kind].h });
+    const dx = Math.round(c.px) - cam.x;
+    const dy = Math.round(c.py) + TS - img.h - cam.y;
+    if (dx > VW || dx + img.w < 0 || dy > VH || dy + img.h < 0) continue;
+    draws.push({ img: img.canvas, dx, dy, base: Math.round(c.py) + TS });
+  }
+
   for (const a of actors) {
     if (!a.frames) continue;
     const frame = a.frames[a.dirIndex][a.animFrame];
@@ -336,6 +486,10 @@ export function renderMap(g, map, cam, actors) {
 
   draws.sort((m, n) => m.base - n.base);
   for (const d of draws) g.drawImage(d.img, d.dx, d.dy);
+
+  // Above everything: smoke is the only thing in the village taller than a
+  // roof, so it never needs to take part in the baseline sort.
+  if (!map.indoor) drawSmoke(g, map, cam, clock, VW, VH);
 
   // --- indoor vignette --------------------------------------------------
   // Glass was expensive and windows were tiny; these rooms were genuinely

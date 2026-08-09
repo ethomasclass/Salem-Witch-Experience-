@@ -932,6 +932,8 @@ export const NPCS = {
    * -------------------------------------------------------------------- */
 
   swineboy: {
+    // Visibly working: the sprite loops two frames on the spot.
+    busy: true,
     id: 'swineboy',
     name: 'A boy with the swine',
     spec: {
@@ -948,6 +950,8 @@ export const NPCS = {
   },
 
   goodwife: {
+    // Visibly working: the sprite loops two frames on the spot.
+    busy: true,
     id: 'goodwife',
     name: 'A woman at the well',
     spec: {
@@ -966,6 +970,8 @@ export const NPCS = {
   },
 
   woodman: {
+    // Visibly working: the sprite loops two frames on the spot.
+    busy: true,
     id: 'woodman',
     name: 'A man splitting wood',
     spec: {

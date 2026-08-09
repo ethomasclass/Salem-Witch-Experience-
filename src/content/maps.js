@@ -107,6 +107,21 @@ function villageGround() {
   vroad(g, 7, 14, 20, 1);          // Nurse homestead
   vroad(g, 28, 3, 20, 1);          // north, into the woods
 
+  // A brook through the north woods.
+  //
+  // Colonial boundaries followed water, because water is the one line in a
+  // forest that two parties can agree on without a survey. Putting the
+  // disputed Topsfield line on a stream makes a thirty-year quarrel legible
+  // at a glance: the marker stone stands on the bank of the thing being
+  // argued over. The ford at x=14 is the only way across, and it is left
+  // deliberately narrow — you should have to look for the crossing.
+  hroad(g, 0, 21, 9, 1, '~');
+  g[9][14] = '.';                  // the ford
+  g[9][15] = '.';
+  // The brook leaves the map east through the trees rather than stopping in
+  // mid-air, which is what a one-tile stub would look like.
+  g[8][21] = '~'; g[8][22] = '~'; g[7][22] = '~'; g[7][23] = '~';
+
   // Old snow in the shaded north and along the treelines.
   patch(g, 6, 4, 3); patch(g, 17, 3, 4); patch(g, 38, 5, 3);
   patch(g, 2, 16, 2); patch(g, 43, 27, 3); patch(g, 12, 34, 2);
@@ -124,11 +139,13 @@ export const VILLAGE = {
     { kind: 'meetinghouse', x: 18, y: 10, w: 9, h: 6, doorCol: 4 },
 
     // --- the parsonage. Note how small the woodpile is beside it. ------
-    { kind: 'house', x: 8, y: 24, w: 6, h: 5, doorCol: 2, windows: [1, 4], chimney: 'center', leanTo: 'right' },
+    // `smoke: 'faint'` is the woodpile clue, drawn instead of stated: this
+    // chimney gives two thin wisps where every other house gives five.
+    { kind: 'house', x: 8, y: 24, w: 6, h: 5, doorCol: 2, windows: [1, 4], chimney: 'center', leanTo: 'right', smoke: 'faint' },
     { kind: 'woodpile', x: 14, y: 27 },
 
     // --- Ingersoll's ordinary (the tavern) -----------------------------
-    { kind: 'house', x: 30, y: 12, w: 7, h: 5, doorCol: 3, windows: [1, 5], chimney: 'left', roofFrac: 0.46 },
+    { kind: 'house', x: 30, y: 12, w: 7, h: 5, doorCol: 3, windows: [1, 5], chimney: 'left', roofFrac: 0.46, smoke: 'lit' },
 
     // --- the Nurse homestead, west ------------------------------------
     { kind: 'house', x: 4, y: 9, w: 6, h: 5, doorCol: 3, windows: [1, 4], chimney: 'right', leanTo: 'left' },

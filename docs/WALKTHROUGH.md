@@ -176,8 +176,11 @@ Village layout, once you are there:
    its front wall). The chart is on the wall by the door; stand below and face
    up.
 3. **The boundary marker** — **north, in the woods, well left of centre.** A
-   small knee-high stone where the trees thin out. Easy to miss. Approach from
-   below or from the right.
+   small knee-high stone where the trees thin out. Easy to miss.
+   **A brook runs across the woods below it and there is only one ford**,
+   just left of centre — you have to find the crossing. That is deliberate:
+   the disputed line follows the water, which is how boundaries were drawn
+   out there.
 4. **The account book** — inside the tavern, east. It is on the first table.
 
 ### The six people

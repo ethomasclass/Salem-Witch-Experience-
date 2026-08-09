@@ -43,6 +43,11 @@ September 1692, and back to the memorial.
 - **Five environmental clues**: the meetinghouse seating chart, the parsonage
   woodpile, the boundary marker, Ingersoll's account book, and the five-mile
   walk to Salem Town.
+- **A brook through the north woods**, with one narrow ford. Colonial
+  boundaries followed water because water is the one line in a forest two
+  parties can agree on without a survey — so the disputed Topsfield line runs
+  along it, and the marker stone stands on the bank of the thing being argued
+  over.
 - **Gossip as currency** — carrying a rumour from one house to another opens a
   topic that was not there before.
 - **Contradictions that land.** When a second account arrives that cannot both
@@ -88,7 +93,12 @@ September 1692, and back to the memorial.
   the one the player walked through in March. One mute button, and the
   setting is remembered.
 - **A working farm village**: barn, hayrick, orchard, dry-laid stone walls,
-  free-ranging swine, cattle, sheep, hens, and four more villagers to talk to
+  free-ranging swine, cattle, sheep, hens, and four more villagers to talk to.
+  **The livestock actually wander** — loose on a tether around where they
+  started, which lets the swine cross a boundary wall into a neighbour's
+  field, the exact grievance Rebecca Nurse describes. Villagers who are
+  working loop on the spot, and every chimney draws smoke except the
+  parsonage's, whose fire is banked low
   — and, by September, visibly half as much livestock, a cart standing in the
   road with nobody loading it, and hay nobody is coming back for. The
   sheriff's inventory, told without a document.
