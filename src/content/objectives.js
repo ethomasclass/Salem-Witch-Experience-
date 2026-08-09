@@ -115,7 +115,7 @@ export const STEPS_BY_CHAPTER = {
     { id: 'people', where: (s) => firstMissing(s, MARCH_CAST_WHERE, byNpc), text: 'Talk to everyone who lives here',
       done: (s) => MARCH_CAST.every((id) => s.hasSpokenTo(id)),
       count: (s) => [MARCH_CAST.filter((id) => s.hasSpokenTo(id)).length, MARCH_CAST.length] },
-    { id: 'papers', where: (s) => firstMissing(s, MARCH_DOC_WHERE, byDoc), text: 'Four papers are now readable, indoors on tables. Stand at one and press Z twice',
+    { id: 'papers', where: (s) => firstMissing(s, MARCH_DOC_WHERE, byDoc), text: 'Four papers are now readable, indoors on tables. Stand at one and press Z',
       done: (s) => MARCH_DOCS.every((d) => s.hasDoc(d)),
       count: (s) => [MARCH_DOCS.filter((d) => s.hasDoc(d)).length, MARCH_DOCS.length] },
     { id: 'leave', where: at('village', 11, 22), text: 'Behind the parsonage the ground dips. Walk onto it',

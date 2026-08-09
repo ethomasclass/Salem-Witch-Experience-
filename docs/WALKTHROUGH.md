@@ -138,6 +138,8 @@ You start on Charter Street, in the road, facing a low granite wall.
    entrance. Talk to her. Work through her topics — the shop question only
    appears if you have looked at the gift shop across the street first.
 6. **Exit: the gap in the north wall**, right beside Rebecca Nurse's bench.
+   Like every chapter exit, it is gated — steps 2 to 5 above have to be done
+   first, and walking onto it early names the one thing still missing.
 
 *Optional:* any of the other nineteen benches; the interpretive sign; the shop
 window across the street (unlocks one of Nora's topics).

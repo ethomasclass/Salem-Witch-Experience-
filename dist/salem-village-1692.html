@@ -2198,6 +2198,16 @@ class GameState {
     s.finalAnswer = data.finalAnswer || '';
     s.disputesSeen = new Set(data.disputesSeen || []);
     s.positions = new Map(data.positions || []);
+
+    // Repair saves written while the memorial exit was missing its
+    // setChapter. Those players walked into 1692 with the chapter still on
+    // 'memorial', which froze the goal tracker on memorial steps and — worse
+    // — meant the village never gained its exit to the dig, so the game
+    // could not be finished. Standing on 1692 ground is proof the transition
+    // happened, whatever the saved chapter says.
+    if (s.chapter === 'memorial' && (s.visited.has('road') || s.visited.has('village'))) {
+      s.chapter = 'march';
+    }
     return { state: s, player: data.player || null };
   }
 
@@ -3775,7 +3785,7 @@ const STEPS_BY_CHAPTER = {
     { id: 'people', where: (s) => firstMissing(s, MARCH_CAST_WHERE, byNpc), text: 'Talk to everyone who lives here',
       done: (s) => MARCH_CAST.every((id) => s.hasSpokenTo(id)),
       count: (s) => [MARCH_CAST.filter((id) => s.hasSpokenTo(id)).length, MARCH_CAST.length] },
-    { id: 'papers', where: (s) => firstMissing(s, MARCH_DOC_WHERE, byDoc), text: 'Four papers are now readable, indoors on tables. Stand at one and press Z twice',
+    { id: 'papers', where: (s) => firstMissing(s, MARCH_DOC_WHERE, byDoc), text: 'Four papers are now readable, indoors on tables. Stand at one and press Z',
       done: (s) => MARCH_DOCS.every((d) => s.hasDoc(d)),
       count: (s) => [MARCH_DOCS.filter((d) => s.hasDoc(d)).length, MARCH_DOCS.length] },
     { id: 'leave', where: at('village', 11, 22), text: 'Behind the parsonage the ground dips. Walk onto it',
@@ -6670,8 +6680,23 @@ const MEMORIAL = {
   // explanation of how you got there, ever: any mechanism invites a student
   // to interrogate the mechanism instead of the history.
   warps: [
-    { x: 13, y: 4, to: 'road', tx: 7, ty: 28, dir: 'up', script: 'arrive1692' },
-    { x: 14, y: 4, to: 'road', tx: 8, ty: 28, dir: 'up', script: 'arrive1692' },
+    // The one chapter transition that was never wired.
+    //
+    // Every other exit in this file carries `gate` and `setChapter`; these
+    // two carried neither, so walking out of the memorial moved the player
+    // to the 1692 road while `state.chapter` stayed 'memorial' for the whole
+    // of March. The village then built with no March cast — everyone the
+    // player met answered with a greeting and nothing else, because their
+    // topics are gated on `chapter: 'march'` — and the goal box went on
+    // showing memorial steps that could no longer be completed.
+    //
+    // It survived because it is invisible from inside any one system: the
+    // maps are right, the objectives are right, the dialogue is right, and
+    // the only thing wrong is a chapter name that nothing on screen prints.
+    { x: 13, y: 4, to: 'road', tx: 7, ty: 28, dir: 'up',
+      gate: 'memorial', script: 'arrive1692', setChapter: 'march' },
+    { x: 14, y: 4, to: 'road', tx: 8, ty: 28, dir: 'up',
+      gate: 'memorial', script: 'arrive1692', setChapter: 'march' },
   ],
   interact: [
     { id: 'threshold', x: 13, y: 21, w: 2, h: 1 },
@@ -6752,9 +6777,15 @@ const DIG = {
   ],
   warps: [
     // Back the way you came — into June.
+    //
+    // Gated like every other chapter exit. Ungated, a player could walk in
+    // one side of the cellar and out the other without ever asking Dr. Reyes
+    // how small the house was — which is the only place the game explains
+    // that nine people lived in two rooms with no corridors, and so the only
+    // place it explains how two children could not be ill privately.
     { x: 11, y: 18, to: 'village', tx: 11, ty: 22, dir: 'up',
-      script: 'toJune', setChapter: 'june' },
-    { x: 12, y: 18, to: 'village', tx: 12, ty: 22, dir: 'up',
+      gate: 'dig', script: 'toJune', setChapter: 'june' },
+    { x: 12, y: 18, to: 'village', tx: 12, ty: 22, dir: 'up', gate: 'dig',
       script: 'toJune', setChapter: 'june' },
   ],
   interact: [
@@ -6822,8 +6853,11 @@ const ARCHIVE = {
     { kind: 'table', x: 12, y: 8 },
   ],
   warps: [
+    // Gated: this room is where the famous tidy explanation gets taken
+    // apart, and a student who walks straight out has skipped the single
+    // most useful twenty seconds in the game.
     { x: 8, y: 12, to: 'village', tx: 22, ty: 17, dir: 'down',
-      script: 'toSeptember', setChapter: 'september' },
+      gate: 'archive', script: 'toSeptember', setChapter: 'september' },
   ],
   interact: [
     { id: 'archiveTable', x: 5, y: 5, w: 6, h: 1 },
@@ -9156,6 +9190,7 @@ window.__readerMetrics = () => drawReader.metrics;
 window.__benchScript = benchScript;
 window.__DISPUTES = DISPUTES;
 window.__MAPS = MAPS;
+window.__currentStep = currentStep;
 window.__activeDisputes = activeDisputes;
 
 const pad = document.getElementById('touch');

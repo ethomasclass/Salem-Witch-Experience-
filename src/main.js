@@ -1016,6 +1016,7 @@ window.__readerMetrics = () => drawReader.metrics;
 window.__benchScript = benchScript;
 window.__DISPUTES = DISPUTES;
 window.__MAPS = MAPS;
+window.__currentStep = currentStep;
 window.__activeDisputes = activeDisputes;
 
 const pad = document.getElementById('touch');

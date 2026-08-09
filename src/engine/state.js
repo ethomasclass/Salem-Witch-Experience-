@@ -185,6 +185,16 @@ export class GameState {
     s.finalAnswer = data.finalAnswer || '';
     s.disputesSeen = new Set(data.disputesSeen || []);
     s.positions = new Map(data.positions || []);
+
+    // Repair saves written while the memorial exit was missing its
+    // setChapter. Those players walked into 1692 with the chapter still on
+    // 'memorial', which froze the goal tracker on memorial steps and — worse
+    // — meant the village never gained its exit to the dig, so the game
+    // could not be finished. Standing on 1692 ground is proof the transition
+    // happened, whatever the saved chapter says.
+    if (s.chapter === 'memorial' && (s.visited.has('road') || s.visited.has('village'))) {
+      s.chapter = 'march';
+    }
     return { state: s, player: data.player || null };
   }
 
