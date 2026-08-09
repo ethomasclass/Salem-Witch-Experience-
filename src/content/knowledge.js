@@ -94,6 +94,9 @@ export const KNOWLEDGE = {
   'clue.marker':     'There is a boundary stone in the woods north of the village, between the Nurse land and the Putnam land.',
   'clue.accounts':   "Ingersoll's account book records who owes whom. A surprising number of people owe the Putnams.",
   'clue.road':       'I walked the road to Salem Town. It is five miles, and the houses at the far end are visibly richer.',
+  'clue.sickbed':    'Betty Parris (9) and Abigail Williams (11) have been ill in the parsonage since midwinter. The house is two rooms and a loft — there is nowhere in it a child could be ill unobserved.',
+  'clue.parrisdesk': 'Rev. Parris is writing the record of the examinations himself: the questions, the answers, and notes in the margin about what the afflicted did while each answer was given.',
+  'clue.insidewood': 'The firewood actually inside the parsonage would fit in two arms. It is the first week of March.',
   'clue.hearth':     'The parsonage fire is banked low even in March. This house is cold.',
 
   // --- things told -------------------------------------------------------
@@ -105,6 +108,10 @@ export const KNOWLEDGE = {
   'fact.nurseland':  'The Nurse family bought a 300-acre farm on a long mortgage. The Putnams believe some of that land was theirs.',
   'fact.mercymaine': 'Mercy Lewis\'s parents were killed in the fighting in Maine. She came south with nothing and went into service in the Putnam house.',
   'fact.tituba':     'Tituba is enslaved in the Parris household. She is Indian, not African — the records say so, whatever later stories claim.',
+  'fact.wetyear':    'The spring of 1691 was the wettest a village farmer had ever worked through. The rye at the low end of the field stood in water for a fortnight.',
+  'fact.spurredrye': 'The 1691 rye came in with black spurs growing where the grain should be — hard, curved, about the length of a fingernail. The farmers call it cockspur, and they have no idea what it is.',
+  'fact.atetherye':  'They ate it. You do not throw away a harvest. Half the village ate from that field through the winter of 1691, the parsonage included.',
+  'fact.cattle':     'Two cows in the village slipped their calves that winter, early and within a month of each other. The farmer had never seen that happen in a wet year.',
   'fact.factions':   'The village is split. The Putnams and their allies on one side, the Porters and theirs on the other. The quarrel is older than the sickness.',
   'fact.parris_deed':'Parris was given the parsonage and its land outright — a thing no previous minister here got, and a thing his opponents have not forgiven.',
   'fact.strangers':  'People are coming in from other towns to look at the afflicted girls.',

@@ -327,6 +327,42 @@ export const CLUES = {
     { learn: 'june.jail', source: 'observed' },
   ],
 
+  /* The bed the two girls were ill in. They are never shown — the design
+   * rule is that nothing is depicted — and an empty bed with the covers
+   * turned back says more than either child would. */
+  sickbed: [
+    { say: 'A low bed against the wall, with the covers turned back and nobody in it.', who: null },
+    { say: 'Two girls have been ill in this room since midwinter. Betty Parris is nine. Abigail Williams is eleven.', who: null },
+    { say: 'They are not here now. Somebody has taken them somewhere quieter, which in a house with two rooms and a loft means somewhere else in this house.', who: null },
+    { learn: 'clue.sickbed', source: 'observed' },
+    { say: 'There is nowhere in this building a child could be ill without every person in it watching.', who: null },
+  ],
+
+  /* Parris's own desk. He kept the record of the examinations himself. */
+  parrisDesk: [
+    { say: 'A writing desk with a sloped top, an inkwell, and a sheet stopped in the middle of a line.', who: null },
+    { say: 'It is not a sermon. It is a list of questions, with the answers set down under them, and a note in the margin about what the afflicted did while each answer was being given.', who: null },
+    { learn: 'clue.parrisdesk', source: 'observed' },
+    { say: 'He is writing the record himself. The man whose household this started in is the man keeping the account of it.', who: null },
+  ],
+
+  /* The wood that is actually in the house, as opposed to the woodpile. */
+  insideWood: [
+    { say: 'The firewood that has made it indoors. You could carry all of it in two arms.', who: null },
+    { say: 'It is the first week of March in Massachusetts.', who: null },
+    { learn: 'clue.insidewood', source: 'observed' },
+  ],
+
+  /* An archive rule that happens to be about what the player has been
+   * doing for half an hour. */
+  archiveRule: [
+    { say: 'A laminated card propped on the shelf, in the tone of somebody who has had this argument many times.', who: null },
+    { say: 'PENCIL ONLY. NO PENS OF ANY KIND. NO INK IN THIS ROOM.', who: null },
+    { say: 'Under it, smaller: "Ink cannot be removed from paper. Please do not test this."', who: null },
+    { learn: 'law.papers', source: 'observed' },
+    { say: 'You have been copying things down for three hundred years and nobody has stopped you yet.', who: null },
+  ],
+
   jailStraw: [
     { say: 'Straw on stone, and it has not been changed in a while.', who: null },
     { say: 'Sarah Good is at the far end. She was pregnant when they took her in March and she is not now.', who: null },

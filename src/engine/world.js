@@ -16,6 +16,7 @@ import {
   buildMemBench, buildLowWall, buildLocust, buildSignboard, buildBin,
   buildShopfront, buildBarn, buildStoneWall, buildHayrick, buildCart,
   buildAppleTree, buildPig, buildCow, buildSheep, buildChicken,
+  buildBookshelf, buildReadingLamp, buildDesk, buildBed, buildWheel, buildDresser,
   buildBars, buildPaper, buildArchiveBox, buildStraw,
 } from './art-props.js';
 import { SPR_W, SPR_H, DIR } from './art-actors.js';
@@ -84,6 +85,12 @@ export const PROPS = {
   bars:         { w: 1, h: 1, build: () => buildBars(), talkThrough: true },
   paper:        { w: 1, h: 1, build: () => buildPaper(), passable: true },
   archivebox:   { w: 1, h: 1, build: () => buildArchiveBox() },
+  bookshelf:    { w: 2, h: 3, build: (o) => buildBookshelf(o.w || 2, o.h || 3), sized: true },
+  readinglamp:  { w: 1, h: 1, build: () => buildReadingLamp(), passable: true },
+  desk:         { w: 2, h: 1, build: () => buildDesk() },
+  bed:          { w: 2, h: 2, build: () => buildBed(), solidRows: 1 },
+  wheel:        { w: 1, h: 1, build: () => buildWheel() },
+  dresser:      { w: 2, h: 1, build: () => buildDresser() },
   straw:        { w: 1, h: 1, build: () => buildStraw(), passable: true },
 
   // Present day.

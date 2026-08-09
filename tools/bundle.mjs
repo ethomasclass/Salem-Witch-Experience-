@@ -33,6 +33,7 @@ const ORDER = [
   'src/content/documents.js',
   'src/content/knowledge.js',
   'src/content/objectives.js',
+  'src/content/directions.js',
   'src/content/clues.js',
   'src/content/npcs.js',
   'src/content/maps.js',
@@ -89,6 +90,13 @@ const body = html
 // width and the canvas sizes itself against a viewport that isn't there.
 const fragment = process.argv.includes('--fragment');
 
+// Carried over from index.html, where it is a data: URI already. It has to
+// go in <head>: a served copy without one makes Chromium ask the server for
+// /favicon.ico, which 404s on every load — console noise, and a failure in
+// any checker that treats console errors as failures. The fragment build
+// leaves it out, because a host that supplies the <head> supplies the icon.
+const icon = (html.match(/<link rel="icon"[^>]*>/) || [''])[0];
+
 const inner = `<title>Salem Village, 1692</title>
 <style>
 ${style.trim()}
@@ -107,6 +115,7 @@ const out = fragment ? inner : `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="A thirty-minute walk through a village coming apart. High school US History.">
+${icon}
 </head>
 <body>
 ${inner}</body>

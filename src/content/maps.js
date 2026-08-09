@@ -238,6 +238,9 @@ export const VILLAGE = {
     { id: 'goodwife', x: 24, y: 21, dir: 'right' },
     { id: 'woodman', x: 6, y: 22, dir: 'down' },
     { id: 'watchman', x: 29, y: 15, dir: 'down' },
+    // Out at the low end of the field, east, past the stone wall. The rye
+    // that stood in water in 1691 was grown down here.
+    { id: 'ryefarmer', x: 34, y: 20, dir: 'down' },
   ],
 
   // The same village, dressed three times. This is the emotional engine of
@@ -403,10 +406,21 @@ export const PARSONAGE = {
     { kind: 'hearth', x: 4, y: 1 },
     { kind: 'table', x: 2, y: 5 },
     { kind: 'paper', x: 2, y: 5 },
+    // The room the whole thing started in. A bed with the covers turned
+    // back and nobody in it: Betty is nine and Abigail is eleven and the
+    // game does not show them, which is the right call and also the reason
+    // an empty bed says more here than a full one would.
+    { kind: 'bed', x: 8, y: 5 },
+    // Parris's desk. He is keeping the record of the examinations himself.
+    { kind: 'desk', x: 8, y: 2 },
+    { kind: 'woodpile', x: 2, y: 2 },
   ],
   warps: [{ x: 5, y: 8, to: 'village', tx: 10, ty: 29, dir: 'down' }],
   interact: [
     { id: 'parsonageHearth', x: 4, y: 1, w: 3, h: 2 },
+    { id: 'sickbed', x: 8, y: 5, w: 2, h: 2 },
+    { id: 'parrisDesk', x: 8, y: 2, w: 2, h: 1 },
+    { id: 'insideWood', x: 2, y: 2, w: 1, h: 1 },
     { doc: 'parrisAgreement', x: 2, y: 5, w: 2, h: 1, require: ['clue.woodpile'],
       locked: 'A folded paper on the table, covered in sums. It is some kind of agreement, and it will mean nothing to you until you have seen what the village actually gave him. The woodpile is outside the front door.' },
   ],
@@ -525,6 +539,10 @@ export const NURSEHOUSE = {
   props: [
     { kind: 'hearth', x: 2, y: 1 },
     { kind: 'table', x: 5, y: 4 },
+    // Eight children were raised in this house and the room says so.
+    { kind: 'wheel', x: 8, y: 2 },
+    { kind: 'bed', x: 2, y: 5 },
+    { kind: 'dresser', x: 6, y: 1 },
   ],
   warps: [{ x: 4, y: 7, to: 'village', tx: 7, ty: 14, dir: 'down' }],
   interact: [],
@@ -562,6 +580,11 @@ export const PUTNAMHOUSE = {
     { kind: 'hearth', x: 5, y: 1 },
     { kind: 'table', x: 2, y: 4 },
     { kind: 'paper', x: 2, y: 4 },
+    // Thomas Putnam's desk. Ann's depositions survive in his handwriting,
+    // which is one of the six things the player can catch her sources
+    // disagreeing about. Standing at the desk beats being told.
+    { kind: 'desk', x: 7, y: 2 },
+    { kind: 'dresser', x: 2, y: 1 },
   ],
   interact: [
     { doc: 'topsfieldPetition', x: 2, y: 4, w: 2, h: 1, require: ['clue.marker'],
@@ -849,12 +872,21 @@ export const ARCHIVE = {
   indoor: true,
   ground: rows(room(18, 13, 8)),
   props: [
-    ...Array.from({ length: 6 }, (_, i) => ({ kind: 'archivebox', x: 2 + i, y: 1 })),
-    ...Array.from({ length: 6 }, (_, i) => ({ kind: 'archivebox', x: 10 + i, y: 1 })),
+    // A wall of shelving, and then two runs the player walks between. The
+    // room used to be twelve one-tile boxes along the top wall, which reads
+    // as a stockroom. Height and depth are what make a library.
+    ...[1, 3, 5, 11, 13, 15].map((x) => ({ kind: 'bookshelf', x, y: 1 })),
+    { kind: 'bookshelf', x: 1, y: 6 }, { kind: 'bookshelf', x: 1, y: 9 },
+    { kind: 'bookshelf', x: 15, y: 9 },
+    ...Array.from({ length: 3 }, (_, i) => ({ kind: 'archivebox', x: 8 + i, y: 1 })),
+
     { kind: 'table', x: 5, y: 5 }, { kind: 'table', x: 7, y: 5 },
     { kind: 'table', x: 9, y: 5 },
+    { kind: 'readinglamp', x: 5, y: 5 }, { kind: 'readinglamp', x: 10, y: 5 },
     { kind: 'paper', x: 6, y: 5 }, { kind: 'paper', x: 9, y: 5 },
     { kind: 'table', x: 12, y: 8 },
+    { kind: 'readinglamp', x: 13, y: 8 },
+    { kind: 'archivebox', x: 12, y: 8 },
   ],
   warps: [
     // Gated: this room is where the famous tidy explanation gets taken
@@ -865,7 +897,8 @@ export const ARCHIVE = {
   ],
   interact: [
     { id: 'archiveTable', x: 5, y: 5, w: 6, h: 1 },
-    { id: 'archiveBoxes', x: 2, y: 1, w: 6, h: 1 },
+    { id: 'archiveBoxes', x: 8, y: 1, w: 3, h: 1 },
+    { id: 'archiveRule', x: 4, y: 8, w: 3, h: 1 },
   ],
   triggers: [{ id: 'arriveArchive', x: 8, y: 11, w: 1, h: 1 }],
   npcs: [{ id: 'historian', x: 11, y: 5, dir: 'left' }],

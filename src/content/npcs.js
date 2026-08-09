@@ -969,6 +969,98 @@ export const NPCS = {
     ],
   },
 
+  /* ------------------------------------------------------------------ *
+   * The rye farmer.
+   *
+   * THE HARD RULE, and everything about this character depends on it:
+   * nobody alive in 1692 could connect blighted rye to a fit. The ergot
+   * theory is Linnda Caporael's, published in Science in 1976. If this man
+   * diagnoses anything, the history breaks.
+   *
+   * So he gives the player evidence and no interpretation. Every detail he
+   * describes is real and is what the modern argument actually rests on:
+   * black sclerotia replacing the grain (period farmers knew them as
+   * cockspur or spurred rye and knew nothing else about them), a wet
+   * growing season in 1691, a harvest you cannot afford to throw away, and
+   * cattle slipping their calves — ergot causes abortion in livestock, and
+   * a farmer would absolutely notice that and never know why.
+   *
+   * Then Dr. Whitfield hands the player the theory AND takes it apart. A
+   * student who found this man walks into the archive certain they have
+   * cracked it, and learns why a tidy cause that explains one symptom and
+   * none of the pattern is usually the wrong answer. That sequence is the
+   * best teaching this game does, and it only works because the evidence
+   * was planted three chapters before the argument.
+   * ------------------------------------------------------------------ */
+  ryefarmer: {
+    busy: true,
+    id: 'ryefarmer',
+    name: 'A man at the rye field',
+    spec: {
+      flesh: FLESH.ruddy, hair: HAIR.brown,
+      coat: CLOTH.russet, under: CLOTH.undyed,
+    },
+    greet: [
+      {
+        if: { notSpokenTo: ['ryefarmer'] },
+        then: [
+          { say: 'He is turning the edge of a field over with a spade, without much conviction. It is the first week of March and there is nothing to plant yet.', who: null },
+          'Ground is still hard. I am wasting my morning and I know it.',
+        ],
+        else: ['Still hard.'],
+      },
+    ],
+    topics: [
+      {
+        id: 'harvest', label: 'How was the harvest?',
+        lines: [
+          { say: 'He straightens up. This is clearly a thing he has wanted to say to somebody.', who: null },
+          'Which one. This year was middling. The year before it was bad and nobody wants to hear about it any more.',
+          'Ninety-one. Wettest spring I have farmed through. The rye stood in water at the low end for a fortnight and I could do nothing but look at it.',
+          { learn: 'fact.wetyear' },
+          'And it came in with spurs on it.',
+        ],
+      },
+      {
+        id: 'spurs', label: 'Spurs?',
+        require: ['fact.wetyear'],
+        lines: [
+          { say: 'He goes to the wall, moves a stone, and takes out a twist of cloth. He has kept some.', who: null },
+          { say: 'Inside are three or four grains of rye — except that they are not grains. They are black, curved, and about the length of a fingernail. They sit in the palm of his hand like little horns.', who: null },
+          'Cockspur. Spurred rye. My father called it that and his father called it that.',
+          { learn: 'fact.spurredrye' },
+          'It comes in a wet year and it comes in the low ground, and there is not a thing to be done about it.',
+          { say: 'He tips them back into the cloth carefully, the way you would handle something you did not intend to lose.', who: null },
+        ],
+      },
+      {
+        id: 'ate', label: 'What did you do with it?',
+        require: ['fact.spurredrye'],
+        lines: [
+          { say: 'He looks at you as though you have asked something very stupid, and then realises you are not from here.', who: null },
+          'Did with it? We ate it.',
+          'You do not throw away a harvest. You winnow what you can and you grind the rest and you eat it through the winter, because the alternative is that you do not eat.',
+          { learn: 'fact.atetherye' },
+          'Half this village ate off that field. The parsonage had their share of it too — they are owed corn and rye by the agreement, whatever the committee says about the rate.',
+          { say: 'He goes back to the spade.', who: null },
+        ],
+      },
+      {
+        id: 'cattle', label: 'Was anything else wrong that winter?',
+        require: ['fact.spurredrye'],
+        lines: [
+          { say: 'He stops.', who: null },
+          'Two of my cows slipped their calves. Before their time, both of them, within the month.',
+          { learn: 'fact.cattle' },
+          'I have had a cow slip in a hard winter. I have never had two in a wet one.',
+          { say: 'He shrugs, because there is no more to be got out of it than that.', who: null },
+          'A bad year is a bad year. You do not get an account of why.',
+        ],
+      },
+    ],
+    farewell: ['Mind the low end if you walk down there. It does not drain.'],
+  },
+
   woodman: {
     // Visibly working: the sprite loops two frames on the spot.
     busy: true,
@@ -1723,9 +1815,28 @@ export const NPCS = {
         lines: [
           { say: 'She sighs, but she is not annoyed. She has had this one a thousand times.', who: null },
           'Ah. The bread.',
-          'The idea is that rye infected with a fungus, ergot, caused hallucinations and convulsions. It got published in Science in 1976 and it has never gone away, because it is tidy.',
-          { learn: 'law.ergot_claim' },
-          'Three problems.',
+          {
+            // A student who stood in that field and held the spurs in March
+            // arrives here certain they have solved it. She takes them
+            // seriously first, and then takes it apart, which is the only
+            // order in which the lesson lands.
+            if: { knows: ['fact.spurredrye'] },
+            then: [
+              { say: 'You tell her about the man at the rye field. The wet spring. The black spurs he keeps in a twist of cloth. The cows that slipped their calves.', who: null },
+              { say: 'She puts her pen down and listens to the whole of it.', who: null },
+              'That is a very good piece of fieldwork and I want you to notice that you did it before you knew what it was for.',
+              'Yes. That is ergot — Claviceps purpurea, a fungus that replaces the grain. It grows in wet springs, in low ground, exactly where he told you. It causes convulsions in people and abortion in cattle, which is why his cows slipped.',
+              { learn: 'law.ergot_claim' },
+              'He could not possibly have known that. Nobody could, until 1976.',
+              { say: 'She lets you enjoy it for a moment.', who: null },
+              'Now. Three problems.',
+            ],
+            else: [
+              'The idea is that rye infected with a fungus, ergot, caused hallucinations and convulsions. It got published in Science in 1976 and it has never gone away, because it is tidy.',
+              { learn: 'law.ergot_claim' },
+              'Three problems.',
+            ],
+          },
           'One: the symptoms do not match. Ergotism produces gangrene or convulsions with vomiting and diarrhoea. The afflicted girls had none of that, and they recovered completely.',
           'Two: whole households ate from the same bread. Only certain people in those households were afflicted, and the afflicted were overwhelmingly girls and young women in a handful of families.',
           'Three, and this is the one that finishes it —',
@@ -1733,6 +1844,16 @@ export const NPCS = {
           'Even if every girl in Salem Village had been poisoned, it tells you nothing about WHO they named.',
           'It does not explain why the accusations follow a land dispute. It does not explain why three sisters from one Topsfield family were all taken. It does not explain the court.',
           { learn: 'law.ergot_rebut' },
+          {
+            if: { knows: ['fact.atetherye'] },
+            then: [
+              { say: 'And you already have the thing that finishes it, because he told you himself.', who: null },
+              'He said half the village ate off that field. Half the village. And how many people were afflicted?',
+              { say: 'A handful of girls and young women, in a handful of related households.', who: null },
+              'You went and got the evidence, and the evidence does not do what the theory needs it to do. That is not a failure. That is the job.',
+            ],
+            else: [],
+          },
           'A satisfying single cause that explains one symptom and none of the pattern is usually the wrong answer. That is worth more to you than anything else I have said today.',
         ],
       },

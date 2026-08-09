@@ -307,7 +307,7 @@ export function drawNotebook(g, view, s, entries, scroll, sourceName) {
  * Deliberately not a quest log: one step at a time, no checklist, nothing
  * that looks like a worksheet.
  */
-export function drawObjective(g, view, s, { step, standing, progress, sub, flash }) {
+export function drawObjective(g, view, s, { step, text, standing, progress, sub, flash }) {
   const pad = 8 * s;
   const right = view.x + view.w - pad;
   // Hard cap, so a long goal wraps instead of spanning the whole screen and
@@ -321,7 +321,7 @@ export function drawObjective(g, view, s, { step, standing, progress, sub, flash
   if (step) {
     const bodyFont = `600 ${7 * s}px system-ui, -apple-system, sans-serif`;
     g.font = bodyFont;
-    const lines = wrapText(g, step.text, maxW);
+    const lines = wrapText(g, text || step.text, maxW);
     let textW = 0;
     for (const l of lines) textW = Math.max(textW, g.measureText(l).width);
 
@@ -896,17 +896,38 @@ export function drawWayfinder(g, view, s, a, tiles) {
   }
 }
 
-/** Title screen. */
-export function drawTitle(g, view, s, hasSave, index) {
-  g.fillStyle = '#14161a';
-  g.fillRect(view.x, view.y, view.w, view.h);
+/**
+ * Title screen.
+ *
+ * `hasScene` means the caller has already drawn the memorial into the view,
+ * and this should darken it rather than paint over it. Worth the extra
+ * parameter: a title card that is a picture of the actual place the game
+ * opens in tells the player what kind of game this is before they press
+ * anything, and a gradient tells them nothing.
+ */
+export function drawTitle(g, view, s, hasSave, index, hasScene = false) {
+  if (!hasScene) {
+    g.fillStyle = '#14161a';
+    g.fillRect(view.x, view.y, view.w, view.h);
 
-  // A cold wash from the top, like the sky over a March village.
-  const grd = g.createLinearGradient(0, view.y, 0, view.y + view.h);
-  grd.addColorStop(0, '#2b3138');
-  grd.addColorStop(1, '#14161a');
-  g.fillStyle = grd;
-  g.fillRect(view.x, view.y, view.w, view.h);
+    // A cold wash from the top, like the sky over a March village.
+    const grd = g.createLinearGradient(0, view.y, 0, view.y + view.h);
+    grd.addColorStop(0, '#2b3138');
+    grd.addColorStop(1, '#14161a');
+    g.fillStyle = grd;
+    g.fillRect(view.x, view.y, view.w, view.h);
+  } else {
+    // Enough scrim that white serif type is readable over grass, stone and
+    // shadow alike, and heavier at the top and bottom where the words are.
+    g.fillStyle = 'rgba(10,11,14,0.55)';
+    g.fillRect(view.x, view.y, view.w, view.h);
+    const grd = g.createLinearGradient(0, view.y, 0, view.y + view.h);
+    grd.addColorStop(0, 'rgba(8,9,12,0.82)');
+    grd.addColorStop(0.45, 'rgba(8,9,12,0.18)');
+    grd.addColorStop(1, 'rgba(8,9,12,0.86)');
+    g.fillStyle = grd;
+    g.fillRect(view.x, view.y, view.w, view.h);
+  }
 
   g.textAlign = 'center';
   g.textBaseline = 'middle';
@@ -959,4 +980,44 @@ export function drawTitle(g, view, s, hasSave, index) {
   g.fillStyle = '#4a4f57';
   g.fillText('No portrait survives of anyone in this story. Every face here is imagined.',
              cx, Y(233));
+}
+
+/**
+ * The cold open.
+ *
+ * Five cards over black before the memorial appears. The point is not
+ * atmosphere — it is that a student should know the size of the thing before
+ * they start walking around in it. A player who wanders into the memorial
+ * cold reads twenty bench names as decoration.
+ *
+ * Every card is skippable and the whole sequence is skippable, because the
+ * second time a class plays this it must not cost them forty seconds.
+ */
+export function drawIntro(g, view, s, card, t) {
+  g.fillStyle = '#08090b';
+  g.fillRect(view.x, view.y, view.w, view.h);
+  if (!card) return;
+
+  // Fade in over the first ¾ second, hold, fade out over the last ½.
+  const inA = Math.min(1, t / 0.75);
+  const outA = Math.min(1, Math.max(0, (card.hold - t) / 0.5));
+  const a = Math.min(inA, outA);
+
+  const cx = view.x + view.w / 2;
+  const maxW = Math.min(view.w * 0.76, 230 * s);
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.font = card.big
+    ? `700 ${19 * s}px Georgia, "Iowan Old Style", Palatino, serif`
+    : `${12 * s}px Georgia, "Iowan Old Style", Palatino, serif`;
+
+  const lines = wrapText(g, card.text, maxW);
+  const lineH = (card.big ? 26 : 18) * s;
+  let y = view.y + view.h / 2 - ((lines.length - 1) * lineH) / 2;
+  g.fillStyle = `rgba(${card.big ? '236,231,220' : '198,203,211'},${a.toFixed(3)})`;
+  for (const l of lines) { g.fillText(l, cx, y); y += lineH; }
+
+  g.font = `${9 * s}px system-ui, sans-serif`;
+  g.fillStyle = `rgba(96,102,112,${(a * 0.9).toFixed(3)})`;
+  g.fillText('Z to continue  ·  X to skip', cx, view.y + view.h - 22 * s);
 }

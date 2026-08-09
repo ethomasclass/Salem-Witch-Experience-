@@ -50,6 +50,18 @@ September 1692, and back to the memorial.
   over.
 - **Gossip as currency** — carrying a rumour from one house to another opens a
   topic that was not there before.
+- **A farmer at the rye field** who describes a wet spring, black spurs on the
+  heads of his rye that he keeps in a twist of cloth, eating the harvest
+  anyway because there was nothing else, and two cows that slipped their
+  calves. He does not diagnose anything, because nobody could have — the
+  ergot hypothesis is Caporael, 1976. A student who found him gets told by
+  the historian later that it was a good piece of fieldwork *and* has it taken
+  apart, using the farmer's own words.
+- **Furnished interiors** — hearths, beds, desks, dressers, a spinning wheel,
+  a woodpile — and an archive reading room that actually looks like one: wall
+  of shelves, coloured spines, reading lamps. Indoor maps render at 2× zoom,
+  so about ten tiles by seven are visible at once and set pieces have to be
+  grouped rather than spread.
 - **Contradictions that land.** When a second account arrives that cannot both
   be true with one you already hold, whoever you are standing in front of says
   so, once. Both accounts go into a third notebook tab with who told you each.
@@ -78,8 +90,22 @@ September 1692, and back to the memorial.
   needs — what happened, how the court worked, and the four things historians
   still argue about. The last one is the only place the game asks its question
   out loud.
-- **A goal tracker** in the corner, one step at a time with a progress count,
-  and the standing question underneath once the memorial has raised it.
+- **A cold open.** Five cards before the title fades in: the death toll, how
+  it was done, that it took ten months, and that nobody has ever agreed on
+  why. Skippable, and skipped automatically on Continue. A student who walks
+  into the memorial cold reads twenty bench names as decoration.
+- **A title screen that is a picture of the place**, not a gradient — the
+  memorial itself, drifting slowly, with Nora already sitting on the wall.
+- **A goal tracker** in the corner that asks for **one thing at a time**, with
+  a progress count and the standing question underneath. A four-part goal
+  names only the part still outstanding, and it takes that line from the same
+  waypoint the edge chevron points at, so the arrow and the words cannot
+  disagree.
+- **People who tell you where to go.** If the person you were talking to knows
+  something about what you still owe, they say it as you leave — once each,
+  in their own voice, and only if they would plausibly know. It is deliberately
+  patchy: a pointer on every goodbye would train students that the last line
+  of every conversation is machinery, and they would stop reading it.
 - **An edge chevron** pointing toward the current goal, which vanishes as soon
   as the target is on screen. Deliberately not a minimap — a map in the corner
   makes players watch the corner instead of the village.
@@ -142,6 +168,18 @@ player can actually see, and that everything can be walked to. It exists
 because two documents shipped correctly defined, correctly gated, reachable
 — and invisible, standing on empty tiles.
 
+`node tools/check-chapters.mjs` starts at the title screen, presses through
+the cold open, and then walks every chapter's exit tile to make sure the
+chapter actually advances. It exists because the exit from the memorial once
+moved the player into 1692 without setting the chapter, which quietly made the
+game unfinishable — and every test at the time set the chapter directly, so
+none of them touched the one broken line. This checker is only allowed to
+change chapter by walking through a warp, and it looks for exits by their
+*gate* rather than by the `setChapter` it is testing for. Both restrictions
+are load-bearing: the first version searched for warps that already carried
+`setChapter`, so deleting `setChapter` made the exit vanish from the search
+and the checker passed with the original bug reintroduced.
+
 > **Before this goes in front of a class**, check every transcription against
 > Rosenthal's *Records of the Salem Witch-Hunt* and the Salem Witch Trials
 > Documentary Archive. Both are cited on screen.
@@ -158,7 +196,7 @@ estimates.
 ### For a classroom — the single file
 
 **[`dist/salem-village-1692.html`](dist/salem-village-1692.html)** is the whole
-game in one self-contained file, about 340 KB. Download it and double-click
+game in one self-contained file, about 516 KB. Download it and double-click
 it. No server, no install, no network. Email it, put it on a shared drive, or
 upload it to Canvas or Google Classroom as a file.
 
@@ -291,6 +329,10 @@ src/
     clues.js          what the player finds by looking
     knowledge.js      flag -> plain English, for the notebook and export
     objectives.js     the goal tracker, and the standing question
+    directions.js     what each character says about where to go next
+    disputes.js       the contradiction pairs the notebook tracks
+    reckoning.js      the closing scene, assembled from what you did
+    portraits.js      drawn faces, embedded as data URIs
 ```
 
 All art is drawn procedurally at boot — there are no image assets to load,

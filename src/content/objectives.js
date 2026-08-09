@@ -42,50 +42,80 @@ const byNpc  = (s, e) => s.hasSpokenTo(e.npc);
 const at = (map, x, y) => () => ({ map, x, y });
 
 const PANEL_WHERE = [
-  { flag: 'present.happened', map: 'memorial', x: 6, y: 22 },
-  { flag: 'present.court',    map: 'memorial', x: 10, y: 22 },
-  { flag: 'present.argument', map: 'memorial', x: 17, y: 22 },
+  { flag: 'present.happened', map: 'memorial', x: 6, y: 22,
+    line: 'Read the first panel on the pavement, by the entrance' },
+  { flag: 'present.court',    map: 'memorial', x: 10, y: 22,
+    line: 'Read the second panel, further along the pavement' },
+  { flag: 'present.argument', map: 'memorial', x: 17, y: 22,
+    line: 'Read the last panel, at the far end of the pavement' },
 ];
 const CLUE_WHERE = [
-  { flag: 'clue.woodpile', map: 'village', x: 14, y: 27 },
-  { flag: 'clue.seating',  map: 'meetinghouse', x: 5, y: 1 },
-  { flag: 'clue.accounts', map: 'tavern', x: 2, y: 3 },
-  { flag: 'clue.marker',   map: 'village', x: 15, y: 4 },
+  { flag: 'clue.woodpile', map: 'village', x: 14, y: 27,
+    line: 'Look at the woodpile stacked against the parsonage' },
+  { flag: 'clue.seating',  map: 'meetinghouse', x: 5, y: 1,
+    line: 'Go into the meetinghouse and look at the seating chart' },
+  { flag: 'clue.accounts', map: 'tavern', x: 2, y: 3,
+    line: 'Go into the tavern and look at the account book' },
+  { flag: 'clue.marker',   map: 'village', x: 15, y: 4,
+    line: 'A boundary stone stands in the woods, north of the village' },
 ];
 const MARCH_CAST_WHERE = [
-  { npc: 'nurse',     map: 'nursehouse', x: 5, y: 3 },
-  { npc: 'tituba',    map: 'parsonage', x: 3, y: 3 },
-  { npc: 'parris',    map: 'parsonage', x: 8, y: 4 },
-  { npc: 'ingersoll', map: 'tavern', x: 6, y: 4 },
-  { npc: 'annjr',     map: 'putnamhouse', x: 3, y: 3 },
-  { npc: 'mercy',     map: 'village', x: 29, y: 23 },
+  { npc: 'nurse',     map: 'nursehouse', x: 5, y: 3,
+    line: 'Talk to Rebecca Nurse, at the farm west of the meetinghouse' },
+  { npc: 'tituba',    map: 'parsonage', x: 3, y: 3,
+    line: 'Talk to Tituba, inside the parsonage' },
+  { npc: 'parris',    map: 'parsonage', x: 8, y: 4,
+    line: 'Talk to Rev. Parris, inside the parsonage' },
+  { npc: 'ingersoll', map: 'tavern', x: 6, y: 4,
+    line: 'Talk to Nathaniel Ingersoll, behind the bar in the tavern' },
+  { npc: 'annjr',     map: 'putnamhouse', x: 3, y: 3,
+    line: 'Talk to Ann Putnam, inside the Putnam house, south-east' },
+  { npc: 'mercy',     map: 'village', x: 29, y: 23,
+    line: 'Talk to Mercy Lewis, out in the road on the east side' },
 ];
 const MARCH_DOC_WHERE = [
-  { doc: 'parrisAgreement',   map: 'parsonage', x: 2, y: 5 },
-  { doc: 'seatingList',       map: 'meetinghouse', x: 7, y: 1 },
-  { doc: 'accountBookPage',   map: 'tavern', x: 2, y: 6 },
-  { doc: 'topsfieldPetition', map: 'putnamhouse', x: 2, y: 4 },
+  { doc: 'parrisAgreement',   map: 'parsonage', x: 2, y: 5,
+    line: 'Read the paper on the desk in the parsonage' },
+  { doc: 'seatingList',       map: 'meetinghouse', x: 7, y: 1,
+    line: 'Read the seating list at the front of the meetinghouse' },
+  { doc: 'accountBookPage',   map: 'tavern', x: 2, y: 6,
+    line: 'Read the loose account page on the tavern table' },
+  { doc: 'topsfieldPetition', map: 'putnamhouse', x: 2, y: 4,
+    line: 'Read the petition on the table in the Putnam house' },
 ];
 const JUNE_CAST_WHERE = [
-  { npc: 'marywarren', map: 'tavern', x: 8, y: 6 },
-  { npc: 'annjr',      map: 'putnamhouse', x: 3, y: 3 },
-  { npc: 'mercy',      map: 'village', x: 29, y: 23 },
+  { npc: 'marywarren', map: 'tavern', x: 8, y: 6,
+    line: 'Talk to Mary Warren, working in the tavern' },
+  { npc: 'annjr',      map: 'putnamhouse', x: 3, y: 3,
+    line: 'Talk to Ann Putnam again, inside the Putnam house' },
+  { npc: 'mercy',      map: 'village', x: 29, y: 23,
+    line: 'Talk to Mercy Lewis again, out in the road' },
 ];
 const JUNE_DOC_WHERE = [
-  { doc: 'nursePetition',    map: 'nursehouse', x: 5, y: 4 },
-  { doc: 'nurseWarrant',     map: 'tavern', x: 3, y: 6 },
-  { doc: 'putnamDeposition', map: 'meetinghouse', x: 5, y: 3 },
-  { doc: 'jailBill',         map: 'jail', x: 9, y: 6 },
+  { doc: 'nursePetition',    map: 'nursehouse', x: 5, y: 4,
+    line: 'Read the petition left on the table in the Nurse house' },
+  { doc: 'nurseWarrant',     map: 'tavern', x: 3, y: 6,
+    line: 'Read the warrant lying on the tavern table' },
+  { doc: 'putnamDeposition', map: 'meetinghouse', x: 5, y: 3,
+    line: 'Read the deposition in the meetinghouse' },
+  { doc: 'jailBill',         map: 'jail', x: 9, y: 6,
+    line: 'Read the jailer’s bill, on the far side of the jail' },
 ];
 const SEPT_DOC_WHERE = [
-  { doc: 'coreyRecord',        map: 'meetinghouse', x: 5, y: 3 },
-  { doc: 'deathWarrantReturn', map: 'meetinghouse', x: 8, y: 3 },
-  { doc: 'eastyPetition',      map: 'meetinghouse', x: 10, y: 3 },
+  { doc: 'coreyRecord',        map: 'meetinghouse', x: 5, y: 3,
+    line: 'Read the first paper on the court table in the meetinghouse' },
+  { doc: 'deathWarrantReturn', map: 'meetinghouse', x: 8, y: 3,
+    line: 'Read the middle paper on the court table' },
+  { doc: 'eastyPetition',      map: 'meetinghouse', x: 10, y: 3,
+    line: 'Read the last paper on the court table' },
 ];
 const RECK_DOC_WHERE = [
-  { doc: 'annApology',    map: 'memorial', x: 9, y: 18 },
-  { doc: 'sewallApology', map: 'memorial', x: 11, y: 18 },
-  { doc: 'johnsonAct',    map: 'memorial', x: 13, y: 18 },
+  { doc: 'annApology',    map: 'memorial', x: 9, y: 18,
+    line: 'Read the first of three papers lying on the grass' },
+  { doc: 'sewallApology', map: 'memorial', x: 11, y: 18,
+    line: 'Read the second paper on the grass' },
+  { doc: 'johnsonAct',    map: 'memorial', x: 13, y: 18,
+    line: 'Read the last paper on the grass' },
 ];
 
 export const STEPS_BY_CHAPTER = {
@@ -196,6 +226,40 @@ export const STANDING = {
 };
 
 export function stepsFor(state) { return STEPS_BY_CHAPTER[state.chapter] || []; }
+
+/**
+ * The one thing the player is being asked for right now.
+ *
+ * A step that covers four items used to print all four: "look at the woodpile,
+ * the seating chart, the account book, and a stone in the north woods". That
+ * is a to-do list, and it reads as one — a student scans it, picks the nearest
+ * item, and stops reading the game. Worse, the counter said 2/4 while the text
+ * still named all four, so the two that were done stayed on screen as though
+ * they were still owed.
+ *
+ * The waypoint already knows which item is outstanding, because the wayfinder
+ * arrow points at it. So the text comes from the same place the arrow does,
+ * and the two cannot disagree.
+ */
+export function outstanding(state, step) {
+  if (!step) return null;
+  const w = typeof step.where === 'function' ? step.where(state) : step.where;
+  return w && (w.flag || w.doc || w.npc) ? w : null;
+}
+
+/** The goal line to print: the outstanding item if the step has parts. */
+export function stepText(state, step) {
+  if (!step) return null;
+  const w = outstanding(state, step);
+  return (w && w.line) || step.text;
+}
+
+/** What the outstanding item IS — a flag, a document, or a person — so a
+ *  character standing in front of the player can point at it. */
+export function outstandingKey(state) {
+  const w = outstanding(state, currentStep(state));
+  return w ? (w.npc || w.doc || w.flag) : null;
+}
 
 /** The step currently in play, or null when the chapter is finished. */
 export function currentStep(state) {

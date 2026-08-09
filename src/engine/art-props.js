@@ -943,6 +943,159 @@ export function buildArchiveBox() {
   return s;
 }
 
+/**
+ * A bookshelf, two tiles wide and three tall.
+ *
+ * The reading room was twelve one-tile boxes along a wall, which reads as
+ * storage rather than as a library. Height is what makes a room feel like
+ * one — a shelf you cannot see over, with spines on it.
+ */
+export function buildBookshelf(wT = 2, hT = 3) {
+  const W = wT * TS, H = hT * TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+
+  // Carcass.
+  rect(g, 0, 2, W, H - 2, '#4a3f33');
+  stroke(g, 0, 2, W, H - 2, P.outline);
+  rect(g, 1, 3, W - 2, H - 4, '#5c4e3f');
+
+  // Shelves, and the books on them. Spines are varied by hash so no two
+  // shelves repeat, and stable so the room does not shimmer.
+  const SPINE = ['#7a3f33', '#4d5b6b', '#6b6042', '#3f5545', '#6d4a5c', '#8a7350', '#40474f'];
+  const shelves = hT * 2 - 1;
+  for (let r = 0; r < shelves; r++) {
+    const y = 4 + r * Math.floor((H - 8) / shelves);
+    const hgt = Math.floor((H - 8) / shelves) - 2;
+    if (hgt < 5) continue;
+    rect(g, 2, y + hgt, W - 4, 2, '#3a3128');       // the shelf board
+    let x = 3;
+    while (x < W - 4) {
+      const t = hash(x, r, 811);
+      if (t < 0.10) { x += 2; continue; }            // a gap where one is out
+      const bw = 2 + Math.floor(hash(x, r, 823) * 2);
+      const bh = hgt - Math.floor(hash(x, r, 829) * 3);
+      const col = SPINE[Math.floor(hash(x, r, 839) * SPINE.length)];
+      rect(g, x, y + hgt - bh, bw, bh, col);
+      // A lighter band along the spine, which is what makes it read as a book.
+      hline(g, x, y + hgt - bh + 1, bw, 'rgba(255,255,255,0.13)');
+      px(g, x, y + hgt - 1, 'rgba(0,0,0,0.35)');
+      x += bw + 1;
+    }
+  }
+  rect(g, 0, H - 3, W, 3, '#3a3128');
+  hline(g, 0, H - 3, W, P.outline);
+  g.fillStyle = P.shadow;
+  g.fillRect(2, H, W - 4, 3);
+  return s;
+}
+
+/** A green-shaded reading lamp. The visual shorthand for an archive. */
+export function buildReadingLamp() {
+  const s = surface(TS, TS + 2);
+  const g = s.g;
+  rect(g, 6, 12, 5, 2, '#2f3238');            // base
+  rect(g, 7, 6, 2, 7, '#5a5f66');             // stem
+  rect(g, 3, 3, 11, 4, '#2f6b48');            // shade
+  hline(g, 3, 3, 11, '#3f8a5e');
+  hline(g, 3, 6, 11, '#1e4a31');
+  stroke(g, 3, 3, 11, 4, P.outline);
+  rect(g, 5, 7, 7, 1, 'rgba(255,236,170,0.55)');   // the light it throws
+  rect(g, 6, 8, 5, 1, 'rgba(255,236,170,0.25)');
+  return s;
+}
+
+/**
+ * A writing desk with a sloped top and paper on it.
+ *
+ * Built for one room in particular: Thomas Putnam wrote his daughter's
+ * depositions, which is one of the six things the player can find sources
+ * disagreeing about. Standing at the desk where that happened is worth more
+ * than another line of dialogue saying so.
+ */
+export function buildDesk() {
+  const W = 2 * TS, H = TS;
+  const s = surface(W, H + 4);
+  const g = s.g;
+  rect(g, 0, 1, W, 8, P.barkHi);              // sloped top
+  hline(g, 0, 1, W, P.outline);
+  for (let i = 2; i < 8; i++) hline(g, 0, i, W, i % 2 ? P.bark : P.barkHi);
+  stroke(g, 0, 1, W, 8, P.outline);
+  rect(g, 4, 3, 12, 5, '#e6dfc9');            // a sheet, mid-sentence
+  stroke(g, 4, 3, 12, 5, '#7a7460');
+  for (let i = 0; i < 3; i++) hline(g, 6, 4 + i * 2, 8 - i * 2, '#8d8571');
+  px(g, 22, 4, '#2b2b30'); px(g, 23, 3, '#2b2b30');   // the inkwell
+  rect(g, 21, 5, 4, 3, '#3a3a40');
+  stroke(g, 21, 5, 4, 3, P.outline);
+  rect(g, 3, 9, 3, 7, P.bark);
+  rect(g, W - 6, 9, 3, 7, P.bark);
+  ellipse(g, W / 2, H + 2, 13, 2, P.shadow);
+  return s;
+}
+
+/** A bed. Two tiles, low, with the covers turned back. */
+export function buildBed() {
+  const W = 2 * TS, H = 2 * TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+  rect(g, 1, 4, W - 2, H - 6, '#4a3c30');
+  stroke(g, 1, 4, W - 2, H - 6, P.outline);
+  rect(g, 2, 6, W - 4, H - 11, '#b0a894');    // the tick
+  speckle(g, 2, 6, W - 4, H - 11, '#9a927e', 0.10, 907);
+  rect(g, 2, H - 12, W - 4, 6, '#7a4750');    // a murrey coverlet, turned back
+  hline(g, 2, H - 12, W - 4, '#8f5760');
+  rect(g, 4, 6, 9, 4, '#cfc8b6');             // the bolster
+  stroke(g, 4, 6, 9, 4, '#98917f');
+  rect(g, 1, H - 6, 3, 5, '#3a2f26');         // posts
+  rect(g, W - 4, H - 6, 3, 5, '#3a2f26');
+  g.fillStyle = P.shadow;
+  g.fillRect(3, H, W - 6, 3);
+  return s;
+}
+
+/** A spinning wheel. One of the few objects in a house that was a woman's
+ *  own property and her own trade. */
+export function buildWheel() {
+  const s = surface(TS, TS + 4);
+  const g = s.g;
+  ellipse(g, 6, 7, 6, 6, P.barkHi);
+  ellipse(g, 6, 7, 4.5, 4.5, '#6b5d4a');
+  ellipse(g, 6, 7, 1.5, 1.5, P.bark);
+  for (let a = 0; a < 6; a++) {
+    const t = (a / 6) * Math.PI * 2;
+    line(g, 6, 7, 6 + Math.round(Math.cos(t) * 5), 7 + Math.round(Math.sin(t) * 5), P.bark);
+  }
+  rect(g, 11, 4, 2, 12, P.bark);              // the post
+  rect(g, 3, 14, 10, 2, P.barkHi);            // the treadle bar
+  hline(g, 3, 14, 10, P.outline);
+  g.fillStyle = P.shadow;
+  g.fillRect(3, TS + 1, 10, 2);
+  return s;
+}
+
+/** A dresser with pewter on it — the thing the sheriff came for. */
+export function buildDresser() {
+  const W = 2 * TS, H = TS;
+  const s = surface(W, H + 3);
+  const g = s.g;
+  rect(g, 0, 5, W, 11, P.bark);
+  stroke(g, 0, 5, W, 11, P.outline);
+  rect(g, 1, 6, W - 2, 4, P.barkHi);
+  hline(g, 0, 10, W, P.outline);
+  // Pewter: three plates on edge and a tankard, which is exactly what the
+  // seizure inventory lists.
+  for (let i = 0; i < 3; i++) {
+    const x = 4 + i * 7;
+    ellipse(g, x + 2, 3, 3, 3, '#9aa0a6');
+    ellipse(g, x + 2, 3, 2, 2, '#b6bcc2');
+    px(g, x + 1, 2, '#d6dade');
+  }
+  rect(g, 25, 1, 4, 5, '#9aa0a6');
+  stroke(g, 25, 1, 4, 5, '#6e747a');
+  ellipse(g, W / 2, H + 1, 13, 2, P.shadow);
+  return s;
+}
+
 /** Straw on a stone floor. */
 export function buildStraw() {
   const s = surface(TS, TS);

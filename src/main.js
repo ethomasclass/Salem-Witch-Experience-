@@ -14,11 +14,13 @@ import { buildActor, buildPortrait, PLAYER_SPEC, SPR_H } from './engine/art-acto
 import {
   dialogueLayout, drawDialogue, drawChoices, drawNotebook, drawTitle, drawToast,
   drawObjective, drawReader, drawDocTab, drawNotebookTabs, drawAnswer, drawPrompt, drawWayfinder,
-  drawDisputeTab,
+  drawDisputeTab, drawIntro,
   wrapText,
 } from './engine/ui.js';
 import { Audio } from './engine/audio.js';
-import { currentStep, progress, STANDING, chapterComplete, remainingIn } from './content/objectives.js';
+import { currentStep, progress, STANDING, chapterComplete, remainingIn,
+         stepText, outstanding, outstandingKey, STEPS_BY_CHAPTER } from './content/objectives.js';
+import { DIRECTIONS, pointerFor } from './content/directions.js';
 import { DOCUMENTS, DOC_COUNT, FIDELITY_LABEL } from './content/documents.js';
 import { MAPS } from './content/maps.js';
 import { NPCS } from './content/npcs.js';
@@ -43,6 +45,30 @@ const MOVE_TIME = 0.16;      // seconds per tile
 // forty tiles, which is six seconds of held arrow key at walking pace.
 const RUN_TIME = 0.095;
 const REVEAL_CPS = 55;       // typewriter speed
+
+/**
+ * The cold open.
+ *
+ * Numbers first, and only numbers that are not in dispute: nineteen hanged,
+ * one pressed to death, at least five dead in custody. "At least" is doing
+ * real work — jail deaths were recorded unevenly and historians do not agree
+ * on a final figure, so the game says the floor and not a total. The village
+ * population of roughly five hundred and the ten-month span are both standard.
+ *
+ * Then the thing the whole game is about, stated as a fact rather than as a
+ * puzzle: nobody has ever agreed on why. A student who starts here knows,
+ * before they take a single step, that they are walking into an argument and
+ * not a mystery with an answer at the end of it.
+ *
+ * `hold` is seconds. Slow enough to read twice.
+ */
+const INTRO_CARDS = [
+  { text: 'In 1692, in a farming village of about five hundred people, twenty-five people died.', hold: 6.5 },
+  { text: 'Nineteen were hanged. One was pressed to death under stones. At least five died in jail, including an infant.', hold: 7.5 },
+  { text: 'It took ten months.', hold: 4.5, big: true },
+  { text: 'Nobody has ever agreed on why it happened.', hold: 5.5, big: true },
+  { text: 'Salem, Massachusetts. Today.', hold: 4.5 },
+];
 
 class Game {
   constructor(canvas) {
@@ -209,6 +235,28 @@ class Game {
 
   /* ---------------- lifecycle ---------------- */
 
+  /**
+   * Start the cold open, then the game.
+   *
+   * Only on a fresh start. A student who is resuming has already seen it, and
+   * making them sit through the death toll again every time they come back
+   * from a fire drill would turn the most serious thing in the game into an
+   * obstacle between them and their save.
+   */
+  startIntro(fresh) {
+    if (!fresh) { this.begin(false); return; }
+    this.introCards = INTRO_CARDS;
+    this.introIndex = 0;
+    this.introT = 0;
+    this.mode = 'intro';
+    this.audio.unlock();
+  }
+
+  endIntro() {
+    this.mode = 'title';          // begin() will move us on; never leave it here
+    this.begin(true);
+  }
+
   begin(fresh) {
     if (!fresh && this.saved) {
       this.state = this.saved.state;
@@ -319,6 +367,22 @@ class Game {
       ], speaker, () => { this.finishConversation(); });
       this.showToast('Your sources disagree');
       return;
+    }
+
+    // Otherwise, if this person has something to say about where the player
+    // still has to go, they say it on the way out. Once, ever — the flag is
+    // set here rather than inside pointerFor so that reading the pointer is
+    // free of side effects and the same call can be made from a test.
+    if (npc) {
+      const key = outstandingKey(this.state);
+      const line = pointerFor(this.state, npc.id, key);
+      if (line) {
+        this.state.learn(`pointed.${npc.id}.${key}`, 'observed');
+        const speaker = { id: npc.id, name: npc.name, spec: npc.def.spec };
+        this.startScript([{ say: line, who: npc.name }], speaker,
+                         () => { this.finishConversation(); });
+        return;
+      }
     }
     this.finishConversation();
   }
@@ -587,7 +651,9 @@ class Game {
     if (!w.gate) return null;
     if (chapterComplete(this.state, w.gate)) return null;
     const left = remainingIn(this.state, w.gate);
-    return left.length ? left[0].text : null;
+    // Same one-thing-at-a-time text the HUD shows, so the message at a closed
+    // door and the message in the corner cannot say different things.
+    return left.length ? stepText(this.state, left[0]) : null;
   }
 
   doWarp(w) {
@@ -629,7 +695,8 @@ class Game {
     // during dialogue would make every conversation feel like a cutscene,
     // and this game is nothing but conversations.
     this.clock = (this.clock || 0) + dt;
-    if (this.mode !== 'title') {
+    const inWorld = this.mode !== 'title' && this.mode !== 'intro';
+    if (inWorld) {
       const here = this.mapFor(this.player.map);
       updateCritters(here, dt, this.clock);
 
@@ -651,7 +718,7 @@ class Game {
 
     // Browsers require a gesture before audio; this is the first one.
     if (inp.justPressed('confirm') || inp.direction()) this.audio.unlock();
-    if (this.mode !== 'title') this.checkObjective();
+    if (inWorld) this.checkObjective();
 
     if (this.mode === 'title') {
       const items = this.saved ? 2 : 1;
@@ -660,7 +727,22 @@ class Game {
       if (inp.justPressed('confirm')) {
         this.audio.unlock();
         this.audio.menuPick();
-        this.begin(!this.saved ? true : this.titleIndex === 1);
+        this.startIntro(!this.saved ? true : this.titleIndex === 1);
+      }
+      return;
+    }
+
+    if (this.mode === 'intro') {
+      this.introT += dt;
+      // X skips the whole sequence. Z takes the next card — which on the last
+      // card is the same as skipping, so a player who mashes Z through the
+      // opening lands in the game rather than on a stuck screen.
+      if (inp.justPressed('cancel')) { this.endIntro(); return; }
+      const card = this.introCards[this.introIndex];
+      if (inp.justPressed('confirm') || this.introT >= card.hold) {
+        this.introIndex++;
+        this.introT = 0;
+        if (this.introIndex >= this.introCards.length) { this.endIntro(); return; }
       }
       return;
     }
@@ -803,7 +885,38 @@ class Game {
     g.fillStyle = '#0b0c0e';
     g.fillRect(0, 0, W, H);
 
-    if (this.mode === 'title') { drawTitle(g, v, s, !!this.saved, this.titleIndex); return; }
+    if (this.mode === 'intro') {
+      drawIntro(g, v, s, this.introCards[this.introIndex], this.introT);
+      return;
+    }
+
+    if (this.mode === 'title') {
+      // The memorial itself, drifting, behind the words. Rendered with the
+      // map's own actors so Nora is already sitting on the wall — the title
+      // screen is a shot of the first thing the player will walk into, not an
+      // illustration of it.
+      //
+      // Asked for by chapter rather than by current state on purpose: if a
+      // save exists from September, mapFor('memorial') would hand back the
+      // 1692 version and the title would be a picture of the wrong century.
+      let scene = false;
+      try {
+        const m = this.mapFor('memorial', 'memorial');
+        const t = this.clock || 0;
+        const cam = computeCamera(m, (13 + Math.sin(t * 0.055) * 3.2) * TS,
+                                     (14 + Math.sin(t * 0.031) * 2.2) * TS);
+        renderMap(this.bg, m, cam, m.actors, t);
+        g.imageSmoothingEnabled = false;
+        g.drawImage(this.buf, v.x, v.y, v.w, v.h);
+        scene = true;
+      } catch (e) {
+        // A title screen must never be the thing that fails to load. If the
+        // memorial cannot be built for any reason, fall back to the gradient.
+        scene = false;
+      }
+      drawTitle(g, v, s, !!this.saved, this.titleIndex, scene);
+      return;
+    }
 
     const map = this.mapFor(this.player.map);
     const cam = computeCamera(map, this.player.px, this.player.py);
@@ -866,6 +979,7 @@ class Game {
       const step = currentStep(this.state);
       drawObjective(g, v, s, {
         step,
+        text: stepText(this.state, step),
         standing: STANDING.active(this.state) ? STANDING.text : null,
         progress: progress(this.state),
         sub: step && step.count ? step.count(this.state) : null,
@@ -1059,8 +1173,15 @@ window.__benchScript = benchScript;
 window.__DISPUTES = DISPUTES;
 window.__MAPS = MAPS;
 window.__currentStep = currentStep;
+window.__objectives = { currentStep, stepText, outstanding, outstandingKey, STEPS_BY_CHAPTER };
+window.__directions = { DIRECTIONS, pointerFor };
+window.__GameState = GameState;
+window.__KNOWLEDGE = KNOWLEDGE;
+window.__NPCS = NPCS;
+window.__chapterComplete = chapterComplete;
 window.__updateCritters = updateCritters;
 window.__isSolid = isSolid;
+window.__CLUES = CLUES;
 window.__reckoningScript = reckoningScript;
 window.__activeDisputes = activeDisputes;
 
