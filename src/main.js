@@ -19,8 +19,9 @@ import {
 } from './engine/ui.js';
 import { Audio } from './engine/audio.js';
 import { currentStep, progress, STANDING, chapterComplete, remainingIn,
-         stepText, outstanding, outstandingKey, STEPS_BY_CHAPTER } from './content/objectives.js';
-import { DIRECTIONS, pointerFor } from './content/directions.js';
+         stepText, outstanding, outstandingKey, outstandingMap,
+         STEPS_BY_CHAPTER } from './content/objectives.js';
+import { DIRECTIONS, pointerFor, withinSight } from './content/directions.js';
 import { DOCUMENTS, DOC_COUNT, FIDELITY_LABEL } from './content/documents.js';
 import { MAPS } from './content/maps.js';
 import { NPCS } from './content/npcs.js';
@@ -102,6 +103,8 @@ class Game {
     this.noteOpen = new Set();  // which people's headings are expanded
     this.docSel = 0;            // cursor in the document collection
     this.readerFrom = 'world';  // where the reader was opened from
+    this.stalled = 0;           // conversations since the goal last moved
+    this.goalAtTalk = null;
     this.convNpc = null;
     this.objFlash = 0;
     this.moveHeld = 0;          // seconds of unbroken walking, for auto-run
@@ -320,6 +323,7 @@ class Game {
 
   talkTo(npc) {
     this.convNpc = npc;
+    this.goalAtTalk = outstandingKey(this.state);
     // Face the player.
     const p = this.player;
     npc.dir = p.ty < npc.ty ? 'up' : p.ty > npc.ty ? 'down' : p.tx < npc.tx ? 'left' : 'right';
@@ -373,15 +377,13 @@ class Game {
       return;
     }
 
-    // Otherwise, if this person has something to say about where the player
-    // still has to go, they say it on the way out. Once, ever — the flag is
-    // set here rather than inside pointerFor so that reading the pointer is
-    // free of side effects and the same call can be made from a test.
+    // Otherwise, if this person has something useful to say about where the
+    // player still has to go, they say it on the way out.
     if (npc) {
-      const key = outstandingKey(this.state);
-      const line = pointerFor(this.state, npc.id, key);
+      const line = this.pointerLine(npc);
       if (line) {
-        this.state.learn(`pointed.${npc.id}.${key}`, 'observed');
+        this.state.learn(`pointed.${npc.id}.${outstandingKey(this.state)}`, 'observed');
+        this.stalled = 0;
         const speaker = { id: npc.id, name: npc.name, spec: npc.def.spec };
         this.startScript([{ say: line, who: npc.name }], speaker,
                          () => { this.finishConversation(); });
@@ -391,8 +393,54 @@ class Game {
     this.finishConversation();
   }
 
+  /**
+   * Should this person volunteer a direction, and which one?
+   *
+   * Four conditions, and every one of them is here because the version
+   * without it shipped and read as machinery:
+   *
+   *   - THE PLAYER HAS TO BE STUCK. `stalled` counts conversations that
+   *     ended without the current goal changing. Two of those and the third
+   *     person helps. Without this the pointer fired on every goodbye, and
+   *     loudest from the ambient villagers — who have no topics at all, so
+   *     their whole conversation was one greeting with a direction stapled
+   *     to the end of it, every single time.
+   *
+   *   - NOT ABOUT SOMETHING YOU CAN SEE. Ingersoll used to tell the player
+   *     to go and look at the account book four tiles behind him. Measured
+   *     as "on screen from where the speaker stands", the same test the
+   *     wayfinder chevron uses — not "same map", which would silence the
+   *     boundary stone in the north woods because it shares a map with the
+   *     well the player is standing at.
+   *
+   *   - NOT ABOUT A PAPER. Documents are unlocked by a person who says where
+   *     the paper is as part of unlocking it. A pointer afterwards is that
+   *     line again, a minute later, and in several cases it had gone stale
+   *     and named furniture the paper was no longer on.
+   *
+   *   - AND THE CHARACTER HAS TO HAVE ONE, in this chapter, unsaid.
+   */
+  pointerLine(npc) {
+    const key = outstandingKey(this.state);
+    if (!key) return null;
+    if (this.stalled < 2) return null;
+    if (DOCUMENTS[key]) return null;
+    const w = outstanding(this.state, currentStep(this.state));
+    if (w && w.map === this.player.map
+        && withinSight(this.mapFor(this.player.map).indoor, w.x - npc.tx, w.y - npc.ty)) {
+      return null;
+    }
+    return pointerFor(this.state, npc.id, key);
+  }
+
   finishConversation() {
     const npc = this.convNpc;
+    // Did this conversation move the player forward? If the goal is the same
+    // one they walked in with, they are that much closer to being lost.
+    const key = outstandingKey(this.state);
+    if (key && key === this.goalAtTalk) this.stalled = (this.stalled || 0) + 1;
+    else this.stalled = 0;
+    this.goalAtTalk = key;
     if (npc) { npc.dir = npc.homeDir; npc.dirIndex = DIR_INDEX[npc.homeDir]; }
     this.convNpc = null;
     this.mode = 'play';
@@ -1303,6 +1351,8 @@ window.__MAPS = MAPS;
 window.__currentStep = currentStep;
 window.__objectives = { currentStep, stepText, outstanding, outstandingKey, STEPS_BY_CHAPTER };
 window.__directions = { DIRECTIONS, pointerFor };
+window.__objectives.outstandingMap = outstandingMap;
+window.__directions.withinSight = withinSight;
 window.__GameState = GameState;
 window.__KNOWLEDGE = KNOWLEDGE;
 window.__NPCS = NPCS;

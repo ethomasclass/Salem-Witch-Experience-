@@ -113,11 +113,16 @@ September 1692, and back to the memorial.
   names only the part still outstanding, and it takes that line from the same
   waypoint the edge chevron points at, so the arrow and the words cannot
   disagree.
-- **People who tell you where to go.** If the person you were talking to knows
-  something about what you still owe, they say it as you leave — once each,
-  in their own voice, and only if they would plausibly know. It is deliberately
-  patchy: a pointer on every goodbye would train students that the last line
-  of every conversation is machinery, and they would stop reading it.
+- **People who tell you where to go — but only when you are stuck.** If a
+  student has ended two conversations without the goal moving, the next
+  person who has something useful to say about it volunteers it as the last
+  line before they leave. Once each, in their own voice, and never about
+  something the player could already see from where the speaker is standing,
+  or about a paper somebody has already told them where to find. The
+  restraint is the feature: the first version fired on every goodbye, which
+  meant the four ambient villagers — who have no topics, so their whole
+  conversation is one greeting — appended a direction every single time, and
+  the whole thing read as machinery.
 - **An edge chevron** pointing toward the current goal, which vanishes as soon
   as the target is on screen. Deliberately not a minimap — a map in the corner
   makes players watch the corner instead of the village.
@@ -195,6 +200,16 @@ player can actually see, and that everything can be walked to. It exists
 because two documents shipped correctly defined, correctly gated, reachable
 — and invisible, standing on empty tiles.
 
+`node tools/check-directions.mjs` checks the directions characters give:
+that every line can actually fire somewhere, that nobody points at something
+the player could already see, that nobody points at a document (the person who
+unlocks a paper already says where it is), and that a chapter-keyed line has a
+line for every chapter it fires in. It exists because ninety of these shipped
+and eight could never fire at all, twenty-four repeated a line the same person
+had given a minute earlier, and several named furniture the paper had since
+been moved off — none of which was visible from the code, because every line
+was well-formed and the system worked.
+
 `node tools/check-play.mjs` plays each chapter the way the most thorough
 possible student would — take every topic whose conditions are met, examine
 everything, copy every document whose gate is open, repeat until nothing new
@@ -233,7 +248,7 @@ estimates.
 ### For a classroom — the single file
 
 **[`dist/salem-village-1692.html`](dist/salem-village-1692.html)** is the whole
-game in one self-contained file, about 548 KB. Download it and double-click
+game in one self-contained file, about 551 KB. Download it and double-click
 it. No server, no install, no network. Email it, put it on a shared drive, or
 upload it to Canvas or Google Classroom as a file.
 

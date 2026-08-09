@@ -57,7 +57,18 @@ const firstMissing = (s, list, has) => {
 const byFlag = (s, e) => s.knows(e.flag);
 const byDoc  = (s, e) => s.hasDoc(e.doc);
 const byNpc  = (s, e) => s.hasSpokenTo(e.npc);
-const at = (map, x, y) => () => ({ map, x, y });
+/**
+ * A step that points at one fixed place.
+ *
+ * `key` names what is there, so a single-target step can be pointed at by a
+ * character the same way a multi-part one can. Without it, the eight best
+ * directions in the game were unreachable — Francis Nurse is standing in his
+ * dooryard having just told you his wife is in the Salem jail, and the line
+ * written for him, "South, down the road. They let people stand at the
+ * bars", could never fire, because the step that wants it is a fixed place
+ * rather than a list.
+ */
+const at = (map, x, y, key) => () => ({ map, x, y, key });
 
 const PANEL_WHERE = [
   { flag: 'present.happened', map: 'memorial', x: 6, y: 22,
@@ -167,13 +178,13 @@ export const STEPS_BY_CHAPTER = {
         .filter((f) => s.knows(f)).length, 3] },
     { id: 'nurse', where: at('memorial', 15, 5), text: 'Find the bench for Rebecca Nurse, beside the far gap',
       done: (s) => s.knows('present.nurse') },
-    { id: 'nora', where: at('memorial', 18, 19), text: 'Talk to the girl sitting on the wall', done: (s) => s.hasSpokenTo('nora') },
+    { id: 'nora', where: at('memorial', 18, 19, 'nora'), text: 'Talk to the girl sitting on the wall', done: (s) => s.hasSpokenTo('nora') },
     { id: 'gap', where: at('memorial', 13, 4), text: 'Go through the gap in the far wall', done: (s) => s.visited.has('road') },
   ],
 
   march: [
     { id: 'walk', where: at('village', 22, 20), text: 'Walk north up the road to Salem Village', done: (s) => s.visited.has('village') },
-    { id: 'meetnurse', where: at('nursehouse', 5, 3), text: 'Find Rebecca Nurse. Her farm is west, past the meetinghouse',
+    { id: 'meetnurse', where: at('nursehouse', 5, 3, 'nurse'), text: 'Find Rebecca Nurse. Her farm is west, past the meetinghouse',
       done: (s) => s.hasSpokenTo('nurse') },
     // Named, not hinted. A student who cannot find the boundary stone is not
     // learning anything from being kept in the dark about it.
@@ -201,13 +212,13 @@ export const STEPS_BY_CHAPTER = {
   ],
 
   june: [
-    { id: 'nursegone', where: at('village', 7, 16), text: 'Rebecca Nurse is not at home. Her husband is in the dooryard, west — ask him',
+    { id: 'nursegone', where: at('village', 7, 16, 'francis'), text: 'Rebecca Nurse is not at home. Her husband is in the dooryard, west — ask him',
       done: (s) => s.knows('june.nursejailed') },
-    { id: 'town', where: at('jail', 6, 7), text: 'Walk south down the road. The jail is on the left, before the town',
+    { id: 'town', where: at('jail', 6, 7, 'jail'), text: 'Walk south down the road. The jail is on the left, before the town',
       done: (s) => s.visited.has('jail') },
-    { id: 'sit', where: at('jail', 4, 4), text: 'Stand below the bars and talk to her through them',
+    { id: 'sit', where: at('jail', 4, 4, 'nurseJail'), text: 'Stand below the bars and talk to her through them',
       done: (s) => s.hasSpokenTo('nurseJail') },
-    { id: 'tituba', where: at('jail', 9, 4), text: 'Tituba is in the same cellar, further along the bars',
+    { id: 'tituba', where: at('jail', 9, 4, 'titubaJail'), text: 'Tituba is in the same cellar, further along the bars',
       done: (s) => s.hasSpokenTo('titubaJail') },
     { id: 'accusers', where: (s) => firstMissing(s, JUNE_CAST_WHERE, byNpc), text: 'Talk to the accusers: Mary Warren in the tavern, Ann Putnam indoors, Mercy Lewis in the road',
       done: (s) => JUNE_CAST.every((id) => s.hasSpokenTo(id)),
@@ -231,12 +242,12 @@ export const STEPS_BY_CHAPTER = {
   ],
 
   september: [
-    { id: 'find', where: at('village', 27, 24), text: 'Almost nobody will talk to you now. One man is mending a fence, east',
+    { id: 'find', where: at('village', 27, 24, 'neighbour'), text: 'Almost nobody will talk to you now. One man is mending a fence, east',
       done: (s) => s.hasSpokenTo('neighbour') },
     { id: 'corey', where: at('village', 27, 24), text: 'Ask him about Giles Corey, and where the dead are buried',
       done: (s) => s.knows('sept.corey') && s.knows('sept.noburial'),
       count: (s) => [['sept.corey', 'sept.noburial'].filter((f) => s.knows(f)).length, 2] },
-    { id: 'putnam', where: at('putnamhouse', 3, 3), text: 'Go inside the Putnam house, south-east', done: (s) => s.knows('sept.noticed') },
+    { id: 'putnam', where: at('putnamhouse', 3, 3, 'putnamhouse'), text: 'Go inside the Putnam house, south-east', done: (s) => s.knows('sept.noticed') },
     { id: 'papers', where: (s) => firstMissing(s, SEPT_DOC_WHERE, byDoc), text: 'Three papers on the court table inside the meetinghouse',
       done: (s) => SEPT_DOCS.every((d) => s.hasDoc(d)),
       count: (s) => [SEPT_DOCS.filter((d) => s.hasDoc(d)).length, SEPT_DOCS.length] },
@@ -282,7 +293,7 @@ export function stepsFor(state) { return STEPS_BY_CHAPTER[state.chapter] || []; 
 export function outstanding(state, step) {
   if (!step) return null;
   const w = typeof step.where === 'function' ? step.where(state) : step.where;
-  return w && (w.flag || w.doc || w.npc) ? w : null;
+  return w && (w.flag || w.doc || w.npc || w.key) ? w : null;
 }
 
 /** The goal line to print: the outstanding item if the step has parts. */
@@ -296,7 +307,14 @@ export function stepText(state, step) {
  *  character standing in front of the player can point at it. */
 export function outstandingKey(state) {
   const w = outstanding(state, currentStep(state));
-  return w ? (w.npc || w.doc || w.flag) : null;
+  return w ? (w.npc || w.doc || w.flag || w.key) : null;
+}
+
+/** Which map the current goal is on — so a character never points the
+ *  player at something in the room they are already standing in. */
+export function outstandingMap(state) {
+  const w = outstanding(state, currentStep(state));
+  return w ? w.map : null;
 }
 
 /** The step currently in play, or null when the chapter is finished. */
