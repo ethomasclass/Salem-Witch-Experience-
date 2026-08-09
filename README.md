@@ -68,6 +68,12 @@ September 1692, and back to the memorial.
   not only to what you know.
 - **A notebook** recording everything learned and who it came from, exportable
   as plain text for an assignment.
+- **An ending that reads your own path back to you** before it asks its
+  question — who you met alive, whether you told Rebecca Nurse the date and
+  what she said, whether a twelve-year-old looked at you in September, and
+  which of your sources you believed when they disagreed. Built entirely
+  from what you did. It never scores, never says what you missed, and never
+  says whether you were right.
 - **Three interpretive panels** at the memorial giving the baseline a student
   needs — what happened, how the court worked, and the four things historians
   still argue about. The last one is the only place the game asks its question

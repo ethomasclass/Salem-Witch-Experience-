@@ -29,6 +29,7 @@ const ORDER = [
   'src/engine/audio.js',
   'src/content/portraits.js',
   'src/content/disputes.js',
+  'src/content/reckoning.js',
   'src/content/documents.js',
   'src/content/knowledge.js',
   'src/content/objectives.js',

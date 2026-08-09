@@ -308,7 +308,16 @@ Same map as the opening. You now know every name on the wall.
    1706 confession, Sewall's 1697 apology, and the 2022 act.
 3. *Optional:* Nora is still there.
 
-When those are done **the closing screen opens by itself**: *What caused it?*
+When those are done **the ending starts by itself.**
+
+First the game reads the player's own path back to them — who they met while
+she was alive, whether they warned Rebecca Nurse and what she said to that,
+whether Ann Putnam looked at them in September, which sources they believed
+where the accounts conflicted, how many papers they copied. It is assembled
+from what that student actually did, so no two are quite the same, and it
+**never mentions anything they missed.**
+
+Then: *What caused it?*
 
 Type an answer. **Enter** to finish. Nothing is scored and the game does not
 respond to the content.

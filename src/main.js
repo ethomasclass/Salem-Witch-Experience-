@@ -26,6 +26,7 @@ import { CLUES, benchScript } from './content/clues.js';
 import { notebookEntries, sourceName, shortSourceName, KNOWLEDGE } from './content/knowledge.js';
 import { PORTRAIT_ART } from './content/portraits.js';
 import { DISPUTES, activeDisputes, disputeCompletedBy, sideSourceOf } from './content/disputes.js';
+import { reckoningScript } from './content/reckoning.js';
 
 // Which chapters wear the hardened faces. March is the only time the player
 // meets these people before anything has happened to them.
@@ -925,7 +926,25 @@ class Game {
     }
   }
 
+  /**
+   * The closing question — but not before the game has said something back.
+   *
+   * The reckoning plays once, is built entirely out of what this player
+   * actually did, and hands over to the text box on its last line. Flagged
+   * rather than held in memory so a student who closes the tab mid-ending
+   * does not sit through it twice.
+   */
   openAnswer() {
+    if (!this.state.knows('reck.reckoned')) {
+      this.state.learn('reck.reckoned', 'observed');
+      this.save();
+      this.mode = 'dialogue';
+      this.startScript(reckoningScript(this.state), null, () => {
+        this.mode = 'answer';
+        this.answerText = this.state.answer || '';
+      });
+      return;
+    }
     this.mode = 'answer';
     this.answerText = this.state.answer || '';
   }
@@ -934,11 +953,14 @@ class Game {
     this.state.answer = this.answerText.trim();
     this.save();
     this.mode = 'dialogue';
+    // The reckoning has already said that nothing here will tell you whether
+    // you are right, so this does not say it twice. It hands over the
+    // artifact and gets out of the way.
     this.startScript([
       { say: 'Written down.', who: null },
-      { say: 'Nothing here is going to tell you whether you are right. Historians have been arguing about this for three hundred and thirty years and they have not finished.', who: null },
-      { say: 'What you can do is show your working.', who: null },
-      { say: 'Press "Copy my notes" below. Everything you saw, everyone who told you something, every paper you copied, and what you just wrote — as plain text you can paste anywhere.', who: null },
+      { say: 'That is your answer, and it is the only one in this game that belongs to anybody. Everything else in here belonged to somebody who was dead before your country existed.', who: null },
+      { say: 'What you can do now is show your working.', who: null },
+      { say: 'Press "Copy my notes" below. Everything you saw, everyone who told you something, every paper you copied, every place your sources disagreed and what you made of it — as plain text you can paste anywhere.', who: null },
       { say: 'Twenty benches. Charter Street. Any time you like.', who: null },
     ], null, () => { this.mode = 'play'; this.dlg = null; });
   }
@@ -1039,6 +1061,7 @@ window.__MAPS = MAPS;
 window.__currentStep = currentStep;
 window.__updateCritters = updateCritters;
 window.__isSolid = isSolid;
+window.__reckoningScript = reckoningScript;
 window.__activeDisputes = activeDisputes;
 
 const pad = document.getElementById('touch');
