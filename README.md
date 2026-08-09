@@ -131,7 +131,7 @@ September 1692, and back to the memorial.
   only harmony in the game, a bare fifth. The jail gets one low note at long
   intervals. The present day gets no melody at all, which is what makes the
   first step into 1692 land. The Sound button cycles all / no music / off.
-- **March is a chain, not a checklist.** It used to be three lists — look at
+- **All three 1692 chapters are chains, not checklists.** It used to be three lists — look at
   four things, talk to six people, read four papers — and a student was told
   to walk to the Nurse farm before they had heard the name Nurse. Now every
   goal is *caused* by the one before it and says so: the firewood sends you to
@@ -144,6 +144,18 @@ September 1692, and back to the memorial.
   actually having in the winter of 1692, and walking it in order is the
   argument. Each handoff is also *spoken* by whoever caused it, so the tracker
   is confirming what a person just told you rather than issuing orders.
+
+  June follows the same rule and barely needed inventing, because it already
+  had a spine the old step list was throwing away: Rebecca Nurse has been
+  taken, so everything follows from wanting to know where she is — her husband
+  in the dooryard, the paper he has carried round the village, the road south,
+  the bars, what her keeping costs, the woman in the same cellar who confessed
+  in March and is still there, and then back up the road to the three girls
+  whose word did it. September is one conversation and its consequences: the
+  only man who will still look at you answers three questions, and the last
+  thing you do is walk into the house it started in, where a twelve-year-old
+  looks up at you. The paperwork first, in a good clear hand, and then the
+  child.
 - **A goal tracker** in the corner that asks for **one thing at a time**, with
   a progress count and the standing question underneath. A four-part goal
   names only the part still outstanding, and it takes that line from the same

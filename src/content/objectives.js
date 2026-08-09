@@ -290,21 +290,63 @@ export const STEPS_BY_CHAPTER = {
       done: (s) => s.knows('june.arrived') },
   ],
 
+  /* ------------------------------------------------------------------ *
+   * June 1692 — she is not at home
+   *
+   * The easiest of the three to give a spine, because June already has one
+   * and the old step list was throwing it away. Rebecca Nurse has been taken.
+   * Everything in the chapter follows from wanting to know where she is: her
+   * husband in the dooryard, the paper he has carried round the village, the
+   * road south, the bars, what her keeping costs, the woman in the same
+   * cellar who confessed in March and is still there — and then back up the
+   * road to the three girls whose word did it, in the order they will let you
+   * reach them.
+   * ------------------------------------------------------------------ */
   june: [
-    { id: 'nursegone', where: at('village', 7, 16, 'francis'), text: 'Rebecca Nurse is not at home. Her husband is in the dooryard, west — ask him',
+    { id: 'nursegone', where: at('village', 7, 16, 'francis'),
+      text: 'Rebecca Nurse is not in her kitchen. There is an old man standing in the dooryard — ask him',
       done: (s) => s.knows('june.nursejailed') },
-    { id: 'town', where: at('jail', 6, 7, 'jail'), text: 'Walk south down the road. The jail is on the left, before the town',
+
+    { id: 'petition', where: (s) => firstMissing(s, [JUNE_DOC_WHERE[0]], byDoc),
+      text: 'He has carried a paper round this village and got thirty-nine names on it. It is on the table inside',
+      done: (s) => s.hasDoc('nursePetition') },
+
+    { id: 'town', where: at('jail', 6, 7, 'jail'),
+      text: 'She is in the jail at Salem town. South, down the road — they let people stand at the bars',
       done: (s) => s.visited.has('jail') },
-    { id: 'sit', where: at('jail', 4, 4, 'nurseJail'), text: 'Stand below the bars and talk to her through them',
+
+    { id: 'sit', where: at('jail', 4, 4, 'nurseJail'),
+      text: 'She is against the wall on the left. Stand below the bars and talk to her through them',
       done: (s) => s.hasSpokenTo('nurseJail') },
-    { id: 'tituba', where: at('jail', 9, 4, 'titubaJail'), text: 'Tituba is in the same cellar, further along the bars',
+
+    { id: 'jailbill', where: (s) => firstMissing(s, [JUNE_DOC_WHERE[3]], byDoc),
+      text: 'She is charged for every day she is here, and cannot leave until it is paid. The account is on the table by the stair',
+      done: (s) => s.hasDoc('jailBill') },
+
+    { id: 'tituba', where: at('jail', 9, 4, 'titubaJail'),
+      text: 'The minister\'s woman is in the same cellar, further along the bars. She confessed in March and she is still here',
       done: (s) => s.hasSpokenTo('titubaJail') },
-    { id: 'accusers', where: (s) => firstMissing(s, JUNE_CAST_WHERE, byNpc), text: 'Talk to the accusers: Mary Warren in the tavern, Ann Putnam indoors, Mercy Lewis in the road',
-      done: (s) => JUNE_CAST.every((id) => s.hasSpokenTo(id)),
-      count: (s) => [JUNE_CAST.filter((id) => s.hasSpokenTo(id)).length, JUNE_CAST.length] },
-    { id: 'papers', where: (s) => firstMissing(s, JUNE_DOC_WHERE, byDoc), text: 'Four papers: the Nurse house, the tavern, the meetinghouse, and the jail',
-      done: (s) => JUNE_DOCS.every((d) => s.hasDoc(d)),
-      count: (s) => [JUNE_DOCS.filter((d) => s.hasDoc(d)).length, JUNE_DOCS.length] },
+
+    { id: 'marywarren', where: at('tavern', 8, 6, 'marywarren'),
+      text: 'One of the girls tried to take it back in May. She is carrying pots at the ordinary again',
+      done: (s) => s.hasSpokenTo('marywarren') },
+
+    { id: 'warrant', where: (s) => firstMissing(s, [JUNE_DOC_WHERE[1]], byDoc),
+      text: 'They examined four people in that room before they moved it to the meetinghouse. The warrant is still on the table',
+      done: (s) => s.hasDoc('nurseWarrant') },
+
+    { id: 'annjr', where: at('putnamhouse', 3, 3, 'annjr'),
+      text: 'The child whose word started it has not been out of the house. She is twelve, and you met her in March',
+      done: (s) => s.hasSpokenTo('annjr') },
+
+    { id: 'mercy', where: at('village', 29, 23, 'mercy'),
+      text: 'The servant who sleeps in the same room is out in the road, where she always is',
+      done: (s) => s.hasSpokenTo('mercy') },
+
+    { id: 'deposition', where: (s) => firstMissing(s, [JUNE_DOC_WHERE[2]], byDoc),
+      text: 'What Ann swore was written out for the court by her father. It is in the meetinghouse with the rest',
+      done: (s) => s.hasDoc('putnamDeposition') },
+
     { id: 'leave', where: at('village', 22, 9), text: 'Walk round to the north side of the meetinghouse',
       done: (s) => s.visited.has('archive') },
   ],
@@ -320,16 +362,53 @@ export const STEPS_BY_CHAPTER = {
       done: (s) => s.knows('sept.arrived') },
   ],
 
+  /* ------------------------------------------------------------------ *
+   * September 1692 — one man will talk to you
+   *
+   * The whole chapter is one conversation and its consequences. Almost
+   * nobody in the village will look at you now; the man mending a fence
+   * answers three questions — what was done, where they are buried, whether
+   * it is over — and each answer sends you somewhere. The record is on a
+   * table in an empty meetinghouse, and the last thing you do is walk into
+   * the house belonging to the family that started it, where a
+   * twelve-year-old looks up at you.
+   *
+   * That order is the argument: the paperwork first, in a good clear hand,
+   * and then the child.
+   * ------------------------------------------------------------------ */
   september: [
-    { id: 'find', where: at('village', 27, 24, 'neighbour'), text: 'Almost nobody will talk to you now. One man is mending a fence, east',
+    { id: 'find', where: at('village', 27, 24, 'neighbour'),
+      text: 'Almost nobody will look at you now. One man is mending a fence, east of the road',
       done: (s) => s.hasSpokenTo('neighbour') },
-    { id: 'corey', where: at('village', 27, 24), text: 'Ask him about Giles Corey, and where the dead are buried',
-      done: (s) => s.knows('sept.corey') && s.knows('sept.noburial'),
-      count: (s) => [['sept.corey', 'sept.noburial'].filter((f) => s.knows(f)).length, 2] },
-    { id: 'putnam', where: at('putnamhouse', 3, 3, 'putnamhouse'), text: 'Go inside the Putnam house, south-east', done: (s) => s.knows('sept.noticed') },
-    { id: 'papers', where: (s) => firstMissing(s, SEPT_DOC_WHERE, byDoc), text: 'Three papers on the court table inside the meetinghouse',
-      done: (s) => SEPT_DOCS.every((d) => s.hasDoc(d)),
-      count: (s) => [SEPT_DOCS.filter((d) => s.hasDoc(d)).length, SEPT_DOCS.length] },
+
+    { id: 'corey', where: at('village', 27, 24, 'neighbour'),
+      text: 'Ask him what was done to Giles Corey on Monday',
+      done: (s) => s.knows('sept.corey') },
+
+    { id: 'burial', where: at('village', 27, 24, 'neighbour'),
+      text: 'Eighty-one years old, and it took two days. Ask him where the dead are buried',
+      done: (s) => s.knows('sept.noburial') },
+
+    { id: 'over', where: at('village', 27, 24, 'neighbour'),
+      text: 'No ground, no service, no stone. Ask him whether it is over',
+      done: (s) => s.knows('sept.stopped') },
+
+    { id: 'corey_paper', where: (s) => firstMissing(s, [SEPT_DOC_WHERE[0]], byDoc),
+      text: 'He says all of it is written down, in a good clear hand, on the table in the meetinghouse',
+      done: (s) => s.hasDoc('coreyRecord') },
+
+    { id: 'return_paper', where: (s) => firstMissing(s, [SEPT_DOC_WHERE[1]], byDoc),
+      text: 'The next one is a warrant, with the sheriff\'s report of what he did written on the back',
+      done: (s) => s.hasDoc('deathWarrantReturn') },
+
+    { id: 'easty_paper', where: (s) => firstMissing(s, [SEPT_DOC_WHERE[2]], byDoc),
+      text: 'The last is in a smaller hand, and not a clerk\'s. Somebody in this room kept it',
+      done: (s) => s.hasDoc('eastyPetition') },
+
+    { id: 'putnam', where: at('putnamhouse', 3, 3, 'putnamhouse'),
+      text: 'The family it started with are still in their house, south-east. Go and see for yourself',
+      done: (s) => s.knows('sept.noticed') },
+
     { id: 'leave', where: at('village', 22, 9), text: 'Walk round to the north side of the meetinghouse',
       done: (s) => s.visited.has('memorial') && s.chapter === 'reckoning' },
   ],
