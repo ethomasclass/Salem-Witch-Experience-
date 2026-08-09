@@ -94,14 +94,17 @@ September 1692, and back to the memorial.
   setting is remembered.
 - **A working farm village**: barn, hayrick, orchard, dry-laid stone walls,
   free-ranging swine, cattle, sheep, hens, and four more villagers to talk to.
-  **The livestock actually wander** — loose on a tether around where they
-  started, which lets the swine cross a boundary wall into a neighbour's
-  field, the exact grievance Rebecca Nurse describes. Villagers who are
-  working loop on the spot, and every chimney draws smoke except the
-  parsonage's, whose fire is banked low
-  — and, by September, visibly half as much livestock, a cart standing in the
-  road with nobody loading it, and hay nobody is coming back for. The
-  sheriff's inventory, told without a document.
+- **A village that moves.** The livestock wander on a loose tether around
+  where they started — loose enough to let the swine cross a boundary wall
+  into a neighbour's field, which is the exact grievance Rebecca Nurse
+  describes. Villagers who are working loop on the spot. Every chimney draws
+  woodsmoke **except the parsonage's**, whose fire is banked low: a student
+  who notices the difference has found the salary dispute without reading a
+  word about it.
+- **And a village that empties.** By September, visibly half as much
+  livestock, a cart standing in the road with nobody loading it, and hay
+  nobody is coming back for. The sheriff's inventory, told without a
+  document.
 
 ### The document collection
 
