@@ -240,16 +240,23 @@ because two documents shipped correctly defined, correctly gated, reachable
 — and invisible, standing on empty tiles.
 
 `node tools/check-chain.mjs` walks each chapter's goals **in order**, letting
-each step do only what is in the room the tracker sends the player to, and
-fails if a goal cannot be completed when the player arrives at it. It exists
+each step reach only what is within sight of where the tracker sends the
+player, and fails if a goal cannot be completed when they arrive at it. It exists
 because March became a chain and immediately grew a failure nothing was
 watching for: a step whose topic is gated on something a *later* step
 provides. The chapter is still completable — go off-script, do the later
 thing, come back — so `check-play` reports it green while the chain is
 unwalkable. The first version of this checker made the mistake it was written
-to catch: it walked the steps in order but let each pass touch the whole
-village, so the topic gated on the seating chart opened anyway. Restricting a
-pass to one room is the entire check.
+to catch, twice. First it walked the steps in order but let each pass touch
+the whole village, so a topic gated on the seating chart opened anyway.
+Narrowing that to one map was still far too coarse outdoors — Salem Village is
+forty-six tiles across, and a player sent to count the woodpile does not
+thereby examine a boundary stone twenty tiles away in the woods. That gap
+shipped a real bug: the Topsfield petition was gated on the stone, the chain
+sends the player to the Putnam house first, and a student found an empty
+table. A pass now reaches only what is within sight of the waypoint, using the
+same predicate the game uses to decide whether a character bothers giving
+directions to something.
 
 `node tools/check-directions.mjs` checks the directions characters give:
 that every line can actually fire somewhere, that nobody points at something

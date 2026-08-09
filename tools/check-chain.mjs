@@ -53,37 +53,56 @@ const report = await page.evaluate(() => {
     st.chapter = chapter;
     for (const id of Object.keys(window.__MAPS)) st.visited.add(id);
 
-    // What is in this chapter, INDEXED BY MAP.
+    // What is in this chapter, INDEXED BY MAP, with coordinates.
     //
-    // The index is the whole point. A pass that does everything in the world
-    // cannot tell a player following the tracker apart from a player doing
-    // everything, and the first version of this checker made exactly that
-    // mistake: it walked the steps in order but let each pass examine the
-    // seating chart on the other side of the village, so the topic gated on
-    // having seen the chart opened, and the unwalkable chain looked fine.
+    // A pass that does everything in the world cannot tell a player following
+    // the tracker apart from a player doing everything. The first version of
+    // this checker made exactly that mistake and let a pass touch the whole
+    // village; the second narrowed it to one map, which is still far too
+    // coarse outdoors. Salem Village is forty-six tiles by thirty-eight — a
+    // player sent to count the woodpile behind the parsonage does not thereby
+    // examine a boundary stone twenty tiles away at the top of the woods.
     //
-    // A player following instructions goes where the goal points and works
-    // with what is in that room. That is what a pass is allowed to do.
-    const cast = {}, spots = {}, docSpots = {};
+    // That gap shipped a bug a student found in a classroom: the Topsfield
+    // petition was gated on the stone, the chain sends the player to the
+    // Putnam house first, and the checker granted the stone anyway because it
+    // was "in the village". So a pass now reaches only what is within sight
+    // of where the goal points, using the same predicate the game uses to
+    // decide whether a character bothers giving directions to something.
+    const cast = {}, spots = {}, docSpots = {}, indoor = {};
     for (const id of Object.keys(window.__MAPS)) {
       const m = g.mapFor(id, chapter);
-      cast[id] = m.actors.map((a) => a.def);
+      cast[id] = m.actors.map((a) => ({ def: a.def, x: a.tx, y: a.ty }));
       spots[id] = []; docSpots[id] = [];
       const seen = new Set();
-      for (const [, spot] of m.interact) {
+      for (const [k, spot] of m.interact) {
         if (seen.has(spot)) continue;
         seen.add(spot);
-        if (spot.doc) docSpots[id].push(spot);
-        if (spot.id && window.__CLUES[spot.id]) spots[id].push(spot);
-        if (spot.bench) spots[id].push(spot);
+        const [x, y] = k.split(',').map(Number);
+        if (spot.doc) docSpots[id].push({ spot, x, y });
+        if (spot.id && window.__CLUES[spot.id]) spots[id].push({ spot, x, y });
+        if (spot.bench) spots[id].push({ spot, x, y });
       }
-      for (const [, t] of m.triggers) if (t.id && window.__CLUES[t.id]) spots[id].push(t);
-      for (const [, w] of m.warps) if (w.script && window.__CLUES[w.script]) spots[id].push({ id: w.script });
+      for (const [k, t] of m.triggers) {
+        if (!t.id || !window.__CLUES[t.id]) continue;
+        const [x, y] = k.split(',').map(Number);
+        spots[id].push({ spot: t, x, y });
+      }
+      // Arrival beats belong to the door, which the player is standing in.
+      for (const [k, w] of m.warps) {
+        if (!w.script || !window.__CLUES[w.script]) continue;
+        const [x, y] = k.split(',').map(Number);
+        spots[id].push({ spot: { id: w.script }, x, y });
+      }
+      indoor[id] = m.indoor;
     }
 
-    // Everything in one room, done by somebody standing in it.
-    const pass = (mapId) => {
-      for (const def of cast[mapId] || []) {
+    // Everything within sight of where the player was sent, done by
+    // somebody standing there.
+    const pass = (mapId, px, py) => {
+      const near = (x, y) => window.__directions.withinSight(indoor[mapId], x - px, y - py);
+      for (const { def, x, y } of cast[mapId] || []) {
+        if (!near(x, y)) continue;
         st.markSpoke(def.id);
         const got = new Set();
         teach(def.greet, got);
@@ -96,12 +115,14 @@ const report = await page.evaluate(() => {
         }
         for (const f of got) st.learn(f, def.id);
       }
-      for (const spot of spots[mapId] || []) {
+      for (const { spot, x, y } of spots[mapId] || []) {
+        if (!near(x, y)) continue;
         const got = new Set();
         teach(spot.bench ? window.__benchScript(spot.bench, st) : window.__CLUES[spot.id], got);
         for (const f of got) st.learn(f, 'observed');
       }
-      for (const spot of docSpots[mapId] || []) {
+      for (const { spot, x, y } of docSpots[mapId] || []) {
+        if (!near(x, y)) continue;
         if (spot.require && !st.knowsAll(spot.require)) continue;
         st.copyDoc(spot.doc);
       }
@@ -122,7 +143,7 @@ const report = await page.evaluate(() => {
         room = w && w.map;
         if (!room) { ok = true; break; }   // nowhere to point: not this check
         const before = st.flags.size + st.docs.size + st.talkedTo.size;
-        pass(room);
+        pass(room, w.x, w.y);
         if (step.done(st)) { ok = true; break; }
         if (st.flags.size + st.docs.size + st.talkedTo.size === before) break;
       }

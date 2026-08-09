@@ -122,7 +122,7 @@ const MARCH_DOC_WHERE = [
   { doc: 'topsfieldPetition', map: 'putnamhouse', x: 2, y: 4,
     line: 'Read the petition on the table in the Putnam house',
     via: { flag: 'paper.topsfield', map: 'putnamhouse', x: 3, y: 3,
-           line: 'Ask Ann Putnam or Rebecca Nurse about the boundary stone' } },
+           line: 'Ask Ann Putnam what her father argues about' } },
 ];
 const JUNE_CAST_WHERE = [
   { npc: 'marywarren', map: 'tavern', x: 8, y: 6,

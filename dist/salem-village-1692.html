@@ -4414,7 +4414,7 @@ const MARCH_DOC_WHERE = [
   { doc: 'topsfieldPetition', map: 'putnamhouse', x: 2, y: 4,
     line: 'Read the petition on the table in the Putnam house',
     via: { flag: 'paper.topsfield', map: 'putnamhouse', x: 3, y: 3,
-           line: 'Ask Ann Putnam or Rebecca Nurse about the boundary stone' } },
+           line: 'Ask Ann Putnam what her father argues about' } },
 ];
 const JUNE_CAST_WHERE = [
   { npc: 'marywarren', map: 'tavern', x: 8, y: 6,
@@ -8343,11 +8343,19 @@ const PUTNAMHOUSE = {
     { kind: 'dresser', x: 2, y: 1 },
   ],
   interact: [
-    // Two gates again, and for the same reason as the parsonage: Rebecca
-    // Nurse sends you here to find it, and the boundary stone in the woods
-    // is what makes a page of surveyors' language mean anything.
+    // One gate, and it used to be two.
+    //
+    // The second was the boundary stone: the idea was that a page of
+    // surveyors' language means nothing until you have stood on the line it
+    // argues about. Good idea, wrong order — once March became a chain, the
+    // ledger sends the player to the Putnams BEFORE the woods, so the goal
+    // read "read it, on their own table" and the table was empty. A student
+    // reported it from the classroom, which is the worst way to find a bug.
+    //
+    // The chain's order turns out to be the better one anyway: read the claim
+    // first, then walk north and stand on the ground it is about.
     { id: 'putnamTable', doc: 'topsfieldPetition', x: 2, y: 4, w: 2, h: 1,
-      require: ['clue.marker', 'paper.topsfield'] },
+      require: ['paper.topsfield'] },
   ],
   npcs: [{ id: 'annjr', x: 3, y: 3, dir: 'down' }],
   byChapter: {
