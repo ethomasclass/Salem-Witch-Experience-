@@ -1691,6 +1691,76 @@ export const NPCS = {
   },
 
   /** Out-of-towners. Trade is good and nobody is comfortable. */
+  /* -------------------------------------------------------------------- *
+   * The June crush
+   *
+   * In June the tavern was where they held the examinations before the room
+   * got too small for them, and Ingersoll says so — "every seat is taken and
+   * there are people standing". Three characters were standing in it. The
+   * meetinghouse, which is where the court moved TO, was empty.
+   *
+   * So: five more, in the two rooms, all of them there to watch. None has a
+   * topic tree; they say one thing and it is the same thing from five angles,
+   * which is the point. A room this full in June is what makes the same room
+   * in September, with one man wiping a clean bar, land at all.
+   * -------------------------------------------------------------------- */
+
+  crowd1: {
+    id: 'crowd1', name: 'A woman at the back',
+    spec: { flesh: FLESH.fair, hair: HAIR.grey, coat: CLOTH.saddGreen, skirt: CLOTH.undyed, coif: LINEN },
+    greet: [
+      { say: 'She has found a place against the wall where she can see and not be seen.', who: null },
+      'I will not sit. If you sit you are in it.',
+      { say: 'She does not explain what she means by in it.', who: null },
+    ],
+  },
+
+  crowd2: {
+    id: 'crowd2', name: 'A man from Topsfield',
+    spec: { flesh: FLESH.ruddy, hair: HAIR.brown, coat: CLOTH.russet, collar: LINEN, hat: '#4a423a' },
+    greet: [
+      'Topsfield. Come down this morning.',
+      { learn: 'fact.strangers' },
+      { say: 'He works out how to say the next part and says it anyway.', who: null },
+      'My family have been at law with the Putnams over a boundary line since before I was born.',
+      'And now they are naming people. And I have come five miles to stand in a room and find out whether they are going to name us.',
+    ],
+  },
+
+  crowd3: {
+    id: 'crowd3', name: 'A girl sent to watch',
+    spec: { flesh: FLESH.olive, hair: HAIR.dark, coat: CLOTH.undyed, skirt: CLOTH.saddGreen, coif: LINEN },
+    greet: [
+      { say: 'She cannot be more than fourteen and she is here on her own.', who: null },
+      'My mistress sent me. She wants to know what is said and she will not come herself.',
+      { say: 'She says the rest very quietly.', who: null },
+      'She has told me to remember it exactly. I have been trying not to.',
+    ],
+  },
+
+  crowd4: {
+    id: 'crowd4', name: 'A man writing',
+    spec: { flesh: FLESH.fair, hair: HAIR.dark, coat: CLOTH.black, collar: LINEN },
+    greet: [
+      { say: 'He has a board on his knee and paper on the board, and he does not stop.', who: null },
+      'You will want to stand further back. They will be brought through there.',
+      { say: 'He writes without looking up.', who: null },
+      'Somebody has to set it down. It is the only part of this that will last.',
+      { learn: 'june.examinations' },
+    ],
+  },
+
+  crowd5: {
+    id: 'crowd5', name: 'A man who will not go in',
+    spec: { flesh: FLESH.brown, hair: HAIR.grey, coat: CLOTH.murrey, collar: LINEN },
+    greet: [
+      { say: 'He is standing just inside the door and has not moved further in.', who: null },
+      'I knew her forty year.',
+      { say: 'He does not say which her, and does not look at you.', who: null },
+      'I have signed nothing and I have said nothing and I am standing here, and I have not worked out yet whether that is the same as agreeing to it.',
+    ],
+  },
+
   stranger: {
     id: 'stranger', name: 'A man from Andover',
     spec: { flesh: FLESH.olive, hair: HAIR.dark, coat: CLOTH.saddGreen, collar: LINEN, hat: '#3f3b36' },

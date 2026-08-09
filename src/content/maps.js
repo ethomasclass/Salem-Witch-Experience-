@@ -471,6 +471,12 @@ export const MEETINGHOUSE = {
   byChapter: {
     june: {
       name: 'The meetinghouse · the court sits here',
+      npcs: [
+        { id: 'crowd4', x: 9, y: 4, dir: 'left' },
+        { id: 'crowd5', x: 5, y: 8, dir: 'up' },
+        { id: 'stranger', x: 3, y: 4, dir: 'right' },
+        { id: 'stranger2', x: 7, y: 6, dir: 'up' },
+      ],
       addProps: [{ kind: 'table', x: 5, y: 3 }, { kind: 'paper', x: 5, y: 3 }],
       addInteract: [
         { id: 'courtTable', doc: 'putnamDeposition', x: 5, y: 3, w: 2, h: 1,
@@ -537,6 +543,10 @@ export const TAVERN = {
         { id: 'ingersoll', x: 6, y: 4, dir: 'left' },
         { id: 'marywarren', x: 8, y: 6, dir: 'left' },
         { id: 'stranger3', x: 3, y: 2, dir: 'down' },
+        // "Every seat is taken and there are people standing." Now there are.
+        { id: 'crowd2', x: 7, y: 2, dir: 'down' },
+        { id: 'crowd1', x: 9, y: 3, dir: 'left' },
+        { id: 'crowd3', x: 2, y: 5, dir: 'right' },
       ],
     },
     september: { npcs: [{ id: 'ingersoll', x: 6, y: 4, dir: 'left' }] },
@@ -708,6 +718,20 @@ export const MEMORIAL = {
   props: [
     ...memorialWall(),
     ...BENCH_SLOTS.map((b) => ({ kind: 'membench', x: b.x, y: b.y })),
+
+    // A stone left on the edge of every bench belonging to somebody the
+    // player actually met or read about — hidden until then, and hidden
+    // entirely on the first visit, when none of these names mean anything.
+    //
+    // Real practice, and a real one at this memorial: visitors leave stones,
+    // the grounds staff clear them, and they come back. It says "somebody was
+    // here and knew who this was" and nothing else, which is precisely what
+    // the player has done and precisely as much as the game should claim.
+    //
+    // Visible from across the enclosure, so a student who never examined a
+    // single bench can still see, on the last screen, that some of the twenty
+    // changed and most did not.
+    ...BENCH_SLOTS.map((b, i) => ({ kind: 'memstone', x: b.x, y: b.y, bench: EXECUTED[i].name })),
 
     { kind: 'locust', x: 9, y: 9 },
     { kind: 'locust', x: 16, y: 15 },

@@ -51,7 +51,8 @@ const BENCH_MEMORY = {
   'GILES COREY': [
     { when: (s) => s.hasDoc('coreyRecord'), say:
       'Two days under the stones, so that the farm would go to his sons-in-law instead of to the sheriff. He worked out what it would cost him.' },
-    { when: () => true, say: 'It is the only one that does not say HANGED.' },
+    // True for everybody, so it earns no stone — see `benchRemembered`.
+    { always: true, when: () => true, say: 'It is the only one that does not say HANGED.' },
   ],
   'MARY EASTEY': [
     { when: (s) => s.hasDoc('eastyPetition'), say:
@@ -82,6 +83,21 @@ const BENCH_MEMORY = {
       'His name is at the top of Ingersoll\'s account book, owing one pound four. To the Putnams.' },
   ],
 };
+
+/**
+ * Does this bench have anything to say to this player?
+ *
+ * Asked by the map so the memorial can show it. A student who does not
+ * examine all twenty benches never discovers that some of them changed, and
+ * "some of them changed" is the entire last screen of the game.
+ */
+export function benchRemembered(name, state) {
+  // `always` entries are observations anyone can make by standing there —
+  // Giles Corey's stone is the only one that does not say HANGED whether the
+  // player did anything or not. A stone has to mean the player brought
+  // something to this bench, or it means nothing.
+  return !!(state && (BENCH_MEMORY[name] || []).some((m) => !m.always && m.when(state)));
+}
 
 /** A bench inscription. Twenty of these, and they are all the same shape —
  *  which is the memorial's actual design argument: no ranking, no

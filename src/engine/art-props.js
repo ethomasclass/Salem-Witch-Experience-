@@ -1097,6 +1097,32 @@ export function buildDresser() {
 }
 
 /** Straw on a stone floor. */
+/**
+ * A small pale stone, left on the edge of a bench.
+ *
+ * Leaving a stone on a grave is a real practice and a real one at this
+ * memorial — visitors do it, and the stones are cleared and reappear. It is
+ * the right object because it says "somebody was here and knew who this was"
+ * without saying anything else, which is exactly what the player has done.
+ *
+ * Deliberately tiny. Twenty benches with a bright marker on them would read
+ * as collectibles; a few pebbles read as a place people visit.
+ */
+export function buildMemStone() {
+  const s = surface(TS, TS);
+  const g = s.g;
+  // Sits on the near edge of the slab, right of centre so a row of them
+  // along the wall does not look stamped on.
+  rect(g, 6, 7, 3, 1, '#d8d2c4');
+  rect(g, 5, 8, 5, 1, '#c6bfb0');
+  rect(g, 5, 9, 5, 1, '#a9a294');
+  rect(g, 6, 10, 3, 1, '#8b8578');
+  // A second, smaller one, because people leave more than one.
+  rect(g, 11, 9, 3, 1, '#c6bfb0');
+  rect(g, 11, 10, 3, 1, '#9a9486');
+  return s;
+}
+
 export function buildStraw() {
   const s = surface(TS, TS);
   const g = s.g;

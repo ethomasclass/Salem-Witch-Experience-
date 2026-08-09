@@ -1814,6 +1814,31 @@ function buildDresser() {
 }
 
 /** Straw on a stone floor. */
+/**
+ * A small pale stone, left on the edge of a bench.
+ *
+ * Leaving a stone on a grave is a real practice and a real one at this
+ * memorial — visitors do it, and the stones are cleared and reappear. It is
+ * the right object because it says "somebody was here and knew who this was"
+ * without saying anything else, which is exactly what the player has done.
+ *
+ * Deliberately tiny. Twenty benches with a bright marker on them would read
+ * as collectibles; a few pebbles read as a place people visit.
+ */
+function buildMemStone() {
+  const s = surface(TS, TS);
+  const g = s.g;
+  // Sits on the near edge of the slab, right of centre so a row of them
+  // along the wall does not look stamped on.
+  rect(g, 6, 7, 3, 1, '#d8d2c4');
+  rect(g, 5, 8, 5, 1, '#c6bfb0');
+  rect(g, 5, 9, 5, 1, '#a9a294');
+  rect(g, 6, 10, 3, 1, '#8b8578');
+  // A second, smaller one, because people leave more than one.
+  rect(g, 11, 9, 3, 1, '#c6bfb0');
+  rect(g, 11, 10, 3, 1, '#9a9486');
+  return s;
+}
 function buildStraw() {
   const s = surface(TS, TS);
   const g = s.g;
@@ -5214,7 +5239,8 @@ const BENCH_MEMORY = {
   'GILES COREY': [
     { when: (s) => s.hasDoc('coreyRecord'), say:
       'Two days under the stones, so that the farm would go to his sons-in-law instead of to the sheriff. He worked out what it would cost him.' },
-    { when: () => true, say: 'It is the only one that does not say HANGED.' },
+    // True for everybody, so it earns no stone — see `benchRemembered`.
+    { always: true, when: () => true, say: 'It is the only one that does not say HANGED.' },
   ],
   'MARY EASTEY': [
     { when: (s) => s.hasDoc('eastyPetition'), say:
@@ -5245,6 +5271,21 @@ const BENCH_MEMORY = {
       'His name is at the top of Ingersoll\'s account book, owing one pound four. To the Putnams.' },
   ],
 };
+
+/**
+ * Does this bench have anything to say to this player?
+ *
+ * Asked by the map so the memorial can show it. A student who does not
+ * examine all twenty benches never discovers that some of them changed, and
+ * "some of them changed" is the entire last screen of the game.
+ */
+function benchRemembered(name, state) {
+  // `always` entries are observations anyone can make by standing there —
+  // Giles Corey's stone is the only one that does not say HANGED whether the
+  // player did anything or not. A stone has to mean the player brought
+  // something to this bench, or it means nothing.
+  return !!(state && (BENCH_MEMORY[name] || []).some((m) => !m.always && m.when(state)));
+}
 
 /** A bench inscription. Twenty of these, and they are all the same shape —
  *  which is the memorial's actual design argument: no ranking, no
@@ -7394,6 +7435,76 @@ const NPCS = {
   },
 
   /** Out-of-towners. Trade is good and nobody is comfortable. */
+  /* -------------------------------------------------------------------- *
+   * The June crush
+   *
+   * In June the tavern was where they held the examinations before the room
+   * got too small for them, and Ingersoll says so — "every seat is taken and
+   * there are people standing". Three characters were standing in it. The
+   * meetinghouse, which is where the court moved TO, was empty.
+   *
+   * So: five more, in the two rooms, all of them there to watch. None has a
+   * topic tree; they say one thing and it is the same thing from five angles,
+   * which is the point. A room this full in June is what makes the same room
+   * in September, with one man wiping a clean bar, land at all.
+   * -------------------------------------------------------------------- */
+
+  crowd1: {
+    id: 'crowd1', name: 'A woman at the back',
+    spec: { flesh: FLESH.fair, hair: HAIR.grey, coat: CLOTH.saddGreen, skirt: CLOTH.undyed, coif: LINEN },
+    greet: [
+      { say: 'She has found a place against the wall where she can see and not be seen.', who: null },
+      'I will not sit. If you sit you are in it.',
+      { say: 'She does not explain what she means by in it.', who: null },
+    ],
+  },
+
+  crowd2: {
+    id: 'crowd2', name: 'A man from Topsfield',
+    spec: { flesh: FLESH.ruddy, hair: HAIR.brown, coat: CLOTH.russet, collar: LINEN, hat: '#4a423a' },
+    greet: [
+      'Topsfield. Come down this morning.',
+      { learn: 'fact.strangers' },
+      { say: 'He works out how to say the next part and says it anyway.', who: null },
+      'My family have been at law with the Putnams over a boundary line since before I was born.',
+      'And now they are naming people. And I have come five miles to stand in a room and find out whether they are going to name us.',
+    ],
+  },
+
+  crowd3: {
+    id: 'crowd3', name: 'A girl sent to watch',
+    spec: { flesh: FLESH.olive, hair: HAIR.dark, coat: CLOTH.undyed, skirt: CLOTH.saddGreen, coif: LINEN },
+    greet: [
+      { say: 'She cannot be more than fourteen and she is here on her own.', who: null },
+      'My mistress sent me. She wants to know what is said and she will not come herself.',
+      { say: 'She says the rest very quietly.', who: null },
+      'She has told me to remember it exactly. I have been trying not to.',
+    ],
+  },
+
+  crowd4: {
+    id: 'crowd4', name: 'A man writing',
+    spec: { flesh: FLESH.fair, hair: HAIR.dark, coat: CLOTH.black, collar: LINEN },
+    greet: [
+      { say: 'He has a board on his knee and paper on the board, and he does not stop.', who: null },
+      'You will want to stand further back. They will be brought through there.',
+      { say: 'He writes without looking up.', who: null },
+      'Somebody has to set it down. It is the only part of this that will last.',
+      { learn: 'june.examinations' },
+    ],
+  },
+
+  crowd5: {
+    id: 'crowd5', name: 'A man who will not go in',
+    spec: { flesh: FLESH.brown, hair: HAIR.grey, coat: CLOTH.murrey, collar: LINEN },
+    greet: [
+      { say: 'He is standing just inside the door and has not moved further in.', who: null },
+      'I knew her forty year.',
+      { say: 'He does not say which her, and does not look at you.', who: null },
+      'I have signed nothing and I have said nothing and I am standing here, and I have not worked out yet whether that is the same as agreeing to it.',
+    ],
+  },
+
   stranger: {
     id: 'stranger', name: 'A man from Andover',
     spec: { flesh: FLESH.olive, hair: HAIR.dark, coat: CLOTH.saddGreen, collar: LINEN, hat: '#3f3b36' },
@@ -8304,6 +8415,12 @@ const MEETINGHOUSE = {
   byChapter: {
     june: {
       name: 'The meetinghouse · the court sits here',
+      npcs: [
+        { id: 'crowd4', x: 9, y: 4, dir: 'left' },
+        { id: 'crowd5', x: 5, y: 8, dir: 'up' },
+        { id: 'stranger', x: 3, y: 4, dir: 'right' },
+        { id: 'stranger2', x: 7, y: 6, dir: 'up' },
+      ],
       addProps: [{ kind: 'table', x: 5, y: 3 }, { kind: 'paper', x: 5, y: 3 }],
       addInteract: [
         { id: 'courtTable', doc: 'putnamDeposition', x: 5, y: 3, w: 2, h: 1,
@@ -8369,6 +8486,10 @@ const TAVERN = {
         { id: 'ingersoll', x: 6, y: 4, dir: 'left' },
         { id: 'marywarren', x: 8, y: 6, dir: 'left' },
         { id: 'stranger3', x: 3, y: 2, dir: 'down' },
+        // "Every seat is taken and there are people standing." Now there are.
+        { id: 'crowd2', x: 7, y: 2, dir: 'down' },
+        { id: 'crowd1', x: 9, y: 3, dir: 'left' },
+        { id: 'crowd3', x: 2, y: 5, dir: 'right' },
       ],
     },
     september: { npcs: [{ id: 'ingersoll', x: 6, y: 4, dir: 'left' }] },
@@ -8537,6 +8658,20 @@ const MEMORIAL = {
   props: [
     ...memorialWall(),
     ...BENCH_SLOTS.map((b) => ({ kind: 'membench', x: b.x, y: b.y })),
+
+    // A stone left on the edge of every bench belonging to somebody the
+    // player actually met or read about — hidden until then, and hidden
+    // entirely on the first visit, when none of these names mean anything.
+    //
+    // Real practice, and a real one at this memorial: visitors leave stones,
+    // the grounds staff clear them, and they come back. It says "somebody was
+    // here and knew who this was" and nothing else, which is precisely what
+    // the player has done and precisely as much as the game should claim.
+    //
+    // Visible from across the enclosure, so a student who never examined a
+    // single bench can still see, on the last screen, that some of the twenty
+    // changed and most did not.
+    ...BENCH_SLOTS.map((b, i) => ({ kind: 'memstone', x: b.x, y: b.y, bench: EXECUTED[i].name })),
 
     { kind: 'locust', x: 9, y: 9 },
     { kind: 'locust', x: 16, y: 15 },
@@ -8853,6 +8988,7 @@ const PROPS = {
 
   // Present day.
   membench:     { w: 2, h: 1, build: () => buildMemBench() },
+  memstone:     { w: 1, h: 1, build: () => buildMemStone(), passable: true },
   lowwall:      { w: 1, h: 1, build: () => buildLowWall() },
   locust:       { w: 3, h: 4, build: () => buildLocust(), solidRows: 1 },
   signboard:    { w: 2, h: 2, build: () => buildSignboard(), solidRows: 1 },
@@ -9318,7 +9454,43 @@ function renderMap(g, map, cam, actors, clock = 0) {
     g.fillRect(0, 0, VIEW_W, VIEW_H);
     g.restore();
   }
+
+  // --- the light of the season ------------------------------------------
+  //
+  // The same village is walked three times, and the whole emotional argument
+  // of the game is that it is not the same village by the end. Props do part
+  // of that — livestock thin out, a cart stands unloaded — and the sound does
+  // part of it, with the wind losing its crows. Light was the missing third,
+  // and it is the one a student registers before they have read anything.
+  //
+  // First week of March: cold that is in the ground and comes up. High washed
+  // midday for June, when the examinations were drawing crowds from three
+  // towns. And for late September, the low gold of a year ending, which is
+  // the most beautiful the village ever looks and is meant to be, because by
+  // then a fifth of its households are gone.
+  //
+  // soft-light rather than a flat overlay: it shifts the hue of what is
+  // already there instead of fogging it, so the pixel art keeps its contrast.
+  const season = SEASON_LIGHT[map.chapter];
+  if (season && map.era !== 'present') {
+    g.save();
+    g.globalCompositeOperation = 'soft-light';
+    // Indoors the sky only reaches the room through two small windows, so
+    // the same wash at full strength would be a lie.
+    g.globalAlpha = map.indoor ? 0.45 : 1;
+    g.fillStyle = season;
+    g.fillRect(0, 0, VIEW_W, VIEW_H);
+    g.restore();
+  }
 }
+
+const SEASON_LIGHT = {
+  march:     'rgba(150, 178, 222, 0.30)',
+  dig:       null,
+  june:      'rgba(255, 246, 206, 0.22)',
+  archive:   null,
+  september: 'rgba(255, 186, 112, 0.32)',
+};
 
 /* ===== src/engine/ui.js ===== */
 // UI: dialogue box, choice menu, notebook, title.
@@ -10766,6 +10938,27 @@ const REVEAL_CPS = 55;       // typewriter speed
  *
  * `hold` is seconds. Slow enough to read twice.
  */
+/**
+ * The two time skips inside 1692.
+ *
+ * Deliberately not one per chapter. The arrival in March and the return to
+ * the memorial are both discoveries, and the writing gets there a sentence at
+ * a time; a card would answer the question before it was asked. These two are
+ * different — the player has been away and needs to feel it — and the second
+ * line is the only place the game states the nineteenth of July, which is the
+ * day Rebecca Nurse was hanged and the day the player is not there for.
+ */
+const CHAPTER_CARDS = {
+  toJune: [
+    { text: 'JUNE 1692', hold: 3.4, big: true },
+    { text: 'Three months later.', hold: 3.0 },
+  ],
+  toSeptember: [
+    { text: 'SEPTEMBER 1692', hold: 3.4, big: true },
+    { text: 'Ten weeks after the nineteenth of July.', hold: 3.4 },
+  ],
+};
+
 const INTRO_CARDS = [
   { text: 'In 1692, in a farming village of about five hundred people, twenty-five people died.', hold: 6.5 },
   { text: 'Nineteen were hanged. One was pressed to death under stones. At least five died in jail, including an infant.', hold: 7.5 },
@@ -10981,16 +11174,32 @@ class Game {
    */
   startIntro(fresh) {
     if (!fresh) { this.begin(false); return; }
-    this.introCards = INTRO_CARDS;
+    this.playCards(INTRO_CARDS, () => this.begin(true));
+  }
+
+  /**
+   * Hold one or more cards in silence, then do something.
+   *
+   * The cold open proved this works, so the chapter transitions borrow it.
+   * A card is not a substitute for the arrival prose — those beats are some
+   * of the best writing in the game and they stay — it is the beat of silence
+   * before them, which is what makes three months of absence feel like three
+   * months rather than a loading screen.
+   */
+  playCards(cards, onDone) {
+    this.introCards = cards;
     this.introIndex = 0;
     this.introT = 0;
+    this.introDone = onDone;
     this.mode = 'intro';
     this.audio.unlock();
   }
 
   endIntro() {
-    this.mode = 'title';          // begin() will move us on; never leave it here
-    this.begin(true);
+    const done = this.introDone;
+    this.introDone = null;
+    this.mode = 'play';
+    if (done) done();
   }
 
   begin(fresh) {
@@ -11386,9 +11595,16 @@ class Game {
    */
   syncPapers(map) {
     for (const p of map.props) {
-      if (!p.docId) continue;
-      p.hidden = !this.state.knowsAll(p.gate);
-      p.live = !p.hidden && !this.state.hasDoc(p.docId);
+      if (p.docId) {
+        p.hidden = !this.state.knowsAll(p.gate);
+        p.live = !p.hidden && !this.state.hasDoc(p.docId);
+      } else if (p.bench) {
+        // A stone appears on a bench once its name means something to this
+        // player. Same mechanism as the papers, and for the same reason: the
+        // condition is written in one place — the bench memory table — and
+        // the world asks it rather than keeping a second copy.
+        p.hidden = !benchRemembered(p.bench, this.state);
+      }
     }
   }
 
@@ -11509,11 +11725,17 @@ class Game {
     // the game declines to explain how.
     if (w.script && CLUES[w.script] && !this.state.knows(`fired.warp.${w.script}`)) {
       this.state.learn(`fired.warp.${w.script}`, 'observed');
-      this.startScript(CLUES[w.script], null, () => {
+      const run = () => this.startScript(CLUES[w.script], null, () => {
         this.mode = 'play';
         this.dlg = null;
         this.save();
       });
+      // Only the two jumps forward WITHIN 1692 get a card. Arriving in March
+      // and coming back to the memorial are both reveals — the prose is
+      // written so the player works out where they are one sentence at a
+      // time — and a card announcing the answer first would spoil both.
+      if (CHAPTER_CARDS[w.script]) this.playCards(CHAPTER_CARDS[w.script], run);
+      else run();
     }
   }
 

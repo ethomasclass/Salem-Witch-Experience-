@@ -106,6 +106,36 @@ September 1692, and back to the memorial.
   it was done, that it took ten months, and that nobody has ever agreed on
   why. Skippable, and skipped automatically on Continue. A student who walks
   into the memorial cold reads twenty bench names as decoration.
+- **The light of the season.** Same village, three visits, three different
+  skies: the cold of the first week of March that is in the ground and comes
+  up, high washed midday for June when the examinations were drawing carts
+  from three towns, and the low gold of late September — which is the most
+  beautiful the village ever looks, and is meant to be, because by then a
+  fifth of its households are gone. Indoors it is weaker, because the sky
+  reaches those rooms through two small windows.
+- **A held card on each of the two jumps forward inside 1692** — JUNE 1692,
+  *three months later*; SEPTEMBER 1692, *ten weeks after the nineteenth of
+  July*. Deliberately not one per chapter: arriving in March and returning to
+  the memorial are discoveries the prose gets to a sentence at a time, and a
+  card would answer the question before it was asked.
+- **A room that is actually full.** Ingersoll says every seat is taken and
+  there are people standing; now there are. Five more people in the June
+  tavern and meetinghouse, each with one thing to say about being there to
+  watch — a woman who will not sit down because "if you sit you are in it", a
+  man from Topsfield whose family have been at law with the Putnams since
+  before he was born, a girl of fourteen sent by her mistress to remember it
+  exactly and trying not to, a man setting it down because somebody has to,
+  and a man just inside the door who knew her forty years and has not worked
+  out whether standing there is the same as agreeing to it. It is also what
+  makes September's empty tavern land.
+- **Stones on the benches you earned.** At the memorial, a small stone appears
+  on the edge of every bench belonging to somebody the player actually met or
+  read about. Leaving a stone is a real practice and a real one at this
+  memorial. It says "somebody was here and knew who this was" and nothing
+  else, which is exactly what the player has done and exactly as much as the
+  game should claim. Visible from across the enclosure, so a student who never
+  examined a single bench can still see that some of the twenty changed and
+  most did not.
 - **A title screen that is a picture of the place**, not a gradient — the
   memorial itself, drifting slowly, with Nora already sitting on the wall.
 - **Four cases, and the student does the sorting.** A fourth notebook tab

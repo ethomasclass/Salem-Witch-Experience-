@@ -25,7 +25,7 @@ import { DIRECTIONS, pointerFor, withinSight } from './content/directions.js';
 import { DOCUMENTS, DOC_COUNT, FIDELITY_LABEL } from './content/documents.js';
 import { MAPS } from './content/maps.js';
 import { NPCS } from './content/npcs.js';
-import { CLUES, benchScript } from './content/clues.js';
+import { CLUES, benchScript, benchRemembered } from './content/clues.js';
 import { notebookEntries, notebookGroups, sourceName, shortSourceName, KNOWLEDGE } from './content/knowledge.js';
 import { PORTRAIT_ART } from './content/portraits.js';
 import { DISPUTES, activeDisputes, disputeCompletedBy, sideSourceOf } from './content/disputes.js';
@@ -64,6 +64,27 @@ const REVEAL_CPS = 55;       // typewriter speed
  *
  * `hold` is seconds. Slow enough to read twice.
  */
+/**
+ * The two time skips inside 1692.
+ *
+ * Deliberately not one per chapter. The arrival in March and the return to
+ * the memorial are both discoveries, and the writing gets there a sentence at
+ * a time; a card would answer the question before it was asked. These two are
+ * different — the player has been away and needs to feel it — and the second
+ * line is the only place the game states the nineteenth of July, which is the
+ * day Rebecca Nurse was hanged and the day the player is not there for.
+ */
+const CHAPTER_CARDS = {
+  toJune: [
+    { text: 'JUNE 1692', hold: 3.4, big: true },
+    { text: 'Three months later.', hold: 3.0 },
+  ],
+  toSeptember: [
+    { text: 'SEPTEMBER 1692', hold: 3.4, big: true },
+    { text: 'Ten weeks after the nineteenth of July.', hold: 3.4 },
+  ],
+};
+
 const INTRO_CARDS = [
   { text: 'In 1692, in a farming village of about five hundred people, twenty-five people died.', hold: 6.5 },
   { text: 'Nineteen were hanged. One was pressed to death under stones. At least five died in jail, including an infant.', hold: 7.5 },
@@ -279,16 +300,32 @@ class Game {
    */
   startIntro(fresh) {
     if (!fresh) { this.begin(false); return; }
-    this.introCards = INTRO_CARDS;
+    this.playCards(INTRO_CARDS, () => this.begin(true));
+  }
+
+  /**
+   * Hold one or more cards in silence, then do something.
+   *
+   * The cold open proved this works, so the chapter transitions borrow it.
+   * A card is not a substitute for the arrival prose — those beats are some
+   * of the best writing in the game and they stay — it is the beat of silence
+   * before them, which is what makes three months of absence feel like three
+   * months rather than a loading screen.
+   */
+  playCards(cards, onDone) {
+    this.introCards = cards;
     this.introIndex = 0;
     this.introT = 0;
+    this.introDone = onDone;
     this.mode = 'intro';
     this.audio.unlock();
   }
 
   endIntro() {
-    this.mode = 'title';          // begin() will move us on; never leave it here
-    this.begin(true);
+    const done = this.introDone;
+    this.introDone = null;
+    this.mode = 'play';
+    if (done) done();
   }
 
   begin(fresh) {
@@ -684,9 +721,16 @@ class Game {
    */
   syncPapers(map) {
     for (const p of map.props) {
-      if (!p.docId) continue;
-      p.hidden = !this.state.knowsAll(p.gate);
-      p.live = !p.hidden && !this.state.hasDoc(p.docId);
+      if (p.docId) {
+        p.hidden = !this.state.knowsAll(p.gate);
+        p.live = !p.hidden && !this.state.hasDoc(p.docId);
+      } else if (p.bench) {
+        // A stone appears on a bench once its name means something to this
+        // player. Same mechanism as the papers, and for the same reason: the
+        // condition is written in one place — the bench memory table — and
+        // the world asks it rather than keeping a second copy.
+        p.hidden = !benchRemembered(p.bench, this.state);
+      }
     }
   }
 
@@ -807,11 +851,17 @@ class Game {
     // the game declines to explain how.
     if (w.script && CLUES[w.script] && !this.state.knows(`fired.warp.${w.script}`)) {
       this.state.learn(`fired.warp.${w.script}`, 'observed');
-      this.startScript(CLUES[w.script], null, () => {
+      const run = () => this.startScript(CLUES[w.script], null, () => {
         this.mode = 'play';
         this.dlg = null;
         this.save();
       });
+      // Only the two jumps forward WITHIN 1692 get a card. Arriving in March
+      // and coming back to the memorial are both reveals — the prose is
+      // written so the player works out where they are one sentence at a
+      // time — and a card announcing the answer first would spoil both.
+      if (CHAPTER_CARDS[w.script]) this.playCards(CHAPTER_CARDS[w.script], run);
+      else run();
     }
   }
 

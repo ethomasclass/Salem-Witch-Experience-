@@ -17,7 +17,7 @@ import {
   buildShopfront, buildBarn, buildStoneWall, buildHayrick, buildCart,
   buildAppleTree, buildPig, buildCow, buildSheep, buildChicken,
   buildBookshelf, buildReadingLamp, buildDesk, buildBed, buildWheel, buildDresser,
-  buildBars, buildPaper, buildArchiveBox, buildStraw,
+  buildBars, buildPaper, buildArchiveBox, buildStraw, buildMemStone,
 } from './art-props.js';
 import { SPR_W, SPR_H, DIR } from './art-actors.js';
 import { P } from '../palette.js';
@@ -95,6 +95,7 @@ export const PROPS = {
 
   // Present day.
   membench:     { w: 2, h: 1, build: () => buildMemBench() },
+  memstone:     { w: 1, h: 1, build: () => buildMemStone(), passable: true },
   lowwall:      { w: 1, h: 1, build: () => buildLowWall() },
   locust:       { w: 3, h: 4, build: () => buildLocust(), solidRows: 1 },
   signboard:    { w: 2, h: 2, build: () => buildSignboard(), solidRows: 1 },
@@ -568,4 +569,40 @@ export function renderMap(g, map, cam, actors, clock = 0) {
     g.fillRect(0, 0, VIEW_W, VIEW_H);
     g.restore();
   }
+
+  // --- the light of the season ------------------------------------------
+  //
+  // The same village is walked three times, and the whole emotional argument
+  // of the game is that it is not the same village by the end. Props do part
+  // of that — livestock thin out, a cart stands unloaded — and the sound does
+  // part of it, with the wind losing its crows. Light was the missing third,
+  // and it is the one a student registers before they have read anything.
+  //
+  // First week of March: cold that is in the ground and comes up. High washed
+  // midday for June, when the examinations were drawing crowds from three
+  // towns. And for late September, the low gold of a year ending, which is
+  // the most beautiful the village ever looks and is meant to be, because by
+  // then a fifth of its households are gone.
+  //
+  // soft-light rather than a flat overlay: it shifts the hue of what is
+  // already there instead of fogging it, so the pixel art keeps its contrast.
+  const season = SEASON_LIGHT[map.chapter];
+  if (season && map.era !== 'present') {
+    g.save();
+    g.globalCompositeOperation = 'soft-light';
+    // Indoors the sky only reaches the room through two small windows, so
+    // the same wash at full strength would be a lie.
+    g.globalAlpha = map.indoor ? 0.45 : 1;
+    g.fillStyle = season;
+    g.fillRect(0, 0, VIEW_W, VIEW_H);
+    g.restore();
+  }
 }
+
+const SEASON_LIGHT = {
+  march:     'rgba(150, 178, 222, 0.30)',
+  dig:       null,
+  june:      'rgba(255, 246, 206, 0.22)',
+  archive:   null,
+  september: 'rgba(255, 186, 112, 0.32)',
+};
