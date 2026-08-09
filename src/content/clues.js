@@ -422,6 +422,7 @@ export const CLUES = {
     { say: 'The front rows are written in a heavier hand: the men who pay the most tax, and their wives, and the elders. Behind them, in smaller writing, everyone else. At the back, names with no title at all.', who: null },
     { learn: 'clue.seating', source: 'observed' },
     { say: 'Twice every Sunday, this whole village sits down in the exact order of who matters. Nobody has to be told where they stand. They can read it on the wall.', who: null },
+    { say: 'Pinned up beside it is a second sheet in a rougher hand — the committee\'s working list, with the crossings-out still on it.', who: null },
   ],
 
   pews: [
@@ -465,5 +466,75 @@ export const CLUES = {
     { learn: 'clue.road', source: 'observed' },
     { say: 'This is Salem Town. It is five miles from the meetinghouse you started at, and it is a different world, and everyone in the village walks this road.', who: null },
     { say: 'They walk it to pay their taxes, argue their land claims, and answer to the court. Then they walk back.', who: null },
+  ],
+
+  /* -------------------------------------------------------------------- *
+   * Standing over a document
+   *
+   * Every paper in the game is now approached through one of these. The
+   * player presses Z once: they get the thing in the room first — the
+   * table, the hand it is written in, who is standing near it — and then
+   * the reader opens on the same keypress.
+   *
+   * This exists because the alternative shipped, and it was two objects.
+   * You examined the seating chart, got the whole beat about who sits
+   * where, saw no document, and walked out. The account book was worse:
+   * the book on the bar and a loose page out of the same ledger were three
+   * tiles apart across the room, and only the second one was the document.
+   *
+   * Rules for writing these:
+   *
+   *   - Describe the OBJECT, not the contents. The reader is about to show
+   *     the contents, in the original spelling, three seconds from now.
+   *     Saying it twice makes the document redundant on arrival.
+   *   - Two or three lines. This is a doorway, not a room.
+   *   - Say who left it there, if anybody did. That is the only part the
+   *     document itself cannot tell you, and it is the part this game is
+   *     about.
+   * -------------------------------------------------------------------- */
+
+  agreementTable: [
+    { say: 'The table by the wall, where the household eats. A folded paper has been left on it, weighted flat with a candlestick.', who: null },
+    { say: 'It is written out fair, in a clerk\'s hand, and signed at the bottom by men who are still alive and still in this village.', who: null },
+  ],
+
+  putnamTable: [
+    { say: 'The Putnams keep their papers on the table where anyone sitting down to eat can see them.', who: null },
+    { say: 'This one has been folded and unfolded until the creases have gone soft. Several different hands, and a column of names down the side.', who: null },
+  ],
+
+  nurseTable: [
+    { say: 'The table is set for a meal nobody came back for.', who: null },
+    { say: 'A sheet of paper lies at one end, with names down it in thirty-nine different hands. Some of them are steady. Some of them plainly are not used to writing.', who: null },
+  ],
+
+  warrantTable: [
+    { say: 'A single sheet, face up on the table where they served it, in the room where they examined her.', who: null },
+    { say: 'Nobody has moved it. Nobody wants to be the one who touched it.', who: null },
+  ],
+
+  courtTable: [
+    { say: 'The court has a table now, at the front, where the deacons used to stand.', who: null },
+    { say: 'The papers on it are written in a good clear hand by somebody who was paid to be accurate. That is the strange part. All of this is filed.', who: null },
+  ],
+
+  coreyPaper: [
+    { say: 'The court record for the nineteenth of September, in the clerk\'s neat hand.', who: null },
+    { say: 'It gives the day, the place, and what was done, in the same language it would use for a boundary dispute.', who: null },
+  ],
+
+  warrantPaper: [
+    { say: 'A warrant, with the sheriff\'s return written on the back of it — what he did, and when, reported to the men who told him to do it.', who: null },
+    { say: 'A completed piece of paperwork. Somebody signed it off.', who: null },
+  ],
+
+  eastyPaper: [
+    { say: 'This one is in a different hand from all the rest: smaller, and not a clerk\'s.', who: null },
+    { say: 'It was written by one of the condemned, and somebody in this room kept it.', who: null },
+  ],
+
+  jailTable: [
+    { say: 'A table by the stair, out of reach of the bars. The keeper does his accounts here.', who: null },
+    { say: 'Everything in this cellar costs money, and every cost is written against the name of the person it was spent on.', who: null },
   ],
 };

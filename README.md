@@ -78,8 +78,20 @@ September 1692, and back to the memorial.
   than scolding you for what you missed.
 - **Source-sensitive replies** — characters react to *who* told you something,
   not only to what you know.
-- **A notebook** recording everything learned and who it came from, exportable
-  as plain text for an assignment.
+- **A notebook filed by who told you.** Headings, closed by default, one
+  screen of them — a finished game holds about ninety entries, which as one
+  flat list was seven screens of unbroken prose. Filed by source rather than
+  by date on purpose: the axis a notebook is organised on is the thing it
+  teaches, and this one teaches that every fact in it arrived through a
+  particular person who had a particular reason to say it. The plain-text
+  export carries the same grouping, with continuous numbering.
+- **The papers as a collection**, not a bibliography: fifteen slots, all
+  fifteen always visible, each drawn from the document's own evidence type —
+  a ledger, a fair clerk's hand with one signature doing the work, thirty-nine
+  uneven hands, or something small and dense that was never meant to be read
+  by you. Empty slots show what is still out there. Selecting one **reopens
+  it** — until now a document could be read exactly once, at the table it was
+  found on.
 - **An ending that reads your own path back to you** before it asks its
   question — who you met alive, whether you told Rebecca Nurse the date and
   what she said, whether a twelve-year-old looked at you in September, and
@@ -141,10 +153,25 @@ September 1692, and back to the memorial.
 ### The document collection
 
 Fifteen real surviving documents. The player never picks one up — they are a
-student in front of a primary source, so they copy it down. Each is
-knowledge-gated like a conversation topic, so copying is the reward for the
-conversation work rather than a scavenger hunt, and several of them
+student in front of a primary source, so they copy it down. Several of them
 contradict the person who told the player about them.
+
+**A person tells you about a paper before the paper exists.** Eleven of the
+fifteen are unlocked by a named character in conversation, and until that
+conversation happens the sheet is not drawn at all — so there is no table to
+stand at hopefully, and no "not yet" message to argue with. Once somebody has
+named it, the paper is there and lit until it is read. Where a document has a
+scenery object attached — the account book, the seating chart — the object and
+the paper are one interactable: examining it plays the observation and then
+opens the reader on the same keypress.
+
+More than one person can name the same paper, and the notebook records
+whichever one the player actually heard it from. Four documents stay
+unannounced, as rewards for wandering: the sheriff's inventory in the road
+and the three papers on the memorial grass at the end.
+
+While a document is still locked, the goal in the corner names the **person**
+to ask rather than the table it will eventually be on.
 
 The reader shows original text beside a plain modern gloss, with the citation
 **and a fidelity label**: `close` follows the surviving document, and
@@ -167,6 +194,16 @@ with the real fonts and fails if any of them overflow. Run it after editing
 player can actually see, and that everything can be walked to. It exists
 because two documents shipped correctly defined, correctly gated, reachable
 — and invisible, standing on empty tiles.
+
+`node tools/check-play.mjs` plays each chapter the way the most thorough
+possible student would — take every topic whose conditions are met, examine
+everything, copy every document whose gate is open, repeat until nothing new
+lands — and asks whether the chapter's own steps come out done. It exists
+because person-gating moved the critical path off the map and into the
+dialogue trees, where nothing was checking it: a document gated on a flag
+taught only by a topic that is itself unobtainable is a chapter no class can
+finish, and every individual piece of it looks correct. Verified by deleting
+one `learn` and confirming it names the chapter and the step.
 
 `node tools/check-chapters.mjs` starts at the title screen, presses through
 the cold open, and then walks every chapter's exit tile to make sure the
@@ -196,7 +233,7 @@ estimates.
 ### For a classroom — the single file
 
 **[`dist/salem-village-1692.html`](dist/salem-village-1692.html)** is the whole
-game in one self-contained file, about 516 KB. Download it and double-click
+game in one self-contained file, about 548 KB. Download it and double-click
 it. No server, no install, no network. Email it, put it on a shared drive, or
 upload it to Canvas or Google Classroom as a file.
 

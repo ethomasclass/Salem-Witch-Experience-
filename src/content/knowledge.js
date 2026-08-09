@@ -116,6 +116,26 @@ export const KNOWLEDGE = {
   'fact.parris_deed':'Parris was given the parsonage and its land outright — a thing no previous minister here got, and a thing his opponents have not forgiven.',
   'fact.strangers':  'People are coming in from other towns to look at the afflicted girls.',
   'fact.annsr':      'Ann Putnam Sr. has buried several children. Her grief is a fact everyone in the village knows and steps around.',
+
+  // --- papers somebody pointed me at -------------------------------------
+  //
+  // These are in the notebook rather than being silent bookkeeping, because
+  // WHO told the player a document existed is the same order of fact as what
+  // the document says. A student who ends the game able to answer "how did
+  // you come to be reading that?" for every source in their notes has done
+  // the thing this game is for.
+  //
+  // Several of them can be learned from more than one person. The notebook
+  // records whichever one the player actually heard it from.
+  'paper.agreement':     'Somebody told me the village\'s written agreement with Rev. Parris is lying on the table in the parsonage.',
+  'paper.seating':       'The committee\'s working sheet for the meetinghouse seating is still pinned up beside the finished chart, crossings-out and all.',
+  'paper.accounts':      'Ingersoll turned a loose page out of his account book and left it on the bar for me to read properly.',
+  'paper.topsfield':     'The Topsfield boundary petition is on the table in the Putnam house, with Thomas Putnam\'s name on it.',
+  'paper.nursepetition': 'Francis Nurse has left the petition — thirty-nine of his neighbours\' names — on the table in his house, and wants somebody to read it.',
+  'paper.warrant':       'The warrant for Rebecca Nurse is lying on the table in the tavern where they served it.',
+  'paper.deposition':    'The deposition Ann Putnam gave the court — written out by her father — is in the meetinghouse with the rest of the papers.',
+  'paper.jailbill':      'The jail keeps a written account of what each prisoner costs. Rebecca Nurse\'s is on the table by the stair.',
+  'paper.court':         'The court\'s papers are still on the table at the front of the meetinghouse. Nobody has moved any of them.',
 };
 
 /** Display name for whoever a piece of knowledge came from. */
@@ -190,4 +210,58 @@ export function notebookEntries(state) {
   return state.knowledgeLog()
     .filter((e) => KNOWLEDGE[e.flag])
     .map((e) => ({ text: KNOWLEDGE[e.flag], source: e.source, flag: e.flag }));
+}
+
+/* ---------------------------------------------------------------------- *
+ * The notebook, filed by who told you
+ *
+ * A finished game holds about ninety entries averaging a hundred and thirty
+ * characters. As one flat scrolling list that is roughly seven screens of
+ * unbroken prose, and a student looking for one thing in it will not find
+ * it. So the notebook is headings, closed by default, one screen of them.
+ *
+ * Filed by SOURCE and not by chapter, deliberately. The axis a notebook is
+ * organised on is the thing it teaches: file by chapter and a student
+ * learns a chronology, file by source and they learn that every fact in
+ * their notes arrived through a particular person who had a particular
+ * reason to say it. That is the entire subject of this game, and it costs
+ * nothing to make the filing system carry it.
+ *
+ * The one exception is `observed`. A third of everything the player knows
+ * they saw for themselves, which would make one heading twice the size of
+ * every other and by far the least interesting to open. It is split by
+ * chapter — which is honest, because "what I saw in March" and "what I saw
+ * in September" really are different bodies of evidence.
+ * ---------------------------------------------------------------------- */
+
+const WHEN = {
+  memorial:  'at the memorial',
+  march:     'in March',
+  dig:       'at the parsonage dig',
+  june:      'in June',
+  archive:   'in the archive',
+  september: 'in September',
+  reckoning: 'at the memorial, afterwards',
+};
+
+export function notebookGroups(state) {
+  const groups = new Map();
+  for (const e of state.knowledgeLog()) {
+    if (!KNOWLEDGE[e.flag]) continue;
+    const split = e.source === 'observed';
+    const key = split ? `observed:${e.chapter}` : e.source;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        label: split
+          ? `I saw this myself, ${WHEN[e.chapter] || e.chapter}`
+          : sourceName(e.source),
+        entries: [],
+      });
+    }
+    groups.get(key).entries.push({ text: KNOWLEDGE[e.flag], flag: e.flag, source: e.source });
+  }
+  // Insertion order is the order the player met each source, which is the
+  // order they will look for them in.
+  return [...groups.values()];
 }

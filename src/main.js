@@ -13,8 +13,8 @@ import { TS } from './engine/art-ground.js';
 import { buildActor, buildPortrait, PLAYER_SPEC, SPR_H } from './engine/art-actors.js';
 import {
   dialogueLayout, drawDialogue, drawChoices, drawNotebook, drawTitle, drawToast,
-  drawObjective, drawReader, drawDocTab, drawNotebookTabs, drawAnswer, drawPrompt, drawWayfinder,
-  drawDisputeTab, drawIntro,
+  drawObjective, drawReader, drawNotebookTabs, drawAnswer, drawPrompt, drawWayfinder,
+  drawDisputeTab, drawIntro, drawGroupedNotebook, drawDocGrid,
   wrapText,
 } from './engine/ui.js';
 import { Audio } from './engine/audio.js';
@@ -25,7 +25,7 @@ import { DOCUMENTS, DOC_COUNT, FIDELITY_LABEL } from './content/documents.js';
 import { MAPS } from './content/maps.js';
 import { NPCS } from './content/npcs.js';
 import { CLUES, benchScript } from './content/clues.js';
-import { notebookEntries, sourceName, shortSourceName, KNOWLEDGE } from './content/knowledge.js';
+import { notebookEntries, notebookGroups, sourceName, shortSourceName, KNOWLEDGE } from './content/knowledge.js';
 import { PORTRAIT_ART } from './content/portraits.js';
 import { DISPUTES, activeDisputes, disputeCompletedBy, sideSourceOf } from './content/disputes.js';
 import { reckoningScript } from './content/reckoning.js';
@@ -98,6 +98,10 @@ class Game {
     this.notebookScroll = 0;
     this.docScroll = 0;
     this.notebookTab = 0;
+    this.noteSel = 0;           // cursor in the grouped notebook
+    this.noteOpen = new Set();  // which people's headings are expanded
+    this.docSel = 0;            // cursor in the document collection
+    this.readerFrom = 'world';  // where the reader was opened from
     this.convNpc = null;
     this.objFlash = 0;
     this.moveHeld = 0;          // seconds of unbroken walking, for auto-run
@@ -504,8 +508,12 @@ class Game {
     if (!spot) return null;
     if (spot.doc) {
       // Never promise "read" on a locked document. Saying "read" and then
-      // doing nothing is indistinguishable from the game being broken.
-      if (spot.require && !this.state.knowsAll(spot.require)) return 'look';
+      // doing nothing is indistinguishable from the game being broken. A
+      // gated spot is still worth examining — it is a bar, a table, a court
+      // bench — it just has no paper on it yet.
+      if (spot.require && !this.state.knowsAll(spot.require)) {
+        return CLUES[spot.id] ? 'look' : null;
+      }
       return this.state.hasDoc(spot.doc) ? 'read again' : 'read';
     }
     if (spot.bench || CLUES[spot.id]) return 'look';
@@ -537,13 +545,40 @@ class Game {
     const spot = interactAt(map, fx, fy);
     if (!spot) return;
 
-    // A document. Knowledge-gated exactly like a conversation topic: you
-    // cannot read Parris's contract until you have counted his woodpile.
+    // A document.
+    //
+    // One object, one keypress. The seating chart and the working sheet
+    // pinned up beside it used to be two interactables a tile apart: you
+    // examined the chart, got the good beat about who sits where, saw no
+    // document, and walked out. The account book was worse — the book on
+    // the bar and the loose page from the same book were three tiles apart
+    // across the room.
+    //
+    // So a document spot may also carry an `id`. Examining it plays that
+    // observation once — the thing itself, in the room, before any
+    // transcription — and then the reader opens on the same keypress.
     if (spot.doc) {
-      if (spot.require && !this.state.knowsAll(spot.require)) {
-        this.startScript([{ say: spot.locked || 'Not yet.', who: null }], null, () => {
+      const locked = spot.require && !this.state.knowsAll(spot.require);
+      const intro = CLUES[spot.id];
+      const fired = spot.id && this.state.knows(`fired.look.${spot.id}`);
+
+      // Locked: the furniture is still there and still worth looking at.
+      // What is missing is the paper, and it is missing rather than refused.
+      if (locked) {
+        if (!intro) return;
+        this.state.learn(`fired.look.${spot.id}`, 'observed');
+        const before = this.state.flags.size;
+        this.startScript(intro, null, () => {
           this.mode = 'play'; this.dlg = null;
+          if (this.state.flags.size > before) this.showToast('Noted in your notebook');
+          this.save();
         });
+        return;
+      }
+
+      if (intro && !fired) {
+        this.state.learn(`fired.look.${spot.id}`, 'observed');
+        this.startScript(intro, null, () => { this.openReader(spot.doc); });
         return;
       }
       this.openReader(spot.doc);
@@ -563,12 +598,28 @@ class Game {
     });
   }
 
+  /**
+   * Which papers exist, and which of them are asking to be picked up.
+   *
+   * Both come from one place — the gate written on the document's
+   * interactable, which `buildMap` copies onto the sprite — so a paper is
+   * drawn exactly when it is readable, and never the other way round.
+   */
+  syncPapers(map) {
+    for (const p of map.props) {
+      if (!p.docId) continue;
+      p.hidden = !this.state.knowsAll(p.gate);
+      p.live = !p.hidden && !this.state.hasDoc(p.docId);
+    }
+  }
+
   showToast(text) { this.toast = { text, t: 2.6 }; this.audio.noted(); }
 
   openReader(id) {
     const doc = DOCUMENTS[id];
-    if (!doc) return;
+    if (!doc) { this.mode = 'play'; this.dlg = null; return; }
     this.reader = doc;
+    this.dlg = null;          // may be arriving straight out of a look script
     this.docScroll = 0;
     this.mode = 'reader';
     // Opening it IS copying it. The second keypress was never discoverable,
@@ -699,6 +750,7 @@ class Game {
     if (inWorld) {
       const here = this.mapFor(this.player.map);
       updateCritters(here, dt, this.clock);
+      this.syncPapers(here);
 
       // Villagers who are doing a job loop two frames on the spot. Actors
       // already carry three frames per direction and nothing had ever
@@ -748,11 +800,17 @@ class Game {
     }
 
     if (this.mode === 'reader') {
-      if (inp.justPressed('cancel') || inp.justPressed('notebook')) {
-        this.mode = 'play'; this.reader = null; return;
-      }
+      // Closing goes back where it was opened from. A student who reopens
+      // the Topsfield petition from the collection to check a date should
+      // land back in the collection, not in a room three chapters away.
+      const back = () => {
+        this.mode = this.readerFrom === 'notebook' ? 'notebook' : 'play';
+        this.reader = null;
+        this.readerFrom = 'world';
+      };
+      if (inp.justPressed('cancel') || inp.justPressed('notebook')) { back(); return; }
       // Z and X both close it now that opening does the copying.
-      if (inp.justPressed('confirm')) { this.mode = 'play'; this.reader = null; return; }
+      if (inp.justPressed('confirm')) { back(); return; }
       if (inp.isDown('down')) this.docScroll += 320 * dt;
       if (inp.isDown('up')) this.docScroll -= 320 * dt;
       this.docScroll = Math.max(0, Math.min(this.docScroll, this.docMax || 0));
@@ -772,6 +830,57 @@ class Game {
         this.notebookTab = (this.notebookTab + 1) % 3;
         this.notebookScroll = 0;
         this.audio.menuMove();
+      }
+
+      // Tab 0: headings. Up and down move between people, Z opens the one
+      // you are on. Nothing scrolls freely any more — a student looking for
+      // what Rebecca Nurse said should be able to find it by name.
+      if (this.notebookTab === 0) {
+        const groups = notebookGroups(this.state);
+        if (groups.length) {
+          this.noteSel = Math.min(this.noteSel, groups.length - 1);
+          if (inp.justPressed('down')) { this.noteSel = Math.min(groups.length - 1, this.noteSel + 1); this.audio.menuMove(); }
+          if (inp.justPressed('up')) { this.noteSel = Math.max(0, this.noteSel - 1); this.audio.menuMove(); }
+          if (inp.justPressed('confirm')) {
+            const k = groups[this.noteSel].key;
+            if (this.noteOpen.has(k)) this.noteOpen.delete(k); else this.noteOpen.add(k);
+            this.audio.menuPick();
+          }
+          // Keep the cursor on screen as the list grows under it. Only an
+          // approximation — an open heading is taller than a closed one —
+          // but it only has to stop the cursor leaving the panel.
+          const approx = this.noteSel * 20 * this.scale;
+          const window = 200 * this.scale;
+          if (approx - this.notebookScroll > window) this.notebookScroll = approx - window;
+          if (approx < this.notebookScroll) this.notebookScroll = approx;
+          this.notebookScroll = Math.max(0, Math.min(this.notebookScroll, this.notebookMax || 0));
+        }
+        return;
+      }
+
+      // Tab 1: the document grid. Arrows move through the fifteen slots, Z
+      // reopens whichever one you are on — a document used to be readable
+      // exactly once, at the table it was found on, which for a game that
+      // ends by asking what you think caused it was a real gap.
+      if (this.notebookTab === 1) {
+        // Up and down walk the whole grid in reading order, one slot at a
+        // time. Left and right belong to the tabs everywhere else in this
+        // screen, and stealing them here to mean "next column" would make
+        // the one key that always changes tab sometimes not change tab.
+        const order = Object.keys(DOCUMENTS);
+        const cols = 5;
+        if (inp.justPressed('down')) { this.docSel = Math.min(order.length - 1, this.docSel + 1); this.audio.menuMove(); }
+        if (inp.justPressed('up')) { this.docSel = Math.max(0, this.docSel - 1); this.audio.menuMove(); }
+        if (inp.justPressed('confirm') && this.state.hasDoc(order[this.docSel])) {
+          this.readerFrom = 'notebook';
+          this.openReader(order[this.docSel]);
+        }
+        const row = Math.floor(this.docSel / cols);
+        const rowH = 66 * this.scale;
+        if (row * rowH - this.notebookScroll > 120 * this.scale) this.notebookScroll = row * rowH - 120 * this.scale;
+        if (row * rowH < this.notebookScroll) this.notebookScroll = row * rowH;
+        this.notebookScroll = Math.max(0, Math.min(this.notebookScroll, this.notebookMax || 0));
+        return;
       }
 
       // On the disputes tab the arrows move a cursor rather than scrolling
@@ -1006,21 +1115,29 @@ class Game {
 
     if (this.mode === 'notebook') {
       if (this.notebookTab === 0) {
-        this.notebookMax = drawNotebook(
-          g, v, s, notebookEntries(this.state), this.notebookScroll, sourceName) || 0;
+        drawNotebook(g, v, s, null, 0, sourceName, 'What I have seen and been told');
+        this.notebookMax = drawGroupedNotebook(
+          g, v, s, notebookGroups(this.state), this.notebookScroll,
+          this.noteSel, this.noteOpen) || 0;
       } else if (this.notebookTab === 1) {
-        // Draw the shell, then the document list in place of the entries.
-        drawNotebook(g, v, s, [], 0, sourceName);
-        const docs = this.state.docLog().map((d) => DOCUMENTS[d.id]).filter(Boolean);
-        this.notebookMax = drawDocTab(g, v, s, docs, this.notebookScroll, DOC_COUNT) || 0;
+        // Draw the shell, then the collection in place of the entries.
+        drawNotebook(g, v, s, null, 0, sourceName, 'The papers I have copied down');
+        this.notebookMax = drawDocGrid(
+          g, v, s, Object.keys(DOCUMENTS), this.state.docs, DOCUMENTS,
+          this.docSel, this.notebookScroll) || 0;
       } else {
         const list = activeDisputes(this.state);
         this.disputeSel = Math.min(this.disputeSel, Math.max(0, list.length - 1));
         this.notebookMax = drawDisputeTab(
           g, v, s, list, this.state, this.notebookScroll, this.disputeSel, shortSourceName) || 0;
       }
+      const HELP = [
+        '↑ ↓ move  ·  Z open a heading  ·  ← → tabs  ·  X close',
+        '↑ ↓ move  ·  Z read it again  ·  ← → tabs  ·  X close',
+        '↑ ↓ move  ·  1 2 3 take a position  ·  ← → tabs  ·  X close',
+      ];
       drawNotebookTabs(g, v, s, this.notebookTab, this.state.docs.size, DOC_COUNT,
-                       activeDisputes(this.state).length);
+                       activeDisputes(this.state).length, HELP[this.notebookTab]);
     }
 
     if (this.mode === 'reader' && this.reader) {
@@ -1096,15 +1213,26 @@ class Game {
       lines.push('MY ANSWER — what caused it?', '', this.state.answer, '',
                  '---------------------------------------------', '');
     }
+    // Grouped the same way the notebook on screen is grouped, by who told
+    // the player. A student pasting this into an assignment should get the
+    // structure they were reading from, not a different one — and grouping
+    // by source puts "how do you know that?" next to every claim.
+    //
+    // Numbering stays continuous across the groups, so an instruction like
+    // "cite three entries by number" still works.
     lines.push('WHAT I SAW AND WAS TOLD', '');
     if (!entries.length) {
       lines.push('(Nothing recorded yet.)');
     } else {
-      entries.forEach((e, i) => {
-        lines.push(`${i + 1}. ${e.text}`);
-        lines.push(`   [${sourceName(e.source)}]`);
+      let n = 0;
+      for (const grp of notebookGroups(this.state)) {
+        lines.push(`${grp.label.toUpperCase()}  (${grp.entries.length})`, '');
+        for (const e of grp.entries) {
+          n += 1;
+          lines.push(`${n}. ${e.text}`);
+        }
         lines.push('');
-      });
+      }
     }
 
     const docs = this.state.docLog().map((d) => DOCUMENTS[d.id]).filter(Boolean);

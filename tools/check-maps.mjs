@@ -100,10 +100,53 @@ const report = await page.evaluate((ENTRY) => {
       }
     }
   }
+  // --- can the gate on each document ever be satisfied? -----------------
+  //
+  // New failure mode, introduced the day documents became person-gated: a
+  // paper is not drawn until somebody names it, so a `require` flag that no
+  // line of dialogue ever teaches produces a document that is invisible
+  // FOREVER — with no error anywhere, because the map, the sprite, the gate
+  // and the goal are all individually correct. That is the same shape as
+  // every other bug this file exists because of.
+  //
+  // So: walk every script in the game, collect everything it can teach, and
+  // check each gate against it.
+  const taught = new Set();
+  const walk = (node) => {
+    if (!node) return;
+    if (Array.isArray(node)) { node.forEach(walk); return; }
+    if (typeof node !== 'object') return;
+    if (node.learn) [].concat(node.learn).forEach((f) => taught.add(f));
+    for (const k of ['then', 'else', 'lines', 'cases', 'options', 'greet', 'topics', 'farewell']) {
+      if (node[k]) walk(node[k]);
+    }
+    if (node.cases) Object.values(node.cases).forEach(walk);
+    if (node.default) walk(node.default);
+  };
+  Object.values(window.__NPCS).forEach(walk);
+  Object.values(window.__CLUES).forEach(walk);
+
+  const ungettable = [];
+  const checkedGates = new Set();
+  for (const ch of chapters) {
+    for (const id of Object.keys(window.__MAPS)) {
+      for (const [, spot] of g.mapFor(id, ch).interact) {
+        if (!spot.doc || !spot.require) continue;
+        for (const f of spot.require) {
+          const key = `${spot.doc}:${f}`;
+          if (checkedGates.has(key)) continue;
+          checkedGates.add(key);
+          if (!taught.has(f)) ungettable.push(`${spot.doc} needs "${f}", which nothing in the game teaches`);
+        }
+      }
+    }
+  }
+
   return {
     invisible: [...new Set(invisible)],
     unreachable: [...new Set(unreachable)],
     unstandable: [...new Set(unstandable)],
+    ungettable: [...new Set(ungettable)],
   };
 }, ENTRY);
 
@@ -120,6 +163,8 @@ section('every document has a paper sprite the player can see', report.invisible
   'A document standing on an empty tile cannot be found, however correct it is.');
 section('every interactable has somewhere to stand beside it', report.unstandable);
 section('every interactable can be walked to from the entrance', report.unreachable);
+section('every document gate is something a person or a script can teach', report.ungettable,
+  'A paper whose gate nothing teaches is never drawn, and nothing anywhere reports it.');
 
 if (errors.length) { bad += errors.length; console.log('\nPAGE ERRORS:\n  ' + errors.join('\n  ')); }
 console.log(bad ? `\n${bad} problems.` : '\nAll maps clean.');

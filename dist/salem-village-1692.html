@@ -3894,6 +3894,26 @@ const KNOWLEDGE = {
   'fact.parris_deed':'Parris was given the parsonage and its land outright — a thing no previous minister here got, and a thing his opponents have not forgiven.',
   'fact.strangers':  'People are coming in from other towns to look at the afflicted girls.',
   'fact.annsr':      'Ann Putnam Sr. has buried several children. Her grief is a fact everyone in the village knows and steps around.',
+
+  // --- papers somebody pointed me at -------------------------------------
+  //
+  // These are in the notebook rather than being silent bookkeeping, because
+  // WHO told the player a document existed is the same order of fact as what
+  // the document says. A student who ends the game able to answer "how did
+  // you come to be reading that?" for every source in their notes has done
+  // the thing this game is for.
+  //
+  // Several of them can be learned from more than one person. The notebook
+  // records whichever one the player actually heard it from.
+  'paper.agreement':     'Somebody told me the village\'s written agreement with Rev. Parris is lying on the table in the parsonage.',
+  'paper.seating':       'The committee\'s working sheet for the meetinghouse seating is still pinned up beside the finished chart, crossings-out and all.',
+  'paper.accounts':      'Ingersoll turned a loose page out of his account book and left it on the bar for me to read properly.',
+  'paper.topsfield':     'The Topsfield boundary petition is on the table in the Putnam house, with Thomas Putnam\'s name on it.',
+  'paper.nursepetition': 'Francis Nurse has left the petition — thirty-nine of his neighbours\' names — on the table in his house, and wants somebody to read it.',
+  'paper.warrant':       'The warrant for Rebecca Nurse is lying on the table in the tavern where they served it.',
+  'paper.deposition':    'The deposition Ann Putnam gave the court — written out by her father — is in the meetinghouse with the rest of the papers.',
+  'paper.jailbill':      'The jail keeps a written account of what each prisoner costs. Rebecca Nurse\'s is on the table by the stair.',
+  'paper.court':         'The court\'s papers are still on the table at the front of the meetinghouse. Nobody has moved any of them.',
 };
 
 /** Display name for whoever a piece of knowledge came from. */
@@ -3968,6 +3988,59 @@ function notebookEntries(state) {
     .map((e) => ({ text: KNOWLEDGE[e.flag], source: e.source, flag: e.flag }));
 }
 
+/* ---------------------------------------------------------------------- *
+ * The notebook, filed by who told you
+ *
+ * A finished game holds about ninety entries averaging a hundred and thirty
+ * characters. As one flat scrolling list that is roughly seven screens of
+ * unbroken prose, and a student looking for one thing in it will not find
+ * it. So the notebook is headings, closed by default, one screen of them.
+ *
+ * Filed by SOURCE and not by chapter, deliberately. The axis a notebook is
+ * organised on is the thing it teaches: file by chapter and a student
+ * learns a chronology, file by source and they learn that every fact in
+ * their notes arrived through a particular person who had a particular
+ * reason to say it. That is the entire subject of this game, and it costs
+ * nothing to make the filing system carry it.
+ *
+ * The one exception is `observed`. A third of everything the player knows
+ * they saw for themselves, which would make one heading twice the size of
+ * every other and by far the least interesting to open. It is split by
+ * chapter — which is honest, because "what I saw in March" and "what I saw
+ * in September" really are different bodies of evidence.
+ * ---------------------------------------------------------------------- */
+
+const WHEN = {
+  memorial:  'at the memorial',
+  march:     'in March',
+  dig:       'at the parsonage dig',
+  june:      'in June',
+  archive:   'in the archive',
+  september: 'in September',
+  reckoning: 'at the memorial, afterwards',
+};
+function notebookGroups(state) {
+  const groups = new Map();
+  for (const e of state.knowledgeLog()) {
+    if (!KNOWLEDGE[e.flag]) continue;
+    const split = e.source === 'observed';
+    const key = split ? `observed:${e.chapter}` : e.source;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        label: split
+          ? `I saw this myself, ${WHEN[e.chapter] || e.chapter}`
+          : sourceName(e.source),
+        entries: [],
+      });
+    }
+    groups.get(key).entries.push({ text: KNOWLEDGE[e.flag], flag: e.flag, source: e.source });
+  }
+  // Insertion order is the order the player met each source, which is the
+  // order they will look for them in.
+  return [...groups.values()];
+}
+
 /* ===== src/content/objectives.js ===== */
 // Objectives.
 //
@@ -4006,7 +4079,25 @@ const RECK_DOCS  = ['annApology', 'sewallApology', 'johnsonAct'];
  * places.
  * ---------------------------------------------------------------------- */
 
-const firstMissing = (s, list, has) => list.find((e) => !has(s, e)) || null;
+/**
+ * The next thing outstanding — but if it is a document nobody has told the
+ * player about yet, point at the person instead of at the paper.
+ *
+ * Documents are unlocked by conversation now, and the paper is not drawn
+ * until somebody names it. So a goal reading "read the petition in the
+ * Putnam house" would send a student to stand in front of an empty table.
+ * The waypoint carries `via` — who to ask, and where they are — and the
+ * step redirects there until that conversation has happened.
+ */
+const firstMissing = (s, list, has) => {
+  const e = list.find((x) => !has(s, x));
+  if (!e) return null;
+  // `via` is an ordinary waypoint in its own right — it has a flag, a place
+  // and a line — so everything downstream (the arrow, the goal text, the
+  // key an NPC can point at) works on it without knowing it is a detour.
+  if (e.via && !s.knows(e.via.flag)) return e.via;
+  return e;
+};
 const byFlag = (s, e) => s.knows(e.flag);
 const byDoc  = (s, e) => s.hasDoc(e.doc);
 const byNpc  = (s, e) => s.hasSpokenTo(e.npc);
@@ -4044,15 +4135,25 @@ const MARCH_CAST_WHERE = [
   { npc: 'mercy',     map: 'village', x: 29, y: 23,
     line: 'Talk to Mercy Lewis, out in the road on the east side' },
 ];
+// `via` is who to ask first. Until that flag is known, the goal points at the
+// person rather than at a table with nothing on it.
 const MARCH_DOC_WHERE = [
   { doc: 'parrisAgreement',   map: 'parsonage', x: 2, y: 5,
-    line: 'Read the paper on the desk in the parsonage' },
+    line: 'Read the agreement on the table in the parsonage',
+    via: { flag: 'paper.agreement', map: 'parsonage', x: 3, y: 3,
+           line: 'Ask Tituba or Rev. Parris about the firewood. One of them will tell you where the agreement is' } },
   { doc: 'seatingList',       map: 'meetinghouse', x: 7, y: 1,
-    line: 'Read the seating list at the front of the meetinghouse' },
-  { doc: 'accountBookPage',   map: 'tavern', x: 2, y: 6,
-    line: 'Read the loose account page on the tavern table' },
+    line: 'Read the working sheet pinned beside the seating chart',
+    via: { flag: 'paper.seating', map: 'tavern', x: 6, y: 4,
+           line: 'Ask Ingersoll or Rebecca Nurse about the meetinghouse seating' } },
+  { doc: 'accountBookPage',   map: 'tavern', x: 2, y: 3,
+    line: 'Read the loose page Ingersoll left on the bar',
+    via: { flag: 'paper.accounts', map: 'tavern', x: 6, y: 4,
+           line: 'Ask Ingersoll about his account book' } },
   { doc: 'topsfieldPetition', map: 'putnamhouse', x: 2, y: 4,
-    line: 'Read the petition on the table in the Putnam house' },
+    line: 'Read the petition on the table in the Putnam house',
+    via: { flag: 'paper.topsfield', map: 'putnamhouse', x: 3, y: 3,
+           line: 'Ask Ann Putnam or Rebecca Nurse about the boundary stone' } },
 ];
 const JUNE_CAST_WHERE = [
   { npc: 'marywarren', map: 'tavern', x: 8, y: 6,
@@ -4064,20 +4165,30 @@ const JUNE_CAST_WHERE = [
 ];
 const JUNE_DOC_WHERE = [
   { doc: 'nursePetition',    map: 'nursehouse', x: 5, y: 4,
-    line: 'Read the petition left on the table in the Nurse house' },
+    line: 'Read the petition left on the table in the Nurse house',
+    via: { flag: 'paper.nursepetition', map: 'village', x: 7, y: 16,
+           line: 'Ask Francis Nurse what he is doing about it' } },
   { doc: 'nurseWarrant',     map: 'tavern', x: 3, y: 6,
-    line: 'Read the warrant lying on the tavern table' },
+    line: 'Read the warrant lying on the tavern table',
+    via: { flag: 'paper.warrant', map: 'tavern', x: 6, y: 4,
+           line: 'Ask Ingersoll about the paper on his table' } },
   { doc: 'putnamDeposition', map: 'meetinghouse', x: 5, y: 3,
-    line: 'Read the deposition in the meetinghouse' },
+    line: 'Read the deposition in the meetinghouse',
+    via: { flag: 'paper.deposition', map: 'putnamhouse', x: 3, y: 3,
+           line: 'Ask Ann Putnam who writes her depositions' } },
   { doc: 'jailBill',         map: 'jail', x: 9, y: 6,
-    line: 'Read the jailer’s bill, on the far side of the jail' },
+    line: 'Read the keeper’s bill, on the table by the stair',
+    via: { flag: 'paper.jailbill', map: 'jail', x: 4, y: 4,
+           line: 'Ask Rebecca Nurse how she is. She will mention what it costs' } },
 ];
+const SEPT_VIA = { flag: 'paper.court', map: 'village', x: 27, y: 24,
+  line: 'Ask the man at the fence whether it is over. He will tell you where the papers are' };
 const SEPT_DOC_WHERE = [
-  { doc: 'coreyRecord',        map: 'meetinghouse', x: 5, y: 3,
+  { doc: 'coreyRecord',        map: 'meetinghouse', x: 5, y: 3, via: SEPT_VIA,
     line: 'Read the first paper on the court table in the meetinghouse' },
-  { doc: 'deathWarrantReturn', map: 'meetinghouse', x: 8, y: 3,
+  { doc: 'deathWarrantReturn', map: 'meetinghouse', x: 8, y: 3, via: SEPT_VIA,
     line: 'Read the middle paper on the court table' },
-  { doc: 'eastyPetition',      map: 'meetinghouse', x: 10, y: 3,
+  { doc: 'eastyPetition',      map: 'meetinghouse', x: 10, y: 3, via: SEPT_VIA,
     line: 'Read the last paper on the court table' },
 ];
 const RECK_DOC_WHERE = [
@@ -4890,6 +5001,7 @@ const CLUES = {
     { say: 'The front rows are written in a heavier hand: the men who pay the most tax, and their wives, and the elders. Behind them, in smaller writing, everyone else. At the back, names with no title at all.', who: null },
     { learn: 'clue.seating', source: 'observed' },
     { say: 'Twice every Sunday, this whole village sits down in the exact order of who matters. Nobody has to be told where they stand. They can read it on the wall.', who: null },
+    { say: 'Pinned up beside it is a second sheet in a rougher hand — the committee\'s working list, with the crossings-out still on it.', who: null },
   ],
 
   pews: [
@@ -4933,6 +5045,76 @@ const CLUES = {
     { learn: 'clue.road', source: 'observed' },
     { say: 'This is Salem Town. It is five miles from the meetinghouse you started at, and it is a different world, and everyone in the village walks this road.', who: null },
     { say: 'They walk it to pay their taxes, argue their land claims, and answer to the court. Then they walk back.', who: null },
+  ],
+
+  /* -------------------------------------------------------------------- *
+   * Standing over a document
+   *
+   * Every paper in the game is now approached through one of these. The
+   * player presses Z once: they get the thing in the room first — the
+   * table, the hand it is written in, who is standing near it — and then
+   * the reader opens on the same keypress.
+   *
+   * This exists because the alternative shipped, and it was two objects.
+   * You examined the seating chart, got the whole beat about who sits
+   * where, saw no document, and walked out. The account book was worse:
+   * the book on the bar and a loose page out of the same ledger were three
+   * tiles apart across the room, and only the second one was the document.
+   *
+   * Rules for writing these:
+   *
+   *   - Describe the OBJECT, not the contents. The reader is about to show
+   *     the contents, in the original spelling, three seconds from now.
+   *     Saying it twice makes the document redundant on arrival.
+   *   - Two or three lines. This is a doorway, not a room.
+   *   - Say who left it there, if anybody did. That is the only part the
+   *     document itself cannot tell you, and it is the part this game is
+   *     about.
+   * -------------------------------------------------------------------- */
+
+  agreementTable: [
+    { say: 'The table by the wall, where the household eats. A folded paper has been left on it, weighted flat with a candlestick.', who: null },
+    { say: 'It is written out fair, in a clerk\'s hand, and signed at the bottom by men who are still alive and still in this village.', who: null },
+  ],
+
+  putnamTable: [
+    { say: 'The Putnams keep their papers on the table where anyone sitting down to eat can see them.', who: null },
+    { say: 'This one has been folded and unfolded until the creases have gone soft. Several different hands, and a column of names down the side.', who: null },
+  ],
+
+  nurseTable: [
+    { say: 'The table is set for a meal nobody came back for.', who: null },
+    { say: 'A sheet of paper lies at one end, with names down it in thirty-nine different hands. Some of them are steady. Some of them plainly are not used to writing.', who: null },
+  ],
+
+  warrantTable: [
+    { say: 'A single sheet, face up on the table where they served it, in the room where they examined her.', who: null },
+    { say: 'Nobody has moved it. Nobody wants to be the one who touched it.', who: null },
+  ],
+
+  courtTable: [
+    { say: 'The court has a table now, at the front, where the deacons used to stand.', who: null },
+    { say: 'The papers on it are written in a good clear hand by somebody who was paid to be accurate. That is the strange part. All of this is filed.', who: null },
+  ],
+
+  coreyPaper: [
+    { say: 'The court record for the nineteenth of September, in the clerk\'s neat hand.', who: null },
+    { say: 'It gives the day, the place, and what was done, in the same language it would use for a boundary dispute.', who: null },
+  ],
+
+  warrantPaper: [
+    { say: 'A warrant, with the sheriff\'s return written on the back of it — what he did, and when, reported to the men who told him to do it.', who: null },
+    { say: 'A completed piece of paperwork. Somebody signed it off.', who: null },
+  ],
+
+  eastyPaper: [
+    { say: 'This one is in a different hand from all the rest: smaller, and not a clerk\'s.', who: null },
+    { say: 'It was written by one of the condemned, and somebody in this room kept it.', who: null },
+  ],
+
+  jailTable: [
+    { say: 'A table by the stair, out of reach of the bars. The keeper does his accounts here.', who: null },
+    { say: 'Everything in this cellar costs money, and every cost is written against the name of the person it was spent on.', who: null },
   ],
 };
 
@@ -5145,6 +5327,9 @@ const NPCS = {
               'Go and look at the woodpile outside, if you want to understand this household better than most who live in it.',
             ],
           },
+          { say: 'She glances at the table by the wall.', who: null },
+          'The agreement is there. What they promised him when he came. He keeps it out where it can be seen.',
+          { learn: 'paper.agreement' },
         ],
       },
       {
@@ -5288,6 +5473,8 @@ const NPCS = {
           'They will not dismiss me. That would require a vote, and a reason, and courage.',
           { say: 'He straightens the sheets that are crossed through.', who: null },
           'So instead they let me be cold, and wait for me to leave of my own accord.',
+          'The agreement is on the table there. Read it, if you think I am making a grievance out of nothing. Every term of it is written out and signed by men who are still living.',
+          { learn: 'paper.agreement' },
         ],
       },
       {
@@ -5418,6 +5605,9 @@ const NPCS = {
           'It is always true when it is read back. He is careful.',
           { say: 'She smooths the front of her apron.', who: null },
           'He has a very good memory for what has been done to this family. Better than mine. I am twelve.',
+          'The one he wrote out for the court is in the meeting house, with the rest of it. You may read what I said.',
+          { learn: 'paper.deposition' },
+          { say: 'She does not say "what I wrote".', who: null },
         ],
       },
       /* ---- March ---- */
@@ -5467,6 +5657,8 @@ const NPCS = {
             else: [],
           },
           'You will hear it called a small thing. It is not a small thing. It is the only thing my father has talked about at that table my whole life.',
+          'The petition about it is on our table. My father put his name to it. His father\'s name is on the older one underneath.',
+          { learn: 'paper.topsfield' },
         ],
       },
       {
@@ -5686,6 +5878,9 @@ const NPCS = {
           { say: 'She says the next part gently, and it is the most frightening thing anyone says to you in this village.', who: null },
           'You cannot live five miles from a family for forty years and not have something between you.',
           'Everyone here has something between them and somebody. It has never once come to anything.',
+          { say: 'She goes back to the mending.', who: null },
+          'If you want the whole of it, it is written down. There is a petition on the Putnams\' own table with my neighbours\' names on it, and not one of them ours.',
+          { learn: 'paper.topsfield' },
         ],
       },
       {
@@ -5699,6 +5894,9 @@ const NPCS = {
           { say: 'She almost laughs.', who: null },
           'I have been moved forward once in my life and back once. I remember both.',
           'You may think that is a small vanity in an old woman. Go and stand in that room and look at who is in the front and who is at the back, and then tell me it is small.',
+          'And there is a second sheet pinned up beside the chart. The committee\'s own working, with the names they moved still crossed through on it.',
+          { learn: 'paper.seating' },
+          'They left it up. I have never decided whether that was carelessness or whether somebody wanted it read.',
         ],
       },
     ],
@@ -5777,7 +5975,7 @@ const NPCS = {
         lines: [
           'The warrant. For Goodwife Nurse.',
           'They served it here because there is nowhere else in this village big enough to serve anything in.',
-          { learn: 'june.warrantfound' },
+          { learn: ['june.warrantfound', 'paper.warrant'] },
           'You may read it. Half the county has.',
         ],
       },
@@ -5841,6 +6039,22 @@ const NPCS = {
           { learn: ['fact.factions'] },
           'That is not wickedness. That is what a big family with land does in a small place.',
           'But it does mean that when a Putnam says a thing in this village, there are a great many people who have a reason not to contradict him.',
+          { say: 'He turns a loose sheet out of the back of the book and leaves it on the bar.', who: null },
+          'That one has come out of the binding. Read it properly if you are going to read it at all.',
+          { learn: 'paper.accounts' },
+        ],
+      },
+      {
+        id: 'seatinglist', chapter: 'march', label: 'The seating in the meetinghouse.',
+        require: ['clue.seating'],
+        lines: [
+          'I am a deacon of that church. I have sat on the committee that does it.',
+          'It is not malice. Somebody has to put five hundred people in a room in some order, and the order we use is what each household pays in rates.',
+          { say: 'He stops wiping.', who: null },
+          'That is a defence, and I notice I am making one.',
+          'The working sheet is still pinned up beside the chart, if you want to see how the thing is actually done. Names crossed out and written in again.',
+          { learn: 'paper.seating' },
+          'A man can be moved back a row by a vote of six men in a room, and then sit in that row in front of his neighbours every Sunday for the rest of his life.',
         ],
       },
       {
@@ -6145,7 +6359,8 @@ const NPCS = {
           'Thirty-nine neighbours who have known her forty years, saying they have never in their lives seen anything in her that could be called what they are calling it.',
           { say: 'He almost smiles.', who: null },
           'There are Putnams on that paper. Their own kin signed for her.',
-          'It is on the table inside. You may read it.',
+          'It is on the table inside. You may read it. I would rather somebody did.',
+          { learn: 'paper.nursepetition' },
           'I have been told by men who know the law that it may not signify. But it is what I have.',
         ],
       },
@@ -6221,6 +6436,9 @@ const NPCS = {
           { say: 'She says this the way she said the road was bad in March.', who: null },
           'My daughters come when they can. They bring what they can bring.',
           'And I am charged for every day I am here, you understand. The dyett, the fees, the chains. It is written in a book.',
+          { learn: 'paper.jailbill' },
+          { say: 'She nods at the table by the stair, out past the bars.', who: null },
+          'It is on that table. Go and see what a week of me costs.',
           'If they let me go tomorrow I could not walk out of the door until it was paid.',
         ],
       },
@@ -6592,6 +6810,10 @@ const NPCS = {
           'Somebody said the Governor\'s own wife had her name spoken.',
           'I do not know if that is true. I notice that it stopped.',
           { learn: 'sept.stopped' },
+          { say: 'He looks toward the meeting house.', who: null },
+          'It is all written down in there, on the table at the front. Every warrant, every return, in a good clear hand.',
+          'Nobody has moved any of it. Go and read it, if you have the stomach. Somebody ought to.',
+          { learn: 'paper.court' },
         ],
       },
     ],
@@ -7306,8 +7528,13 @@ const PARSONAGE = {
     { id: 'sickbed', x: 8, y: 5, w: 2, h: 2 },
     { id: 'parrisDesk', x: 8, y: 2, w: 2, h: 1 },
     { id: 'insideWood', x: 2, y: 2, w: 1, h: 1 },
-    { doc: 'parrisAgreement', x: 2, y: 5, w: 2, h: 1, require: ['clue.woodpile'],
-      locked: 'A folded paper on the table, covered in sums. It is some kind of agreement, and it will mean nothing to you until you have seen what the village actually gave him. The woodpile is outside the front door.' },
+    // Two gates, deliberately. Tituba has to name the paper before it is
+    // there to read — and the woodpile is still required, because the
+    // written promise means nothing until you have counted what the village
+    // actually delivered against it. Which order the player does them in is
+    // up to them, and Tituba's line changes depending.
+    { id: 'agreementTable', doc: 'parrisAgreement', x: 2, y: 5, w: 2, h: 1,
+      require: ['clue.woodpile', 'paper.agreement'] },
   ],
   npcs: [
     { id: 'tituba', x: 3, y: 3, dir: 'down' },
@@ -7337,11 +7564,14 @@ const MEETINGHOUSE = {
   ],
   warps: [{ x: 6, y: 9, to: 'village', tx: 22, ty: 16, dir: 'down' }],
   interact: [
-    { id: 'seatingChart', x: 5, y: 1, w: 2, h: 2 },
+    // The chart and the working sheet pinned up beside it are ONE object.
+    // They were two, a tile apart, and a player who examined the chart got
+    // the whole beat about who sits where, saw no document, and walked out
+    // with the counter stuck at two of four.
+    { id: 'seatingChart', doc: 'seatingList', x: 5, y: 1, w: 3, h: 2,
+      require: ['paper.seating'] },
     { id: 'pews', x: 2, y: 5, w: 3, h: 1 },
     { id: 'pews', x: 8, y: 7, w: 3, h: 1 },
-    { doc: 'seatingList', x: 7, y: 1, w: 1, h: 2, require: ['clue.seating'],
-      locked: 'A second sheet is pinned up beside the seating chart. Look at the chart itself first — this one is only the working.' },
   ],
   npcs: [],
   byChapter: {
@@ -7349,7 +7579,8 @@ const MEETINGHOUSE = {
       name: 'The meetinghouse · the court sits here',
       addProps: [{ kind: 'table', x: 5, y: 3 }, { kind: 'paper', x: 5, y: 3 }],
       addInteract: [
-        { doc: 'putnamDeposition', x: 5, y: 3, w: 2, h: 1 },
+        { id: 'courtTable', doc: 'putnamDeposition', x: 5, y: 3, w: 2, h: 1,
+          require: ['paper.deposition'] },
         { id: 'courtRoom', x: 8, y: 3, w: 3, h: 1 },
       ],
     },
@@ -7359,9 +7590,16 @@ const MEETINGHOUSE = {
         { kind: 'paper', x: 8, y: 3 }, { kind: 'paper', x: 10, y: 3 },
       ],
       addInteract: [
-        { doc: 'coreyRecord', x: 5, y: 3, w: 2, h: 1 },
-        { doc: 'deathWarrantReturn', x: 8, y: 3, w: 1, h: 1 },
-        { doc: 'eastyPetition', x: 10, y: 3, w: 1, h: 1 },
+        // All three unlocked together, by the one man in September who
+        // will still talk to you. Splitting them into three errands would
+        // send the player back and forth across an empty village to the
+        // same fence three times.
+        { id: 'coreyPaper', doc: 'coreyRecord', x: 5, y: 3, w: 2, h: 1,
+          require: ['paper.court'] },
+        { id: 'warrantPaper', doc: 'deathWarrantReturn', x: 8, y: 3, w: 1, h: 1,
+          require: ['paper.court'] },
+        { id: 'eastyPaper', doc: 'eastyPetition', x: 10, y: 3, w: 1, h: 1,
+          require: ['paper.court'] },
       ],
     },
   },
@@ -7379,18 +7617,17 @@ const TAVERN = {
     { kind: 'hearth', x: 7, y: 1 },
     { kind: 'table', x: 2, y: 3 },
     { kind: 'accountbook', x: 2, y: 3 },
+    // The loose page sits ON the book it came out of. It used to be three
+    // tiles away on a second table, which meant the player examined the
+    // account book, got the good beat, and then had to find a different
+    // sprite across the room to read a page of the same ledger.
+    { kind: 'paper', x: 3, y: 3 },
     { kind: 'table', x: 2, y: 6 },
-    // The loose pages further down the table. Same bug as the seating list:
-    // the document was reachable and invisible, so the player saw a bare
-    // table. June happened to escape it only because the Nurse warrant adds
-    // its own sheet to the same table three months later.
-    { kind: 'paper', x: 2, y: 6 },
   ],
   warps: [{ x: 5, y: 8, to: 'village', tx: 33, ty: 17, dir: 'down' }],
   interact: [
-    { id: 'accountBook', x: 2, y: 3, w: 2, h: 1 },
-    { doc: 'accountBookPage', x: 2, y: 6, w: 2, h: 1, require: ['clue.accounts'],
-      locked: 'More pages of the same ledger, further down the table. Read the page Ingersoll has open first.' },
+    { id: 'accountBook', doc: 'accountBookPage', x: 2, y: 3, w: 2, h: 1,
+      require: ['paper.accounts'] },
   ],
   npcs: [
     { id: 'ingersoll', x: 6, y: 4, dir: 'left' },
@@ -7399,7 +7636,8 @@ const TAVERN = {
     june: {
       name: "Ingersoll's tavern · full house",
       addProps: [{ kind: 'paper', x: 3, y: 6 }],
-      addInteract: [{ doc: 'nurseWarrant', x: 3, y: 6, w: 1, h: 1 }],
+      addInteract: [{ id: 'warrantTable', doc: 'nurseWarrant', x: 3, y: 6, w: 2, h: 1,
+                      require: ['paper.warrant'] }],
       npcs: [
         { id: 'ingersoll', x: 6, y: 4, dir: 'left' },
         { id: 'marywarren', x: 8, y: 6, dir: 'left' },
@@ -7433,12 +7671,14 @@ const NURSEHOUSE = {
     june: {
       name: 'The Nurse homestead · quiet',
       addProps: [{ kind: 'paper', x: 5, y: 4 }],
-      addInteract: [{ doc: 'nursePetition', x: 5, y: 4, w: 2, h: 1 }],
+      addInteract: [{ id: 'nurseTable', doc: 'nursePetition', x: 5, y: 4, w: 2, h: 1,
+                      require: ['paper.nursepetition'] }],
       npcs: [],
     },
     september: {
       addProps: [{ kind: 'paper', x: 5, y: 4 }],
-      addInteract: [{ doc: 'nursePetition', x: 5, y: 4, w: 2, h: 1 }],
+      addInteract: [{ id: 'nurseTable', doc: 'nursePetition', x: 5, y: 4, w: 2, h: 1,
+                      require: ['paper.nursepetition'] }],
       npcs: [],
     },
   },
@@ -7468,8 +7708,11 @@ const PUTNAMHOUSE = {
     { kind: 'dresser', x: 2, y: 1 },
   ],
   interact: [
-    { doc: 'topsfieldPetition', x: 2, y: 4, w: 2, h: 1, require: ['clue.marker'],
-      locked: 'Papers on the table in several different hands, arguing about a boundary line. You would have to have seen that boundary for any of this to mean anything. There is a stone somewhere in the woods north of the village.' },
+    // Two gates again, and for the same reason as the parsonage: Rebecca
+    // Nurse sends you here to find it, and the boundary stone in the woods
+    // is what makes a page of surveyors' language mean anything.
+    { id: 'putnamTable', doc: 'topsfieldPetition', x: 2, y: 4, w: 2, h: 1,
+      require: ['clue.marker', 'paper.topsfield'] },
   ],
   npcs: [{ id: 'annjr', x: 3, y: 3, dir: 'down' }],
   byChapter: {
@@ -7722,7 +7965,8 @@ const JAIL = {
   ],
   warps: [{ x: 6, y: 9, to: 'road', tx: 7, ty: 30, dir: 'down' }],
   interact: [
-    { doc: 'jailBill', x: 9, y: 6, w: 2, h: 1 },
+    { id: 'jailTable', doc: 'jailBill', x: 9, y: 6, w: 2, h: 1,
+      require: ['paper.jailbill'] },
     { id: 'jailStraw', x: 2, y: 5, w: 3, h: 1 },
   ],
   triggers: [{ id: 'arriveJail', x: 6, y: 8, w: 1, h: 1 }],
@@ -8018,6 +8262,27 @@ function buildMap(def, chapter = 'march') {
     }
   }
 
+  // Bind every paper sprite to the document it is the sprite FOR.
+  //
+  // A document has two halves that must agree: the interactable that opens
+  // it, and the sheet of paper the player can see lying there. They were
+  // authored separately, which is how two documents once shipped correctly
+  // gated and completely invisible. Now the gate is written once, on the
+  // interactable, and the sprite inherits it — so a paper cannot be visible
+  // for a document that is still locked, or missing for one that isn't.
+  //
+  // Searched outward one tile because a paper often sits on the near edge of
+  // a two-tile table while the interactable covers the whole table.
+  for (const p of props) {
+    if (p.kind !== 'paper') continue;
+    const near = [[0, 0], [0, -1], [0, 1], [-1, 0], [1, 0]]
+      .map(([dx, dy]) => interact.get(`${p.x + dx},${p.y + dy}`))
+      .find((s) => s && s.doc);
+    if (!near) continue;
+    p.docId = near.doc;
+    p.gate = near.require || null;
+  }
+
   // Tiles that fire once when stepped on, without the player pressing
   // anything. Used sparingly — the road to Salem Town is worth one, because
   // the point of that walk is the walk itself.
@@ -8235,12 +8500,17 @@ function renderMap(g, map, cam, actors, clock = 0) {
   const draws = [];
 
   for (const p of map.props) {
+    // A document nobody has told the player about is not lying there yet.
+    // Drawing it and refusing to open it is the shape that produced "the
+    // arrow points at a building I already searched" — the player can see
+    // the thing and cannot have it, which reads as breakage, not as a lock.
+    if (p.hidden) continue;
     const img = propImage(p);
     const dx = p.x * TS - cam.x;
     const dy = (p.y + p.h) * TS - img.h - cam.y + (PROPS[p.kind].sized ? 6 : 0);
     // Cull generously — props can be tall.
     if (dx > VW || dx + img.w < 0 || dy > VH || dy + img.h < 0) continue;
-    draws.push({ img: img.canvas, dx, dy, base: (p.y + p.h) * TS });
+    draws.push({ img: img.canvas, dx, dy, base: (p.y + p.h) * TS, live: p.live });
   }
 
   // Livestock: same sort as everything else, so a cow in front of a barn
@@ -8263,7 +8533,30 @@ function renderMap(g, map, cam, actors, clock = 0) {
   }
 
   draws.sort((m, n) => m.base - n.base);
-  for (const d of draws) g.drawImage(d.img, d.dx, d.dy);
+  for (const d of draws) {
+    // A paper somebody has just told the player about, and which they have
+    // not read yet. It lifts a pixel and carries a warm edge that breathes.
+    //
+    // Restraint is the whole design here. Because a document is only visible
+    // once a person has named it, there is almost never more than one of
+    // these on screen — so it reads as "that is the thing he meant" rather
+    // than as a map strewn with collectibles. It stops the instant the
+    // document is read.
+    if (d.live) {
+      const pulse = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(clock * 3.1));
+      const lift = Math.round(Math.sin(clock * 2.2) * 0.9 + 0.9);
+      g.save();
+      g.globalAlpha = 0.30 + 0.42 * pulse;
+      g.globalCompositeOperation = 'lighter';
+      for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+        g.drawImage(d.img, d.dx + ox, d.dy - lift + oy);
+      }
+      g.restore();
+      g.drawImage(d.img, d.dx, d.dy - lift);
+      continue;
+    }
+    g.drawImage(d.img, d.dx, d.dy);
+  }
 
   // Above everything: smoke is the only thing in the village taller than a
   // roof, so it never needs to take part in the baseline sort.
@@ -8504,7 +8797,108 @@ function drawToast(g, view, s, text, alpha) {
  * doc is firm that without something the teacher can collect, this is a fun
  * thirty minutes with no assessment hook.
  */
-function drawNotebook(g, view, s, entries, scroll, sourceName) {
+/**
+ * The notebook, as headings.
+ *
+ * Closed by default, one line each, arrow keys to move and Z to open. The
+ * flat version of this screen was seven screens of prose with no structure
+ * in it, and the honest description of what a student did with it was scroll
+ * past the whole thing.
+ *
+ * `open` is a Set of group keys, `sel` the cursor. Returns the max scroll so
+ * the caller can clamp, exactly like the other tabs.
+ */
+function drawGroupedNotebook(g, view, s, groups, scroll, sel, open) {
+  const bx = view.x + 20 * s, by = view.y + 20 * s;
+  const bw = view.w - 40 * s, bh = view.h - 40 * s;
+
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+  const top = by + 46 * s;
+  const bottom = by + bh - 12 * s;
+
+  if (!groups.length) {
+    g.font = `italic ${11 * s}px Georgia, serif`;
+    g.fillStyle = P.boxDim;
+    g.fillText('Nothing yet. Go and talk to someone.', bx + 18 * s, top + 6 * s);
+    return 0;
+  }
+
+  g.save();
+  g.beginPath();
+  g.rect(bx + 8 * s, top - 4 * s, bw - 16 * s, bottom - top + 4 * s);
+  g.clip();
+
+  const textW = bw - 76 * s;
+  const lineH = 12.5 * s;
+  const headFont = `600 ${10.5 * s}px Georgia, serif`;
+  const bodyFont = `${9.5 * s}px Georgia, serif`;
+
+  let y = top - scroll;
+  let contentH = 0;
+
+  groups.forEach((grp, i) => {
+    const isOpen = open.has(grp.key);
+    const isSel = i === sel;
+    const headH = 20 * s;
+
+    if (y + headH > top - 24 * s && y < bottom + 24 * s) {
+      if (isSel) {
+        g.fillStyle = 'rgba(232,196,106,0.16)';
+        g.fillRect(bx + 14 * s, y - 3 * s, bw - 28 * s, headH);
+      }
+      g.font = `${9 * s}px system-ui, sans-serif`;
+      g.fillStyle = isSel ? P.accent : P.boxDim;
+      g.fillText(isOpen ? '▾' : '▸', bx + 20 * s, y + 2 * s);
+
+      g.font = headFont;
+      g.fillStyle = isSel ? P.boxInk : 'rgba(58,54,48,0.86)';
+      g.fillText(grp.label, bx + 34 * s, y + 1 * s);
+
+      // The count is the point of a closed heading: it tells a student how
+      // much they got out of a person without opening anything.
+      g.font = `${9 * s}px system-ui, sans-serif`;
+      g.fillStyle = P.boxDim;
+      g.textAlign = 'right';
+      g.fillText(String(grp.entries.length), bx + bw - 22 * s, y + 3 * s);
+      g.textAlign = 'left';
+    }
+    y += headH;
+    contentH += headH;
+
+    if (!isOpen) return;
+    for (const e of grp.entries) {
+      g.font = bodyFont;
+      const lines = wrapText(g, e.text, textW);
+      const blockH = lines.length * lineH + 7 * s;
+      if (y + blockH > top - 24 * s && y < bottom + 24 * s) {
+        g.fillStyle = 'rgba(140,120,80,0.5)';
+        g.fillRect(bx + 38 * s, y + 1 * s, 1 * s, lines.length * lineH - 2 * s);
+        g.font = bodyFont;
+        g.fillStyle = P.boxInk;
+        let ly = y;
+        for (const l of lines) { g.fillText(l, bx + 46 * s, ly); ly += lineH; }
+      }
+      y += blockH;
+      contentH += blockH;
+    }
+    y += 4 * s;
+    contentH += 4 * s;
+  });
+  g.restore();
+
+  return Math.max(0, contentH - (bottom - top));
+}
+
+/**
+ * @param entries  an array to render as a flat list, or NULL to draw only
+ *                 the panel and let a tab draw its own contents into it.
+ *                 The shell used to be requested by passing an empty array,
+ *                 which meant every tab printed "Nothing yet. Go and talk to
+ *                 someone." underneath itself, in italic, through the tabs.
+ * @param heading  overrides the panel title for tabs that are not a log.
+ */
+function drawNotebook(g, view, s, entries, scroll, sourceName, heading) {
   g.fillStyle = 'rgba(12,12,16,0.72)';
   g.fillRect(view.x, view.y, view.w, view.h);
 
@@ -8516,11 +8910,11 @@ function drawNotebook(g, view, s, entries, scroll, sourceName) {
   g.font = `700 ${13 * s}px Georgia, serif`;
   g.fillStyle = P.boxInk;
   g.textBaseline = 'top';
-  g.fillText('What I have seen and been told', bx + 18 * s, by + 14 * s);
+  g.fillText(heading || 'What I have seen and been told', bx + 18 * s, by + 14 * s);
 
-  g.font = `${8.5 * s}px system-ui, sans-serif`;
-  g.fillStyle = P.boxDim;
-  g.fillText('X or Esc to close  ·  ↑ ↓ to scroll', bx + 18 * s, by + 31 * s);
+  // No key hint here. It used to print at by+31s, which is exactly where
+  // the tab strip lands, so the two overprinted each other on every tab.
+  // The help now belongs to the tabs, drawn once, in one place.
 
   const top = by + 46 * s;
   const bottom = by + bh - 12 * s;
@@ -8532,6 +8926,7 @@ function drawNotebook(g, view, s, entries, scroll, sourceName) {
   g.lineTo(bx + bw - 18 * s, top - 8 * s);
   g.stroke();
 
+  if (!entries) return;              // shell only; a tab draws its own body
   if (!entries.length) {
     g.font = `italic ${11 * s}px Georgia, serif`;
     g.fillStyle = P.boxDim;
@@ -8825,48 +9220,159 @@ function drawReader(g, view, s, doc, fidelityLabel, scroll, copied) {
 }
 
 /** The notebook's document tab: what the player has copied down. */
-function drawDocTab(g, view, s, docs, scroll, total) {
+/* ---------------------------------------------------------------------- *
+ * The document collection
+ *
+ * Fifteen slots, always all fifteen, drawn as the papers themselves. The
+ * list version was fifteen lines of title-and-date, which is a bibliography
+ * — and a bibliography is the one thing a student can already produce
+ * without playing anything.
+ *
+ * The thumbnails are drawn from each document's own `kind` field, which was
+ * already an evidence typology before this screen existed: "A signature",
+ * "A number", "Thirty-nine signatures", "Not meant for you". So the grid
+ * sorts itself visually by what makes each paper evidence, without a legend
+ * and without a word of new content.
+ * ---------------------------------------------------------------------- */
+
+const INK = '#4a4238';
+const PAPER_LIT = '#e9e2d2';
+const PAPER_DIM = 'rgba(90,84,74,0.22)';
+
+function drawDocThumb(g, x, y, w, h, s, doc, owned) {
+  const px = (n) => n * s;
+  g.fillStyle = owned ? PAPER_LIT : 'rgba(58,54,48,0.10)';
+  g.fillRect(x, y, w, h);
+  g.strokeStyle = owned ? 'rgba(58,54,48,0.45)' : 'rgba(58,54,48,0.30)';
+  g.lineWidth = Math.max(1, s * 0.6);
+  g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+
+  if (!owned) {
+    // An empty slot says how many are left without a bar or a percentage.
+    g.strokeStyle = 'rgba(58,54,48,0.22)';
+    g.beginPath();
+    g.moveTo(x + px(5), y + px(5));
+    g.lineTo(x + w - px(5), y + h - px(5));
+    g.moveTo(x + w - px(5), y + px(5));
+    g.lineTo(x + px(5), y + h - px(5));
+    g.stroke();
+    return;
+  }
+
+  const ink = (ix, iy, iw, ih, a = 0.55) => {
+    g.globalAlpha = a;
+    g.fillStyle = INK;
+    g.fillRect(x + px(ix), y + px(iy), px(iw), px(ih));
+    g.globalAlpha = 1;
+  };
+
+  const kind = doc.kind || '';
+  if (kind === 'A number') {
+    // A ledger: two columns, short entries, figures ruled off to the right.
+    for (let r = 0; r < 7; r++) {
+      ink(4, 5 + r * 3.4, 9 + (r % 3) * 3, 1);
+      ink(20, 5 + r * 3.4, 5 - (r % 2), 1, 0.7);
+    }
+    ink(18.5, 4, 0.6, 25, 0.35);
+  } else if (kind === 'Thirty-nine signatures') {
+    // Many hands. Deliberately uneven — some of these people signed with
+    // difficulty, and the thumbnail should say so before the reader does.
+    ink(4, 4, 18, 1);
+    ink(4, 6.4, 13, 1);
+    for (let r = 0; r < 8; r++) {
+      const wobble = ((r * 7) % 5) - 2;
+      ink(4 + (r % 2) * 12, 11 + r * 2.3, 8 + wobble, 1.2, 0.5 + (r % 3) * 0.12);
+    }
+  } else if (kind === 'Not meant for you') {
+    // Private writing: small, dense, no clerk's margin, and a fold across it.
+    for (let r = 0; r < 11; r++) ink(4, 4 + r * 2.3, 19 - ((r * 5) % 6), 0.9, 0.42);
+    g.globalAlpha = 0.5;
+    g.strokeStyle = 'rgba(58,54,48,0.6)';
+    g.beginPath();
+    g.moveTo(x + px(2), y + h * 0.52);
+    g.lineTo(x + w - px(2), y + h * 0.48);
+    g.stroke();
+    g.globalAlpha = 1;
+  } else {
+    // A signature: a fair clerk's hand, and one name at the bottom that is
+    // doing all the work.
+    for (let r = 0; r < 6; r++) ink(4, 4 + r * 2.8, 19 - ((r * 4) % 5), 1, 0.45);
+    ink(4, 22, 11, 1, 0.3);
+    ink(12, 25.5, 10, 1.6, 0.85);
+    ink(11, 27, 3, 1, 0.6);
+  }
+}
+
+
+/**
+ * The collection: fifteen slots, always all fifteen.
+ *
+ * @returns max scroll, so the caller clamps the same way as every tab.
+ */
+function drawDocGrid(g, view, s, order, owned, docs, sel, scroll) {
   const bx = view.x + 20 * s, by = view.y + 20 * s;
   const bw = view.w - 40 * s, bh = view.h - 40 * s;
-
-  g.textAlign = 'left';
-  g.textBaseline = 'top';
   const top = by + 46 * s;
   const bottom = by + bh - 12 * s;
 
-  if (!docs.length) {
-    g.font = `italic ${11 * s}px Georgia, serif`;
-    g.fillStyle = P.boxDim;
-    g.fillText('Nothing copied yet. Papers you find can be copied down.',
-               bx + 18 * s, top + 6 * s);
-    return 0;
-  }
+  // Sized so all fifteen fit at once, on any window, without scrolling.
+  // A collection you have to scroll is a list with pictures on it; the
+  // point of this screen is that a student can see the whole set and the
+  // holes in it in one look.
+  const cols = 5;
+  const rowsTotal = Math.ceil(order.length / cols);
+  const cellW = (bw - 44 * s) / cols;
+  // Room reserved at the bottom for the selected paper's title and for the
+  // key help on the tab row, so neither can land on the last row of thumbs.
+  const barH = 30 * s;
+  const barTop = bottom - barH - 14 * s;
+  const gridBottom = barTop - 8 * s;
+  const cellH = (gridBottom - top) / rowsTotal;
+  const thumbH = Math.max(12 * s, cellH - 8 * s);
+  const thumbW = Math.min(thumbH / 1.28, cellW - 10 * s);
 
   g.save();
   g.beginPath();
-  g.rect(bx + 8 * s, top - 4 * s, bw - 16 * s, bottom - top + 4 * s);
+  g.rect(bx + 8 * s, top - 4 * s, bw - 16 * s, gridBottom - top + 4 * s);
   g.clip();
 
-  let y = top - scroll;
-  let contentH = 0;
-  for (const d of docs) {
-    const blockH = 30 * s;
-    if (y + blockH > top - 20 * s && y < bottom + 20 * s) {
-      g.font = `600 ${11 * s}px Georgia, serif`;
-      g.fillStyle = P.boxInk;
-      g.fillText(d.title, bx + 32 * s, y);
-      g.font = `${8.5 * s}px system-ui, sans-serif`;
-      g.fillStyle = P.boxDim;
-      g.fillText(`${d.date} · ${d.kind}`, bx + 32 * s, y + 14 * s);
-      g.fillStyle = P.accent;
-      g.fillRect(bx + 20 * s, y + 4 * s, 4 * s, 4 * s);
+  order.forEach((id, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    const x = bx + 22 * s + c * cellW + (cellW - thumbW) / 2;
+    const y = top + r * cellH - scroll;
+    if (y > gridBottom + cellH || y + cellH < top - cellH) return;
+
+    const have = owned.has(id);
+    const doc = docs[id];
+    if (i === sel) {
+      g.fillStyle = 'rgba(232,196,106,0.30)';
+      g.fillRect(x - 6 * s, y - 6 * s, thumbW + 12 * s, thumbH + 12 * s);
+      g.strokeStyle = P.accent;
+      g.lineWidth = Math.max(1, s);
+      g.strokeRect(x - 6 * s + 0.5, y - 6 * s + 0.5, thumbW + 12 * s - 1, thumbH + 12 * s - 1);
     }
-    y += blockH;
-    contentH += blockH;
-  }
+    drawDocThumb(g, x, y, thumbW, thumbH, s, doc, have);
+  });
   g.restore();
 
-  return Math.max(0, contentH - (bottom - top));
+  // The selected document's title, below the grid, where it has room to be
+  // a full sentence rather than a caption truncated under a thumbnail.
+  const doc = docs[order[sel]];
+  const have = owned.has(order[sel]);
+  g.textAlign = 'left';
+  g.fillStyle = 'rgba(58,54,48,0.10)';
+  g.fillRect(bx + 14 * s, barTop, bw - 28 * s, barH);
+  g.font = `600 ${10 * s}px Georgia, serif`;
+  g.fillStyle = have ? P.boxInk : P.boxDim;
+  g.fillText(have ? doc.title : 'You have not found this one yet.',
+             bx + 22 * s, barTop + 4 * s);
+  g.font = `${8 * s}px system-ui, sans-serif`;
+  g.fillStyle = P.boxDim;
+  g.fillText(have ? `${doc.date}  ·  ${doc.kind}`
+                  : 'Fifteen papers survive. Somebody in the village knows where each one is.',
+             bx + 22 * s, barTop + 17 * s);
+
+  return 0;
 }
 
 /**
@@ -8994,8 +9500,9 @@ function sideSourceOfSafe(state, key) {
 }
 
 /** The tabs across the top of the notebook. */
-function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount) {
+function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount, help) {
   const bx = view.x + 20 * s, by = view.y + 20 * s;
+  const bh = view.h - 40 * s;
   const labels = [
     'What I was told',
     `What I copied down   ${docCount}/${docTotal}`,
@@ -9029,6 +9536,16 @@ function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount) {
     }
     x += widths[i] + gap;
   });
+
+  // Key help, on the tab row, right-aligned, quiet. One place, so it cannot
+  // land on top of anything.
+  if (help) {
+    g.textAlign = 'right';
+    g.font = `${7.5 * s}px system-ui, sans-serif`;
+    g.fillStyle = 'rgba(90,84,74,0.62)';
+    g.fillText(help, bx + bw - 18 * s, by + bh - 14 * s);
+    g.textAlign = 'left';
+  }
 }
 
 /**
@@ -9404,6 +9921,10 @@ class Game {
     this.notebookScroll = 0;
     this.docScroll = 0;
     this.notebookTab = 0;
+    this.noteSel = 0;           // cursor in the grouped notebook
+    this.noteOpen = new Set();  // which people's headings are expanded
+    this.docSel = 0;            // cursor in the document collection
+    this.readerFrom = 'world';  // where the reader was opened from
     this.convNpc = null;
     this.objFlash = 0;
     this.moveHeld = 0;          // seconds of unbroken walking, for auto-run
@@ -9810,8 +10331,12 @@ class Game {
     if (!spot) return null;
     if (spot.doc) {
       // Never promise "read" on a locked document. Saying "read" and then
-      // doing nothing is indistinguishable from the game being broken.
-      if (spot.require && !this.state.knowsAll(spot.require)) return 'look';
+      // doing nothing is indistinguishable from the game being broken. A
+      // gated spot is still worth examining — it is a bar, a table, a court
+      // bench — it just has no paper on it yet.
+      if (spot.require && !this.state.knowsAll(spot.require)) {
+        return CLUES[spot.id] ? 'look' : null;
+      }
       return this.state.hasDoc(spot.doc) ? 'read again' : 'read';
     }
     if (spot.bench || CLUES[spot.id]) return 'look';
@@ -9843,13 +10368,40 @@ class Game {
     const spot = interactAt(map, fx, fy);
     if (!spot) return;
 
-    // A document. Knowledge-gated exactly like a conversation topic: you
-    // cannot read Parris's contract until you have counted his woodpile.
+    // A document.
+    //
+    // One object, one keypress. The seating chart and the working sheet
+    // pinned up beside it used to be two interactables a tile apart: you
+    // examined the chart, got the good beat about who sits where, saw no
+    // document, and walked out. The account book was worse — the book on
+    // the bar and the loose page from the same book were three tiles apart
+    // across the room.
+    //
+    // So a document spot may also carry an `id`. Examining it plays that
+    // observation once — the thing itself, in the room, before any
+    // transcription — and then the reader opens on the same keypress.
     if (spot.doc) {
-      if (spot.require && !this.state.knowsAll(spot.require)) {
-        this.startScript([{ say: spot.locked || 'Not yet.', who: null }], null, () => {
+      const locked = spot.require && !this.state.knowsAll(spot.require);
+      const intro = CLUES[spot.id];
+      const fired = spot.id && this.state.knows(`fired.look.${spot.id}`);
+
+      // Locked: the furniture is still there and still worth looking at.
+      // What is missing is the paper, and it is missing rather than refused.
+      if (locked) {
+        if (!intro) return;
+        this.state.learn(`fired.look.${spot.id}`, 'observed');
+        const before = this.state.flags.size;
+        this.startScript(intro, null, () => {
           this.mode = 'play'; this.dlg = null;
+          if (this.state.flags.size > before) this.showToast('Noted in your notebook');
+          this.save();
         });
+        return;
+      }
+
+      if (intro && !fired) {
+        this.state.learn(`fired.look.${spot.id}`, 'observed');
+        this.startScript(intro, null, () => { this.openReader(spot.doc); });
         return;
       }
       this.openReader(spot.doc);
@@ -9869,12 +10421,28 @@ class Game {
     });
   }
 
+  /**
+   * Which papers exist, and which of them are asking to be picked up.
+   *
+   * Both come from one place — the gate written on the document's
+   * interactable, which `buildMap` copies onto the sprite — so a paper is
+   * drawn exactly when it is readable, and never the other way round.
+   */
+  syncPapers(map) {
+    for (const p of map.props) {
+      if (!p.docId) continue;
+      p.hidden = !this.state.knowsAll(p.gate);
+      p.live = !p.hidden && !this.state.hasDoc(p.docId);
+    }
+  }
+
   showToast(text) { this.toast = { text, t: 2.6 }; this.audio.noted(); }
 
   openReader(id) {
     const doc = DOCUMENTS[id];
-    if (!doc) return;
+    if (!doc) { this.mode = 'play'; this.dlg = null; return; }
     this.reader = doc;
+    this.dlg = null;          // may be arriving straight out of a look script
     this.docScroll = 0;
     this.mode = 'reader';
     // Opening it IS copying it. The second keypress was never discoverable,
@@ -10005,6 +10573,7 @@ class Game {
     if (inWorld) {
       const here = this.mapFor(this.player.map);
       updateCritters(here, dt, this.clock);
+      this.syncPapers(here);
 
       // Villagers who are doing a job loop two frames on the spot. Actors
       // already carry three frames per direction and nothing had ever
@@ -10054,11 +10623,17 @@ class Game {
     }
 
     if (this.mode === 'reader') {
-      if (inp.justPressed('cancel') || inp.justPressed('notebook')) {
-        this.mode = 'play'; this.reader = null; return;
-      }
+      // Closing goes back where it was opened from. A student who reopens
+      // the Topsfield petition from the collection to check a date should
+      // land back in the collection, not in a room three chapters away.
+      const back = () => {
+        this.mode = this.readerFrom === 'notebook' ? 'notebook' : 'play';
+        this.reader = null;
+        this.readerFrom = 'world';
+      };
+      if (inp.justPressed('cancel') || inp.justPressed('notebook')) { back(); return; }
       // Z and X both close it now that opening does the copying.
-      if (inp.justPressed('confirm')) { this.mode = 'play'; this.reader = null; return; }
+      if (inp.justPressed('confirm')) { back(); return; }
       if (inp.isDown('down')) this.docScroll += 320 * dt;
       if (inp.isDown('up')) this.docScroll -= 320 * dt;
       this.docScroll = Math.max(0, Math.min(this.docScroll, this.docMax || 0));
@@ -10078,6 +10653,57 @@ class Game {
         this.notebookTab = (this.notebookTab + 1) % 3;
         this.notebookScroll = 0;
         this.audio.menuMove();
+      }
+
+      // Tab 0: headings. Up and down move between people, Z opens the one
+      // you are on. Nothing scrolls freely any more — a student looking for
+      // what Rebecca Nurse said should be able to find it by name.
+      if (this.notebookTab === 0) {
+        const groups = notebookGroups(this.state);
+        if (groups.length) {
+          this.noteSel = Math.min(this.noteSel, groups.length - 1);
+          if (inp.justPressed('down')) { this.noteSel = Math.min(groups.length - 1, this.noteSel + 1); this.audio.menuMove(); }
+          if (inp.justPressed('up')) { this.noteSel = Math.max(0, this.noteSel - 1); this.audio.menuMove(); }
+          if (inp.justPressed('confirm')) {
+            const k = groups[this.noteSel].key;
+            if (this.noteOpen.has(k)) this.noteOpen.delete(k); else this.noteOpen.add(k);
+            this.audio.menuPick();
+          }
+          // Keep the cursor on screen as the list grows under it. Only an
+          // approximation — an open heading is taller than a closed one —
+          // but it only has to stop the cursor leaving the panel.
+          const approx = this.noteSel * 20 * this.scale;
+          const window = 200 * this.scale;
+          if (approx - this.notebookScroll > window) this.notebookScroll = approx - window;
+          if (approx < this.notebookScroll) this.notebookScroll = approx;
+          this.notebookScroll = Math.max(0, Math.min(this.notebookScroll, this.notebookMax || 0));
+        }
+        return;
+      }
+
+      // Tab 1: the document grid. Arrows move through the fifteen slots, Z
+      // reopens whichever one you are on — a document used to be readable
+      // exactly once, at the table it was found on, which for a game that
+      // ends by asking what you think caused it was a real gap.
+      if (this.notebookTab === 1) {
+        // Up and down walk the whole grid in reading order, one slot at a
+        // time. Left and right belong to the tabs everywhere else in this
+        // screen, and stealing them here to mean "next column" would make
+        // the one key that always changes tab sometimes not change tab.
+        const order = Object.keys(DOCUMENTS);
+        const cols = 5;
+        if (inp.justPressed('down')) { this.docSel = Math.min(order.length - 1, this.docSel + 1); this.audio.menuMove(); }
+        if (inp.justPressed('up')) { this.docSel = Math.max(0, this.docSel - 1); this.audio.menuMove(); }
+        if (inp.justPressed('confirm') && this.state.hasDoc(order[this.docSel])) {
+          this.readerFrom = 'notebook';
+          this.openReader(order[this.docSel]);
+        }
+        const row = Math.floor(this.docSel / cols);
+        const rowH = 66 * this.scale;
+        if (row * rowH - this.notebookScroll > 120 * this.scale) this.notebookScroll = row * rowH - 120 * this.scale;
+        if (row * rowH < this.notebookScroll) this.notebookScroll = row * rowH;
+        this.notebookScroll = Math.max(0, Math.min(this.notebookScroll, this.notebookMax || 0));
+        return;
       }
 
       // On the disputes tab the arrows move a cursor rather than scrolling
@@ -10312,21 +10938,29 @@ class Game {
 
     if (this.mode === 'notebook') {
       if (this.notebookTab === 0) {
-        this.notebookMax = drawNotebook(
-          g, v, s, notebookEntries(this.state), this.notebookScroll, sourceName) || 0;
+        drawNotebook(g, v, s, null, 0, sourceName, 'What I have seen and been told');
+        this.notebookMax = drawGroupedNotebook(
+          g, v, s, notebookGroups(this.state), this.notebookScroll,
+          this.noteSel, this.noteOpen) || 0;
       } else if (this.notebookTab === 1) {
-        // Draw the shell, then the document list in place of the entries.
-        drawNotebook(g, v, s, [], 0, sourceName);
-        const docs = this.state.docLog().map((d) => DOCUMENTS[d.id]).filter(Boolean);
-        this.notebookMax = drawDocTab(g, v, s, docs, this.notebookScroll, DOC_COUNT) || 0;
+        // Draw the shell, then the collection in place of the entries.
+        drawNotebook(g, v, s, null, 0, sourceName, 'The papers I have copied down');
+        this.notebookMax = drawDocGrid(
+          g, v, s, Object.keys(DOCUMENTS), this.state.docs, DOCUMENTS,
+          this.docSel, this.notebookScroll) || 0;
       } else {
         const list = activeDisputes(this.state);
         this.disputeSel = Math.min(this.disputeSel, Math.max(0, list.length - 1));
         this.notebookMax = drawDisputeTab(
           g, v, s, list, this.state, this.notebookScroll, this.disputeSel, shortSourceName) || 0;
       }
+      const HELP = [
+        '↑ ↓ move  ·  Z open a heading  ·  ← → tabs  ·  X close',
+        '↑ ↓ move  ·  Z read it again  ·  ← → tabs  ·  X close',
+        '↑ ↓ move  ·  1 2 3 take a position  ·  ← → tabs  ·  X close',
+      ];
       drawNotebookTabs(g, v, s, this.notebookTab, this.state.docs.size, DOC_COUNT,
-                       activeDisputes(this.state).length);
+                       activeDisputes(this.state).length, HELP[this.notebookTab]);
     }
 
     if (this.mode === 'reader' && this.reader) {
@@ -10402,15 +11036,26 @@ class Game {
       lines.push('MY ANSWER — what caused it?', '', this.state.answer, '',
                  '---------------------------------------------', '');
     }
+    // Grouped the same way the notebook on screen is grouped, by who told
+    // the player. A student pasting this into an assignment should get the
+    // structure they were reading from, not a different one — and grouping
+    // by source puts "how do you know that?" next to every claim.
+    //
+    // Numbering stays continuous across the groups, so an instruction like
+    // "cite three entries by number" still works.
     lines.push('WHAT I SAW AND WAS TOLD', '');
     if (!entries.length) {
       lines.push('(Nothing recorded yet.)');
     } else {
-      entries.forEach((e, i) => {
-        lines.push(`${i + 1}. ${e.text}`);
-        lines.push(`   [${sourceName(e.source)}]`);
+      let n = 0;
+      for (const grp of notebookGroups(this.state)) {
+        lines.push(`${grp.label.toUpperCase()}  (${grp.entries.length})`, '');
+        for (const e of grp.entries) {
+          n += 1;
+          lines.push(`${n}. ${e.text}`);
+        }
         lines.push('');
-      });
+      }
     }
 
     const docs = this.state.docLog().map((d) => DOCUMENTS[d.id]).filter(Boolean);

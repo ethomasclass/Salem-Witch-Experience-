@@ -35,7 +35,25 @@ const RECK_DOCS  = ['annApology', 'sewallApology', 'johnsonAct'];
  * places.
  * ---------------------------------------------------------------------- */
 
-const firstMissing = (s, list, has) => list.find((e) => !has(s, e)) || null;
+/**
+ * The next thing outstanding — but if it is a document nobody has told the
+ * player about yet, point at the person instead of at the paper.
+ *
+ * Documents are unlocked by conversation now, and the paper is not drawn
+ * until somebody names it. So a goal reading "read the petition in the
+ * Putnam house" would send a student to stand in front of an empty table.
+ * The waypoint carries `via` — who to ask, and where they are — and the
+ * step redirects there until that conversation has happened.
+ */
+const firstMissing = (s, list, has) => {
+  const e = list.find((x) => !has(s, x));
+  if (!e) return null;
+  // `via` is an ordinary waypoint in its own right — it has a flag, a place
+  // and a line — so everything downstream (the arrow, the goal text, the
+  // key an NPC can point at) works on it without knowing it is a detour.
+  if (e.via && !s.knows(e.via.flag)) return e.via;
+  return e;
+};
 const byFlag = (s, e) => s.knows(e.flag);
 const byDoc  = (s, e) => s.hasDoc(e.doc);
 const byNpc  = (s, e) => s.hasSpokenTo(e.npc);
@@ -73,15 +91,25 @@ const MARCH_CAST_WHERE = [
   { npc: 'mercy',     map: 'village', x: 29, y: 23,
     line: 'Talk to Mercy Lewis, out in the road on the east side' },
 ];
+// `via` is who to ask first. Until that flag is known, the goal points at the
+// person rather than at a table with nothing on it.
 const MARCH_DOC_WHERE = [
   { doc: 'parrisAgreement',   map: 'parsonage', x: 2, y: 5,
-    line: 'Read the paper on the desk in the parsonage' },
+    line: 'Read the agreement on the table in the parsonage',
+    via: { flag: 'paper.agreement', map: 'parsonage', x: 3, y: 3,
+           line: 'Ask Tituba or Rev. Parris about the firewood. One of them will tell you where the agreement is' } },
   { doc: 'seatingList',       map: 'meetinghouse', x: 7, y: 1,
-    line: 'Read the seating list at the front of the meetinghouse' },
-  { doc: 'accountBookPage',   map: 'tavern', x: 2, y: 6,
-    line: 'Read the loose account page on the tavern table' },
+    line: 'Read the working sheet pinned beside the seating chart',
+    via: { flag: 'paper.seating', map: 'tavern', x: 6, y: 4,
+           line: 'Ask Ingersoll or Rebecca Nurse about the meetinghouse seating' } },
+  { doc: 'accountBookPage',   map: 'tavern', x: 2, y: 3,
+    line: 'Read the loose page Ingersoll left on the bar',
+    via: { flag: 'paper.accounts', map: 'tavern', x: 6, y: 4,
+           line: 'Ask Ingersoll about his account book' } },
   { doc: 'topsfieldPetition', map: 'putnamhouse', x: 2, y: 4,
-    line: 'Read the petition on the table in the Putnam house' },
+    line: 'Read the petition on the table in the Putnam house',
+    via: { flag: 'paper.topsfield', map: 'putnamhouse', x: 3, y: 3,
+           line: 'Ask Ann Putnam or Rebecca Nurse about the boundary stone' } },
 ];
 const JUNE_CAST_WHERE = [
   { npc: 'marywarren', map: 'tavern', x: 8, y: 6,
@@ -93,20 +121,30 @@ const JUNE_CAST_WHERE = [
 ];
 const JUNE_DOC_WHERE = [
   { doc: 'nursePetition',    map: 'nursehouse', x: 5, y: 4,
-    line: 'Read the petition left on the table in the Nurse house' },
+    line: 'Read the petition left on the table in the Nurse house',
+    via: { flag: 'paper.nursepetition', map: 'village', x: 7, y: 16,
+           line: 'Ask Francis Nurse what he is doing about it' } },
   { doc: 'nurseWarrant',     map: 'tavern', x: 3, y: 6,
-    line: 'Read the warrant lying on the tavern table' },
+    line: 'Read the warrant lying on the tavern table',
+    via: { flag: 'paper.warrant', map: 'tavern', x: 6, y: 4,
+           line: 'Ask Ingersoll about the paper on his table' } },
   { doc: 'putnamDeposition', map: 'meetinghouse', x: 5, y: 3,
-    line: 'Read the deposition in the meetinghouse' },
+    line: 'Read the deposition in the meetinghouse',
+    via: { flag: 'paper.deposition', map: 'putnamhouse', x: 3, y: 3,
+           line: 'Ask Ann Putnam who writes her depositions' } },
   { doc: 'jailBill',         map: 'jail', x: 9, y: 6,
-    line: 'Read the jailer’s bill, on the far side of the jail' },
+    line: 'Read the keeper’s bill, on the table by the stair',
+    via: { flag: 'paper.jailbill', map: 'jail', x: 4, y: 4,
+           line: 'Ask Rebecca Nurse how she is. She will mention what it costs' } },
 ];
+const SEPT_VIA = { flag: 'paper.court', map: 'village', x: 27, y: 24,
+  line: 'Ask the man at the fence whether it is over. He will tell you where the papers are' };
 const SEPT_DOC_WHERE = [
-  { doc: 'coreyRecord',        map: 'meetinghouse', x: 5, y: 3,
+  { doc: 'coreyRecord',        map: 'meetinghouse', x: 5, y: 3, via: SEPT_VIA,
     line: 'Read the first paper on the court table in the meetinghouse' },
-  { doc: 'deathWarrantReturn', map: 'meetinghouse', x: 8, y: 3,
+  { doc: 'deathWarrantReturn', map: 'meetinghouse', x: 8, y: 3, via: SEPT_VIA,
     line: 'Read the middle paper on the court table' },
-  { doc: 'eastyPetition',      map: 'meetinghouse', x: 10, y: 3,
+  { doc: 'eastyPetition',      map: 'meetinghouse', x: 10, y: 3, via: SEPT_VIA,
     line: 'Read the last paper on the court table' },
 ];
 const RECK_DOC_WHERE = [

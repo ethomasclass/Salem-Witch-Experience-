@@ -421,8 +421,13 @@ export const PARSONAGE = {
     { id: 'sickbed', x: 8, y: 5, w: 2, h: 2 },
     { id: 'parrisDesk', x: 8, y: 2, w: 2, h: 1 },
     { id: 'insideWood', x: 2, y: 2, w: 1, h: 1 },
-    { doc: 'parrisAgreement', x: 2, y: 5, w: 2, h: 1, require: ['clue.woodpile'],
-      locked: 'A folded paper on the table, covered in sums. It is some kind of agreement, and it will mean nothing to you until you have seen what the village actually gave him. The woodpile is outside the front door.' },
+    // Two gates, deliberately. Tituba has to name the paper before it is
+    // there to read — and the woodpile is still required, because the
+    // written promise means nothing until you have counted what the village
+    // actually delivered against it. Which order the player does them in is
+    // up to them, and Tituba's line changes depending.
+    { id: 'agreementTable', doc: 'parrisAgreement', x: 2, y: 5, w: 2, h: 1,
+      require: ['clue.woodpile', 'paper.agreement'] },
   ],
   npcs: [
     { id: 'tituba', x: 3, y: 3, dir: 'down' },
@@ -453,11 +458,14 @@ export const MEETINGHOUSE = {
   ],
   warps: [{ x: 6, y: 9, to: 'village', tx: 22, ty: 16, dir: 'down' }],
   interact: [
-    { id: 'seatingChart', x: 5, y: 1, w: 2, h: 2 },
+    // The chart and the working sheet pinned up beside it are ONE object.
+    // They were two, a tile apart, and a player who examined the chart got
+    // the whole beat about who sits where, saw no document, and walked out
+    // with the counter stuck at two of four.
+    { id: 'seatingChart', doc: 'seatingList', x: 5, y: 1, w: 3, h: 2,
+      require: ['paper.seating'] },
     { id: 'pews', x: 2, y: 5, w: 3, h: 1 },
     { id: 'pews', x: 8, y: 7, w: 3, h: 1 },
-    { doc: 'seatingList', x: 7, y: 1, w: 1, h: 2, require: ['clue.seating'],
-      locked: 'A second sheet is pinned up beside the seating chart. Look at the chart itself first — this one is only the working.' },
   ],
   npcs: [],
   byChapter: {
@@ -465,7 +473,8 @@ export const MEETINGHOUSE = {
       name: 'The meetinghouse · the court sits here',
       addProps: [{ kind: 'table', x: 5, y: 3 }, { kind: 'paper', x: 5, y: 3 }],
       addInteract: [
-        { doc: 'putnamDeposition', x: 5, y: 3, w: 2, h: 1 },
+        { id: 'courtTable', doc: 'putnamDeposition', x: 5, y: 3, w: 2, h: 1,
+          require: ['paper.deposition'] },
         { id: 'courtRoom', x: 8, y: 3, w: 3, h: 1 },
       ],
     },
@@ -475,9 +484,16 @@ export const MEETINGHOUSE = {
         { kind: 'paper', x: 8, y: 3 }, { kind: 'paper', x: 10, y: 3 },
       ],
       addInteract: [
-        { doc: 'coreyRecord', x: 5, y: 3, w: 2, h: 1 },
-        { doc: 'deathWarrantReturn', x: 8, y: 3, w: 1, h: 1 },
-        { doc: 'eastyPetition', x: 10, y: 3, w: 1, h: 1 },
+        // All three unlocked together, by the one man in September who
+        // will still talk to you. Splitting them into three errands would
+        // send the player back and forth across an empty village to the
+        // same fence three times.
+        { id: 'coreyPaper', doc: 'coreyRecord', x: 5, y: 3, w: 2, h: 1,
+          require: ['paper.court'] },
+        { id: 'warrantPaper', doc: 'deathWarrantReturn', x: 8, y: 3, w: 1, h: 1,
+          require: ['paper.court'] },
+        { id: 'eastyPaper', doc: 'eastyPetition', x: 10, y: 3, w: 1, h: 1,
+          require: ['paper.court'] },
       ],
     },
   },
@@ -496,18 +512,17 @@ export const TAVERN = {
     { kind: 'hearth', x: 7, y: 1 },
     { kind: 'table', x: 2, y: 3 },
     { kind: 'accountbook', x: 2, y: 3 },
+    // The loose page sits ON the book it came out of. It used to be three
+    // tiles away on a second table, which meant the player examined the
+    // account book, got the good beat, and then had to find a different
+    // sprite across the room to read a page of the same ledger.
+    { kind: 'paper', x: 3, y: 3 },
     { kind: 'table', x: 2, y: 6 },
-    // The loose pages further down the table. Same bug as the seating list:
-    // the document was reachable and invisible, so the player saw a bare
-    // table. June happened to escape it only because the Nurse warrant adds
-    // its own sheet to the same table three months later.
-    { kind: 'paper', x: 2, y: 6 },
   ],
   warps: [{ x: 5, y: 8, to: 'village', tx: 33, ty: 17, dir: 'down' }],
   interact: [
-    { id: 'accountBook', x: 2, y: 3, w: 2, h: 1 },
-    { doc: 'accountBookPage', x: 2, y: 6, w: 2, h: 1, require: ['clue.accounts'],
-      locked: 'More pages of the same ledger, further down the table. Read the page Ingersoll has open first.' },
+    { id: 'accountBook', doc: 'accountBookPage', x: 2, y: 3, w: 2, h: 1,
+      require: ['paper.accounts'] },
   ],
   npcs: [
     { id: 'ingersoll', x: 6, y: 4, dir: 'left' },
@@ -516,7 +531,8 @@ export const TAVERN = {
     june: {
       name: "Ingersoll's tavern · full house",
       addProps: [{ kind: 'paper', x: 3, y: 6 }],
-      addInteract: [{ doc: 'nurseWarrant', x: 3, y: 6, w: 1, h: 1 }],
+      addInteract: [{ id: 'warrantTable', doc: 'nurseWarrant', x: 3, y: 6, w: 2, h: 1,
+                      require: ['paper.warrant'] }],
       npcs: [
         { id: 'ingersoll', x: 6, y: 4, dir: 'left' },
         { id: 'marywarren', x: 8, y: 6, dir: 'left' },
@@ -551,12 +567,14 @@ export const NURSEHOUSE = {
     june: {
       name: 'The Nurse homestead · quiet',
       addProps: [{ kind: 'paper', x: 5, y: 4 }],
-      addInteract: [{ doc: 'nursePetition', x: 5, y: 4, w: 2, h: 1 }],
+      addInteract: [{ id: 'nurseTable', doc: 'nursePetition', x: 5, y: 4, w: 2, h: 1,
+                      require: ['paper.nursepetition'] }],
       npcs: [],
     },
     september: {
       addProps: [{ kind: 'paper', x: 5, y: 4 }],
-      addInteract: [{ doc: 'nursePetition', x: 5, y: 4, w: 2, h: 1 }],
+      addInteract: [{ id: 'nurseTable', doc: 'nursePetition', x: 5, y: 4, w: 2, h: 1,
+                      require: ['paper.nursepetition'] }],
       npcs: [],
     },
   },
@@ -587,8 +605,11 @@ export const PUTNAMHOUSE = {
     { kind: 'dresser', x: 2, y: 1 },
   ],
   interact: [
-    { doc: 'topsfieldPetition', x: 2, y: 4, w: 2, h: 1, require: ['clue.marker'],
-      locked: 'Papers on the table in several different hands, arguing about a boundary line. You would have to have seen that boundary for any of this to mean anything. There is a stone somewhere in the woods north of the village.' },
+    // Two gates again, and for the same reason as the parsonage: Rebecca
+    // Nurse sends you here to find it, and the boundary stone in the woods
+    // is what makes a page of surveyors' language mean anything.
+    { id: 'putnamTable', doc: 'topsfieldPetition', x: 2, y: 4, w: 2, h: 1,
+      require: ['clue.marker', 'paper.topsfield'] },
   ],
   npcs: [{ id: 'annjr', x: 3, y: 3, dir: 'down' }],
   byChapter: {
@@ -844,7 +865,8 @@ export const JAIL = {
   ],
   warps: [{ x: 6, y: 9, to: 'road', tx: 7, ty: 30, dir: 'down' }],
   interact: [
-    { doc: 'jailBill', x: 9, y: 6, w: 2, h: 1 },
+    { id: 'jailTable', doc: 'jailBill', x: 9, y: 6, w: 2, h: 1,
+      require: ['paper.jailbill'] },
     { id: 'jailStraw', x: 2, y: 5, w: 3, h: 1 },
   ],
   triggers: [{ id: 'arriveJail', x: 6, y: 8, w: 1, h: 1 }],

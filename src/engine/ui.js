@@ -212,7 +212,108 @@ export function drawToast(g, view, s, text, alpha) {
  * doc is firm that without something the teacher can collect, this is a fun
  * thirty minutes with no assessment hook.
  */
-export function drawNotebook(g, view, s, entries, scroll, sourceName) {
+/**
+ * The notebook, as headings.
+ *
+ * Closed by default, one line each, arrow keys to move and Z to open. The
+ * flat version of this screen was seven screens of prose with no structure
+ * in it, and the honest description of what a student did with it was scroll
+ * past the whole thing.
+ *
+ * `open` is a Set of group keys, `sel` the cursor. Returns the max scroll so
+ * the caller can clamp, exactly like the other tabs.
+ */
+export function drawGroupedNotebook(g, view, s, groups, scroll, sel, open) {
+  const bx = view.x + 20 * s, by = view.y + 20 * s;
+  const bw = view.w - 40 * s, bh = view.h - 40 * s;
+
+  g.textAlign = 'left';
+  g.textBaseline = 'top';
+  const top = by + 46 * s;
+  const bottom = by + bh - 12 * s;
+
+  if (!groups.length) {
+    g.font = `italic ${11 * s}px Georgia, serif`;
+    g.fillStyle = P.boxDim;
+    g.fillText('Nothing yet. Go and talk to someone.', bx + 18 * s, top + 6 * s);
+    return 0;
+  }
+
+  g.save();
+  g.beginPath();
+  g.rect(bx + 8 * s, top - 4 * s, bw - 16 * s, bottom - top + 4 * s);
+  g.clip();
+
+  const textW = bw - 76 * s;
+  const lineH = 12.5 * s;
+  const headFont = `600 ${10.5 * s}px Georgia, serif`;
+  const bodyFont = `${9.5 * s}px Georgia, serif`;
+
+  let y = top - scroll;
+  let contentH = 0;
+
+  groups.forEach((grp, i) => {
+    const isOpen = open.has(grp.key);
+    const isSel = i === sel;
+    const headH = 20 * s;
+
+    if (y + headH > top - 24 * s && y < bottom + 24 * s) {
+      if (isSel) {
+        g.fillStyle = 'rgba(232,196,106,0.16)';
+        g.fillRect(bx + 14 * s, y - 3 * s, bw - 28 * s, headH);
+      }
+      g.font = `${9 * s}px system-ui, sans-serif`;
+      g.fillStyle = isSel ? P.accent : P.boxDim;
+      g.fillText(isOpen ? '▾' : '▸', bx + 20 * s, y + 2 * s);
+
+      g.font = headFont;
+      g.fillStyle = isSel ? P.boxInk : 'rgba(58,54,48,0.86)';
+      g.fillText(grp.label, bx + 34 * s, y + 1 * s);
+
+      // The count is the point of a closed heading: it tells a student how
+      // much they got out of a person without opening anything.
+      g.font = `${9 * s}px system-ui, sans-serif`;
+      g.fillStyle = P.boxDim;
+      g.textAlign = 'right';
+      g.fillText(String(grp.entries.length), bx + bw - 22 * s, y + 3 * s);
+      g.textAlign = 'left';
+    }
+    y += headH;
+    contentH += headH;
+
+    if (!isOpen) return;
+    for (const e of grp.entries) {
+      g.font = bodyFont;
+      const lines = wrapText(g, e.text, textW);
+      const blockH = lines.length * lineH + 7 * s;
+      if (y + blockH > top - 24 * s && y < bottom + 24 * s) {
+        g.fillStyle = 'rgba(140,120,80,0.5)';
+        g.fillRect(bx + 38 * s, y + 1 * s, 1 * s, lines.length * lineH - 2 * s);
+        g.font = bodyFont;
+        g.fillStyle = P.boxInk;
+        let ly = y;
+        for (const l of lines) { g.fillText(l, bx + 46 * s, ly); ly += lineH; }
+      }
+      y += blockH;
+      contentH += blockH;
+    }
+    y += 4 * s;
+    contentH += 4 * s;
+  });
+  g.restore();
+
+  return Math.max(0, contentH - (bottom - top));
+}
+
+/**
+ * @param entries  an array to render as a flat list, or NULL to draw only
+ *                 the panel and let a tab draw its own contents into it.
+ *                 The shell used to be requested by passing an empty array,
+ *                 which meant every tab printed "Nothing yet. Go and talk to
+ *                 someone." underneath itself, in italic, through the tabs.
+ * @param heading  overrides the panel title for tabs that are not a log.
+ */
+export function drawNotebook(g, view, s, entries, scroll, sourceName, heading) {
   g.fillStyle = 'rgba(12,12,16,0.72)';
   g.fillRect(view.x, view.y, view.w, view.h);
 
@@ -224,11 +325,11 @@ export function drawNotebook(g, view, s, entries, scroll, sourceName) {
   g.font = `700 ${13 * s}px Georgia, serif`;
   g.fillStyle = P.boxInk;
   g.textBaseline = 'top';
-  g.fillText('What I have seen and been told', bx + 18 * s, by + 14 * s);
+  g.fillText(heading || 'What I have seen and been told', bx + 18 * s, by + 14 * s);
 
-  g.font = `${8.5 * s}px system-ui, sans-serif`;
-  g.fillStyle = P.boxDim;
-  g.fillText('X or Esc to close  ·  ↑ ↓ to scroll', bx + 18 * s, by + 31 * s);
+  // No key hint here. It used to print at by+31s, which is exactly where
+  // the tab strip lands, so the two overprinted each other on every tab.
+  // The help now belongs to the tabs, drawn once, in one place.
 
   const top = by + 46 * s;
   const bottom = by + bh - 12 * s;
@@ -240,6 +341,7 @@ export function drawNotebook(g, view, s, entries, scroll, sourceName) {
   g.lineTo(bx + bw - 18 * s, top - 8 * s);
   g.stroke();
 
+  if (!entries) return;              // shell only; a tab draws its own body
   if (!entries.length) {
     g.font = `italic ${11 * s}px Georgia, serif`;
     g.fillStyle = P.boxDim;
@@ -533,48 +635,159 @@ export function drawReader(g, view, s, doc, fidelityLabel, scroll, copied) {
 }
 
 /** The notebook's document tab: what the player has copied down. */
-export function drawDocTab(g, view, s, docs, scroll, total) {
+/* ---------------------------------------------------------------------- *
+ * The document collection
+ *
+ * Fifteen slots, always all fifteen, drawn as the papers themselves. The
+ * list version was fifteen lines of title-and-date, which is a bibliography
+ * — and a bibliography is the one thing a student can already produce
+ * without playing anything.
+ *
+ * The thumbnails are drawn from each document's own `kind` field, which was
+ * already an evidence typology before this screen existed: "A signature",
+ * "A number", "Thirty-nine signatures", "Not meant for you". So the grid
+ * sorts itself visually by what makes each paper evidence, without a legend
+ * and without a word of new content.
+ * ---------------------------------------------------------------------- */
+
+const INK = '#4a4238';
+const PAPER_LIT = '#e9e2d2';
+const PAPER_DIM = 'rgba(90,84,74,0.22)';
+
+function drawDocThumb(g, x, y, w, h, s, doc, owned) {
+  const px = (n) => n * s;
+  g.fillStyle = owned ? PAPER_LIT : 'rgba(58,54,48,0.10)';
+  g.fillRect(x, y, w, h);
+  g.strokeStyle = owned ? 'rgba(58,54,48,0.45)' : 'rgba(58,54,48,0.30)';
+  g.lineWidth = Math.max(1, s * 0.6);
+  g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+
+  if (!owned) {
+    // An empty slot says how many are left without a bar or a percentage.
+    g.strokeStyle = 'rgba(58,54,48,0.22)';
+    g.beginPath();
+    g.moveTo(x + px(5), y + px(5));
+    g.lineTo(x + w - px(5), y + h - px(5));
+    g.moveTo(x + w - px(5), y + px(5));
+    g.lineTo(x + px(5), y + h - px(5));
+    g.stroke();
+    return;
+  }
+
+  const ink = (ix, iy, iw, ih, a = 0.55) => {
+    g.globalAlpha = a;
+    g.fillStyle = INK;
+    g.fillRect(x + px(ix), y + px(iy), px(iw), px(ih));
+    g.globalAlpha = 1;
+  };
+
+  const kind = doc.kind || '';
+  if (kind === 'A number') {
+    // A ledger: two columns, short entries, figures ruled off to the right.
+    for (let r = 0; r < 7; r++) {
+      ink(4, 5 + r * 3.4, 9 + (r % 3) * 3, 1);
+      ink(20, 5 + r * 3.4, 5 - (r % 2), 1, 0.7);
+    }
+    ink(18.5, 4, 0.6, 25, 0.35);
+  } else if (kind === 'Thirty-nine signatures') {
+    // Many hands. Deliberately uneven — some of these people signed with
+    // difficulty, and the thumbnail should say so before the reader does.
+    ink(4, 4, 18, 1);
+    ink(4, 6.4, 13, 1);
+    for (let r = 0; r < 8; r++) {
+      const wobble = ((r * 7) % 5) - 2;
+      ink(4 + (r % 2) * 12, 11 + r * 2.3, 8 + wobble, 1.2, 0.5 + (r % 3) * 0.12);
+    }
+  } else if (kind === 'Not meant for you') {
+    // Private writing: small, dense, no clerk's margin, and a fold across it.
+    for (let r = 0; r < 11; r++) ink(4, 4 + r * 2.3, 19 - ((r * 5) % 6), 0.9, 0.42);
+    g.globalAlpha = 0.5;
+    g.strokeStyle = 'rgba(58,54,48,0.6)';
+    g.beginPath();
+    g.moveTo(x + px(2), y + h * 0.52);
+    g.lineTo(x + w - px(2), y + h * 0.48);
+    g.stroke();
+    g.globalAlpha = 1;
+  } else {
+    // A signature: a fair clerk's hand, and one name at the bottom that is
+    // doing all the work.
+    for (let r = 0; r < 6; r++) ink(4, 4 + r * 2.8, 19 - ((r * 4) % 5), 1, 0.45);
+    ink(4, 22, 11, 1, 0.3);
+    ink(12, 25.5, 10, 1.6, 0.85);
+    ink(11, 27, 3, 1, 0.6);
+  }
+}
+
+
+/**
+ * The collection: fifteen slots, always all fifteen.
+ *
+ * @returns max scroll, so the caller clamps the same way as every tab.
+ */
+export function drawDocGrid(g, view, s, order, owned, docs, sel, scroll) {
   const bx = view.x + 20 * s, by = view.y + 20 * s;
   const bw = view.w - 40 * s, bh = view.h - 40 * s;
-
-  g.textAlign = 'left';
-  g.textBaseline = 'top';
   const top = by + 46 * s;
   const bottom = by + bh - 12 * s;
 
-  if (!docs.length) {
-    g.font = `italic ${11 * s}px Georgia, serif`;
-    g.fillStyle = P.boxDim;
-    g.fillText('Nothing copied yet. Papers you find can be copied down.',
-               bx + 18 * s, top + 6 * s);
-    return 0;
-  }
+  // Sized so all fifteen fit at once, on any window, without scrolling.
+  // A collection you have to scroll is a list with pictures on it; the
+  // point of this screen is that a student can see the whole set and the
+  // holes in it in one look.
+  const cols = 5;
+  const rowsTotal = Math.ceil(order.length / cols);
+  const cellW = (bw - 44 * s) / cols;
+  // Room reserved at the bottom for the selected paper's title and for the
+  // key help on the tab row, so neither can land on the last row of thumbs.
+  const barH = 30 * s;
+  const barTop = bottom - barH - 14 * s;
+  const gridBottom = barTop - 8 * s;
+  const cellH = (gridBottom - top) / rowsTotal;
+  const thumbH = Math.max(12 * s, cellH - 8 * s);
+  const thumbW = Math.min(thumbH / 1.28, cellW - 10 * s);
 
   g.save();
   g.beginPath();
-  g.rect(bx + 8 * s, top - 4 * s, bw - 16 * s, bottom - top + 4 * s);
+  g.rect(bx + 8 * s, top - 4 * s, bw - 16 * s, gridBottom - top + 4 * s);
   g.clip();
 
-  let y = top - scroll;
-  let contentH = 0;
-  for (const d of docs) {
-    const blockH = 30 * s;
-    if (y + blockH > top - 20 * s && y < bottom + 20 * s) {
-      g.font = `600 ${11 * s}px Georgia, serif`;
-      g.fillStyle = P.boxInk;
-      g.fillText(d.title, bx + 32 * s, y);
-      g.font = `${8.5 * s}px system-ui, sans-serif`;
-      g.fillStyle = P.boxDim;
-      g.fillText(`${d.date} · ${d.kind}`, bx + 32 * s, y + 14 * s);
-      g.fillStyle = P.accent;
-      g.fillRect(bx + 20 * s, y + 4 * s, 4 * s, 4 * s);
+  order.forEach((id, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    const x = bx + 22 * s + c * cellW + (cellW - thumbW) / 2;
+    const y = top + r * cellH - scroll;
+    if (y > gridBottom + cellH || y + cellH < top - cellH) return;
+
+    const have = owned.has(id);
+    const doc = docs[id];
+    if (i === sel) {
+      g.fillStyle = 'rgba(232,196,106,0.30)';
+      g.fillRect(x - 6 * s, y - 6 * s, thumbW + 12 * s, thumbH + 12 * s);
+      g.strokeStyle = P.accent;
+      g.lineWidth = Math.max(1, s);
+      g.strokeRect(x - 6 * s + 0.5, y - 6 * s + 0.5, thumbW + 12 * s - 1, thumbH + 12 * s - 1);
     }
-    y += blockH;
-    contentH += blockH;
-  }
+    drawDocThumb(g, x, y, thumbW, thumbH, s, doc, have);
+  });
   g.restore();
 
-  return Math.max(0, contentH - (bottom - top));
+  // The selected document's title, below the grid, where it has room to be
+  // a full sentence rather than a caption truncated under a thumbnail.
+  const doc = docs[order[sel]];
+  const have = owned.has(order[sel]);
+  g.textAlign = 'left';
+  g.fillStyle = 'rgba(58,54,48,0.10)';
+  g.fillRect(bx + 14 * s, barTop, bw - 28 * s, barH);
+  g.font = `600 ${10 * s}px Georgia, serif`;
+  g.fillStyle = have ? P.boxInk : P.boxDim;
+  g.fillText(have ? doc.title : 'You have not found this one yet.',
+             bx + 22 * s, barTop + 4 * s);
+  g.font = `${8 * s}px system-ui, sans-serif`;
+  g.fillStyle = P.boxDim;
+  g.fillText(have ? `${doc.date}  ·  ${doc.kind}`
+                  : 'Fifteen papers survive. Somebody in the village knows where each one is.',
+             bx + 22 * s, barTop + 17 * s);
+
+  return 0;
 }
 
 /**
@@ -702,8 +915,9 @@ function sideSourceOfSafe(state, key) {
 }
 
 /** The tabs across the top of the notebook. */
-export function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount) {
+export function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCount, help) {
   const bx = view.x + 20 * s, by = view.y + 20 * s;
+  const bh = view.h - 40 * s;
   const labels = [
     'What I was told',
     `What I copied down   ${docCount}/${docTotal}`,
@@ -737,6 +951,16 @@ export function drawNotebookTabs(g, view, s, tab, docCount, docTotal, disputeCou
     }
     x += widths[i] + gap;
   });
+
+  // Key help, on the tab row, right-aligned, quiet. One place, so it cannot
+  // land on top of anything.
+  if (help) {
+    g.textAlign = 'right';
+    g.font = `${7.5 * s}px system-ui, sans-serif`;
+    g.fillStyle = 'rgba(90,84,74,0.62)';
+    g.fillText(help, bx + bw - 18 * s, by + bh - 14 * s);
+    g.textAlign = 'left';
+  }
 }
 
 /**

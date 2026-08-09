@@ -241,6 +241,27 @@ export function buildMap(def, chapter = 'march') {
     }
   }
 
+  // Bind every paper sprite to the document it is the sprite FOR.
+  //
+  // A document has two halves that must agree: the interactable that opens
+  // it, and the sheet of paper the player can see lying there. They were
+  // authored separately, which is how two documents once shipped correctly
+  // gated and completely invisible. Now the gate is written once, on the
+  // interactable, and the sprite inherits it — so a paper cannot be visible
+  // for a document that is still locked, or missing for one that isn't.
+  //
+  // Searched outward one tile because a paper often sits on the near edge of
+  // a two-tile table while the interactable covers the whole table.
+  for (const p of props) {
+    if (p.kind !== 'paper') continue;
+    const near = [[0, 0], [0, -1], [0, 1], [-1, 0], [1, 0]]
+      .map(([dx, dy]) => interact.get(`${p.x + dx},${p.y + dy}`))
+      .find((s) => s && s.doc);
+    if (!near) continue;
+    p.docId = near.doc;
+    p.gate = near.require || null;
+  }
+
   // Tiles that fire once when stepped on, without the player pressing
   // anything. Used sparingly — the road to Salem Town is worth one, because
   // the point of that walk is the walk itself.
@@ -464,12 +485,17 @@ export function renderMap(g, map, cam, actors, clock = 0) {
   const draws = [];
 
   for (const p of map.props) {
+    // A document nobody has told the player about is not lying there yet.
+    // Drawing it and refusing to open it is the shape that produced "the
+    // arrow points at a building I already searched" — the player can see
+    // the thing and cannot have it, which reads as breakage, not as a lock.
+    if (p.hidden) continue;
     const img = propImage(p);
     const dx = p.x * TS - cam.x;
     const dy = (p.y + p.h) * TS - img.h - cam.y + (PROPS[p.kind].sized ? 6 : 0);
     // Cull generously — props can be tall.
     if (dx > VW || dx + img.w < 0 || dy > VH || dy + img.h < 0) continue;
-    draws.push({ img: img.canvas, dx, dy, base: (p.y + p.h) * TS });
+    draws.push({ img: img.canvas, dx, dy, base: (p.y + p.h) * TS, live: p.live });
   }
 
   // Livestock: same sort as everything else, so a cow in front of a barn
@@ -492,7 +518,30 @@ export function renderMap(g, map, cam, actors, clock = 0) {
   }
 
   draws.sort((m, n) => m.base - n.base);
-  for (const d of draws) g.drawImage(d.img, d.dx, d.dy);
+  for (const d of draws) {
+    // A paper somebody has just told the player about, and which they have
+    // not read yet. It lifts a pixel and carries a warm edge that breathes.
+    //
+    // Restraint is the whole design here. Because a document is only visible
+    // once a person has named it, there is almost never more than one of
+    // these on screen — so it reads as "that is the thing he meant" rather
+    // than as a map strewn with collectibles. It stops the instant the
+    // document is read.
+    if (d.live) {
+      const pulse = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(clock * 3.1));
+      const lift = Math.round(Math.sin(clock * 2.2) * 0.9 + 0.9);
+      g.save();
+      g.globalAlpha = 0.30 + 0.42 * pulse;
+      g.globalCompositeOperation = 'lighter';
+      for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+        g.drawImage(d.img, d.dx + ox, d.dy - lift + oy);
+      }
+      g.restore();
+      g.drawImage(d.img, d.dx, d.dy - lift);
+      continue;
+    }
+    g.drawImage(d.img, d.dx, d.dy);
+  }
 
   // Above everything: smoke is the only thing in the village taller than a
   // roof, so it never needs to take part in the baseline sort.
