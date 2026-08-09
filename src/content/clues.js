@@ -135,6 +135,7 @@ export const PRESENT_CLUES = {
     { say: 'You keep waiting for the ends of the sentences.', who: null },
     { say: 'They run into the base of the wall and stop. All of them. Mid-sentence, mid-word, cut off in stone.', who: null },
     { learn: 'present.threshold', source: 'observed' },
+    { say: 'You take your foot off the one you are standing on.', who: null },
     { say: 'That is not damage. Somebody designed it that way.', who: null },
   ],
 
@@ -205,6 +206,7 @@ export const PRESENT_CLUES = {
     { say: 'You step through the gap in the wall.', who: null },
     { say: '...', who: null },
     { say: 'The traffic noise is gone. So is the road, and the wall, and the shop.', who: null },
+    { say: 'The cold gets to you before anything else does. It is a different cold from the one outside the car this morning — it is in the ground, and it comes up.', who: null },
     { say: 'You are standing on a rutted cart track in cold air that smells like woodsmoke and low tide. There are two large houses behind you with glass in every window.', who: null },
     { say: 'This is Salem Town, and it is the first week of March, 1692.', who: null },
     { say: 'Nobody has been arrested. Nothing has happened yet.', who: null },
@@ -319,7 +321,9 @@ export const CLUES = {
 
   arriveJail: [
     { say: 'The gaol is a cellar. The floor is stone and there is straw on the stone and it has been a warm month.', who: null },
-    { say: 'There are more people down here than you expected. Some of them are children.', who: null },
+    { say: 'You breathe through your mouth without deciding to.', who: null },
+    { say: 'There are more people down here than you expected.', who: null },
+    { say: 'Some of them are children. There is one at the far end who is too small to be at the bars.', who: null },
     { learn: 'june.jail', source: 'observed' },
   ],
 

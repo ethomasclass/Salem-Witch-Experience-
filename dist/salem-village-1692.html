@@ -3678,7 +3678,8 @@ const KNOWLEDGE = {
   'june.spreading':  'The accusations are spreading beyond Salem Village — names are being spoken in Beverly and Andover.',
   'june.jail':       'The Salem jail is a cellar. Some of the prisoners are children.',
   'june.jailoutside':'Nobody guards the jail door. Nobody inside can pay the fees required to leave.',
-  'june.dorothy':    'Sarah Good gave birth in the jail and the baby died. Her four-year-old daughter has been imprisoned since March.',
+  'june.dorothy':    'Sarah Good gave birth in the jail and the baby died. Her daughter Dorothy is four years old and has been imprisoned since 24 March. I talked to her.',
+  'june.dorothychain':'Dorothy Good is four. The irons on her were made for an adult and have been taken in with cord so they will stay on her wrists. Somebody sat down and did that on purpose.',
   'june.courtroom':  'The meetinghouse is a church on Sunday and a courtroom the rest of the week — same room, same people, and the seating chart still on the wall.',
 
   // --- the law, present --------------------------------------------------
@@ -4170,6 +4171,7 @@ const PRESENT_CLUES = {
     { say: 'You keep waiting for the ends of the sentences.', who: null },
     { say: 'They run into the base of the wall and stop. All of them. Mid-sentence, mid-word, cut off in stone.', who: null },
     { learn: 'present.threshold', source: 'observed' },
+    { say: 'You take your foot off the one you are standing on.', who: null },
     { say: 'That is not damage. Somebody designed it that way.', who: null },
   ],
 
@@ -4240,6 +4242,7 @@ const PRESENT_CLUES = {
     { say: 'You step through the gap in the wall.', who: null },
     { say: '...', who: null },
     { say: 'The traffic noise is gone. So is the road, and the wall, and the shop.', who: null },
+    { say: 'The cold gets to you before anything else does. It is a different cold from the one outside the car this morning — it is in the ground, and it comes up.', who: null },
     { say: 'You are standing on a rutted cart track in cold air that smells like woodsmoke and low tide. There are two large houses behind you with glass in every window.', who: null },
     { say: 'This is Salem Town, and it is the first week of March, 1692.', who: null },
     { say: 'Nobody has been arrested. Nothing has happened yet.', who: null },
@@ -4353,7 +4356,9 @@ const CLUES = {
 
   arriveJail: [
     { say: 'The gaol is a cellar. The floor is stone and there is straw on the stone and it has been a warm month.', who: null },
-    { say: 'There are more people down here than you expected. Some of them are children.', who: null },
+    { say: 'You breathe through your mouth without deciding to.', who: null },
+    { say: 'There are more people down here than you expected.', who: null },
+    { say: 'Some of them are children. There is one at the far end who is too small to be at the bars.', who: null },
     { learn: 'june.jail', source: 'observed' },
   ],
 
@@ -4636,7 +4641,7 @@ const NPCS = {
           { bySource: 'fact.witchcake', cases: {
               ingersoll: [
                 'Ingersoll told you that.',
-                'Of course he did. A man keeps an ordinary, he keeps everything else that passes through it too.',
+                'Of course he did. A man keeps a tavern, he keeps everything else that passes through it too.',
               ],
               mercy: [
                 'Mercy told you.',
@@ -4740,7 +4745,7 @@ const NPCS = {
         id: 'j_tituba', label: 'Where is Tituba?', chapter: 'june',
         lines: [
           { say: 'The pen stops.', who: null },
-          'In Salem gaol, where she has been since the first of March.',
+          'In Salem gaol. The jail. Where she has been since the first of March.',
           'She confessed. You may make of that what you like; the magistrates did.',
           {
             if: { knows: ['june.beating'] },
@@ -5290,7 +5295,7 @@ const NPCS = {
         lines: [
           { say: 'He stops wiping.', who: null },
           'Do not.',
-          'I have taken more money across that bar in a fortnight than in the last two years, and I am a deacon of the church, and I have watched them bring a seventy-one-year-old woman through that door in irons.',
+          'I have taken more money across that bar in a fortnight than in the last two years. I am a deacon of this church. And I have watched them bring a seventy-one-year-old woman through that door in irons — chained, at the wrists.',
           { learn: 'june.ingersollguilt' },
           'She sat in that chair. There.',
           { say: 'He does not look at the chair.', who: null },
@@ -5332,8 +5337,8 @@ const NPCS = {
           { learn: ['fact.witchcake'] },
           'She had the Parris woman do it. The Indian. Tituba.',
           { say: 'He straightens up.', who: null },
-          'That was not a fortnight ago. And this week the girls have started giving names.',
-          'I am not saying the one made the other. I am saying I keep an ordinary, and I have watched a great many things start in this room, and they all start about that quick.',
+          'That was not two weeks ago. And this week the girls have started giving names.',
+          'I am not saying the one made the other. I am saying I keep an ordinary — a tavern — and I have watched a great many things start in this room, and they all start about that quick.',
         ],
       },
       {
@@ -5530,6 +5535,34 @@ const NPCS = {
       },
     ],
     topics: [
+      /* ------------------------------------------------------------ *
+       * September. Ten weeks after the nineteenth of July.
+       *
+       * Every character in this game holds it together in every scene.
+       * That restraint is why the good lines land — but a village where
+       * nobody's voice ever goes is a village where nothing has happened
+       * to anybody, and something has happened to this man.
+       *
+       * He does not weep and nothing is described. He simply cannot get
+       * to the end of a sentence, and the game does not help him.
+       * ------------------------------------------------------------ */
+      {
+        id: 's_her', label: 'I am sorry about your wife.', chapter: 'september',
+        lines: [
+          { say: 'He nods, the way a man does when he has been told this a great many times and has a way of getting through it.', who: null },
+          'Thank you. That is kindly said.',
+          { say: 'And then he does not say anything else.', who: null },
+          { say: 'The pause goes on long enough that you understand he is not deciding what to say. He is waiting to see whether he can.', who: null },
+          'They would not give her back.',
+          { say: 'His voice does something on the second word and he stops and starts again.', who: null },
+          'They would not give her back to me. Do you understand. She was to be left up there with the others, in the rocks, and no ground said over her.',
+          { learn: 'sept.noburial' },
+          { say: 'He looks at the fence he is mending, and at his own hands on it.', who: null },
+          'So we went up at night and we brought her home. Myself and my sons.',
+          'That is all I have done for her since March. That is the whole of it.',
+          { say: 'Nobody in this village has ever been charged for that, and nobody has ever written it down.', who: null },
+        ],
+      },
       {
         id: 'where', label: 'Where is she?',
         lines: [
@@ -5638,7 +5671,7 @@ const NPCS = {
           'Francis has taken a paper round the village. Thirty-nine names, he tells me. Thirty-nine neighbours.',
           'Some of them are Putnams. I want you to understand that. Their own family signed for me.',
           { learn: 'june.petition' },
-          'I have lived in this place forty years. I am a covenanted member of the church in the Town. They will look at the paper and they will look at me and they will see an old woman who has never done anybody any harm.',
+          'I have lived in this place forty years. I am a full member of the church in the Town — covenanted, sworn in, the whole of it. They will look at the paper and they will look at me and they will see an old woman who has never done anybody any harm.',
           { say: 'She pats the wall beside her, the way you would pat a table.', who: null },
           'It will be sorted out. These things are sorted out.',
         ],
@@ -5663,9 +5696,10 @@ const NPCS = {
           { say: 'You have known this since before you met her. It was cut into a bench in a city that does not exist yet.', who: null },
           { say: 'You say it out loud.', who: null },
           { say: 'The nineteenth of July. Hanged. Along with four other women, on a ledge above the town.', who: null },
+          { say: 'It comes out steadier than you expected, and that is somehow worse.', who: null },
           { say: 'She listens to the whole of it. She does not interrupt.', who: null },
           { learn: 'june.warned' },
-          { say: 'Then she reaches through the grate and puts her hand on your arm.', who: null },
+          { say: 'Then she reaches through the grate and puts her hand on your arm. Her hand is cold and the grip is not weak.', who: null },
           'Child.',
           'You have been in that village three months and you have listened to everything anybody has told you, and you have believed all of it.',
           { say: 'She is being kind. She thinks she is being kind.', who: null },
@@ -5681,6 +5715,86 @@ const NPCS = {
   },
 
   /** Tituba, in the same jail. She confessed and she lived. */
+  /* ------------------------------------------------------------------ *
+   * Dorothy Good, four years old.
+   *
+   * She was a sentence in an optional clue, weighted the same as a line
+   * about tax rates: "her four-year-old daughter is in here too." She is in
+   * the room the player walks through, so she should be in it.
+   *
+   * Nothing is depicted. She is not suffering on screen and she does not
+   * complain — she is a small child being perfectly ordinary in a cellar,
+   * which is worse than any description of a cell would be. Everything she
+   * says is a thing a four-year-old actually says.
+   *
+   * She is deliberately not on any goal list. A child is not a checklist
+   * item. The arrival narration points at her and the player decides.
+   * ------------------------------------------------------------------ */
+  dorothy: {
+    id: 'dorothy',
+    name: 'Dorothy Good',
+    spec: {
+      flesh: FLESH.fair, hair: HAIR.brown, child: true,
+      coat: CLOTH.undyed, skirt: CLOTH.undyed,
+    },
+    greet: [
+      {
+        if: { notSpokenTo: ['dorothy'] },
+        then: [
+          { say: 'There is somebody else down here, right at the end, where the one window does not reach.', who: null },
+          { say: 'She is sitting on the floor with her back against the stone, sorting pieces of straw into lengths. Long ones here. Short ones there.', who: null },
+          { say: 'She is four years old.', who: null },
+          'Are you come for my mother?',
+        ],
+        else: ['You came back down.'],
+      },
+    ],
+    topics: [
+      {
+        id: 'name', label: 'What is your name?',
+        lines: [
+          'Dorothy Good.',
+          { say: 'She says both parts of it carefully, the way a child says something they have been made to repeat a great many times to people who wrote it down.', who: null },
+          { learn: 'june.dorothy' },
+          'I told the men already. I told them twice.',
+        ],
+      },
+      {
+        id: 'long', label: 'How long have you been here?',
+        lines: [
+          { say: 'She thinks about this seriously. It is clearly a real question and she wants to get it right.', who: null },
+          'It was cold when I came.',
+          'It is not cold now.',
+          { say: 'She was brought in on the twenty-fourth of March. It is the middle of June.', who: null },
+        ],
+      },
+      {
+        id: 'mother', label: 'Where is your mother?',
+        lines: [
+          { say: 'She points down the cellar, without looking.', who: null },
+          'She is there. She is not well.',
+          'There was a baby and now there is not one.',
+          { say: 'She says this in exactly the tone she used about the straw.', who: null },
+        ],
+      },
+      {
+        id: 'irons', label: '…',
+        require: ['june.dorothy'],
+        lines: [
+          { say: 'You are looking at her wrists before you have decided to.', who: null },
+          { say: 'The irons on this child were made for a grown woman. They have been taken in with a twist of cord so that they will stay on her.', who: null },
+          { say: 'Somebody sat down and did that. It took them a few minutes and they will have thought about the knot.', who: null },
+          { learn: 'june.dorothychain', source: 'observed' },
+          'They are not heavy,',
+          { say: 'she says, helpfully, because you were looking.', who: null },
+        ],
+      },
+    ],
+    farewell: [
+      'Will you tell them I said my name right?',
+    ],
+  },
+
   titubaJail: {
     id: 'titubaJail',
     name: 'Tituba',
@@ -5793,7 +5907,7 @@ const NPCS = {
           'I told them the girls did but dissemble. That we had made it up, all of it.',
           { learn: 'june.recant' },
           { say: 'Her hands are flat on the table and she is looking at them.', who: null },
-          'And within a fortnight I was in irons, and the same girls I had stood beside were crying out that my shape was tormenting them.',
+          'And within two weeks I was in irons myself, and the same girls I had stood beside were crying out that my shape was tormenting them.',
           'They put me in that cellar in Salem. I was examined three times.',
           'So I stopped saying it was not true.',
           { learn: 'june.onlyexit' },
@@ -5849,7 +5963,7 @@ const NPCS = {
     spec: { flesh: FLESH.ruddy, hair: HAIR.grey, coat: CLOTH.russet, collar: LINEN },
     greet: [
       { say: 'He has been here a while.', who: null },
-      'Best fortnight of trade this house has ever had, and Ingersoll looks like a man at a funeral.',
+      'Best two weeks of trade this house has ever had, and Ingersoll looks like a man at a funeral.',
       { say: 'He lowers his voice, which does not help.', who: null },
       'Mind what you say in this room. There is a girl at that end of the table who can put you in Salem gaol by Friday and there is nothing you could say to stop her.',
       'Nothing. That is the thing of it. There is no answer you can give.',
@@ -6052,7 +6166,7 @@ const NPCS = {
           { learn: 'law.charter' },
           'Sir William Phips arrived with the new charter in May, walked into a colony with jails already full of accused witches, and created a special court to clear the backlog.',
           'Court of Oyer and Terminer — "to hear and to determine". Assembled quickly, out of his own council, with a chief justice who had no legal training.',
-          'It had no settled rules of evidence because it had no history. It had never sat before.',
+          'It had no settled rules of evidence, because it had never sat before.',
           { say: 'She shrugs.', who: null },
           'Every English legal safeguard that would have slowed this down was either not in force yet or had been swept away in the previous three years.',
           'The timing is not incidental. It is close to being the whole answer.',
@@ -6158,7 +6272,7 @@ const NPCS = {
         lines: [
           { say: 'She laughs.', who: null },
           'Oh, no. I am not doing that for you.',
-          'Every school group that comes through here wants the sentence at the end. "And the lesson of Salem is..." and then something about tolerance.',
+          'Every school group that comes through here wants the sentence at the end. "And the lesson of Salem is—" and then something about tolerance.',
           { say: 'She shakes her head.', who: null },
           'Here is the only thing I will give you.',
           'Nobody involved in this thought they were doing something evil. The judges thought they were protecting the colony. The girls were frightened. The neighbours who testified had genuinely had a bad year and genuinely wanted to know why.',
@@ -6991,6 +7105,9 @@ const JAIL = {
   npcs: [
     { id: 'nurseJail', x: 4, y: 3, dir: 'down' },
     { id: 'titubaJail', x: 9, y: 3, dir: 'down' },
+    // Right at the end, away from the two adults, in the part of the cellar
+    // the window does not reach.
+    { id: 'dorothy', x: 11, y: 3, dir: 'down' },
   ],
 };
 

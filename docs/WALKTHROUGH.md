@@ -243,6 +243,12 @@ The village again, three months later. Carts, strangers, dust.
    press Z — interaction reaches through the grate.**
    - **Rebecca Nurse** is on the left.
    - **Tituba** is on the right.
+   - **Dorothy Good is at the far right end**, in the corner the window does
+     not reach. She is four years old and has been in that cellar since 24
+     March. She is deliberately on no goal list — a child is not a checklist
+     item — so students only find her if they look. Her last topic appears
+     only after you have asked her name, and it is the hardest thing in the
+     game. **Know it is there before a class does.**
    - **The jail keeper's account** is on the table on your side.
    - *Optional:* the straw on the floor.
 

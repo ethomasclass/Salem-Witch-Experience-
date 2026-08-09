@@ -817,6 +817,9 @@ export const JAIL = {
   npcs: [
     { id: 'nurseJail', x: 4, y: 3, dir: 'down' },
     { id: 'titubaJail', x: 9, y: 3, dir: 'down' },
+    // Right at the end, away from the two adults, in the part of the cellar
+    // the window does not reach.
+    { id: 'dorothy', x: 11, y: 3, dir: 'down' },
   ],
 };
 

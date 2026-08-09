@@ -211,6 +211,15 @@ automatically.
   and the game never adjudicates. The disagreement is the lesson.
 - **Nothing violent is depicted.** Every atrocity in the later chapters
   arrives as something a person tells you, standing in their own kitchen.
+- **Dorothy Good is in the jail**, four years old, on no goal list, found
+  only by students who look. Nothing is depicted: she is an ordinary small
+  child sorting straw in a cellar, which is worse than any description of
+  one would be. Read her scene before you run this.
+- **Reading load.** The game holds about 12,500 words. A student who sees
+  most of it reads at roughly 240 words a minute for half an hour. The
+  prose is deliberately plain — grade 2.4 in 1692, 3.4 in the present, at
+  around eight words a sentence — but the *volume* is real, and it is worth
+  knowing when you plan the period.
 - **Sound can be switched off** from the button under the game, and the
   choice is remembered. Nothing plays until a key is pressed.
 

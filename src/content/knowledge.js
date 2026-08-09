@@ -54,7 +54,8 @@ export const KNOWLEDGE = {
   'june.spreading':  'The accusations are spreading beyond Salem Village — names are being spoken in Beverly and Andover.',
   'june.jail':       'The Salem jail is a cellar. Some of the prisoners are children.',
   'june.jailoutside':'Nobody guards the jail door. Nobody inside can pay the fees required to leave.',
-  'june.dorothy':    'Sarah Good gave birth in the jail and the baby died. Her four-year-old daughter has been imprisoned since March.',
+  'june.dorothy':    'Sarah Good gave birth in the jail and the baby died. Her daughter Dorothy is four years old and has been imprisoned since 24 March. I talked to her.',
+  'june.dorothychain':'Dorothy Good is four. The irons on her were made for an adult and have been taken in with cord so they will stay on her wrists. Somebody sat down and did that on purpose.',
   'june.courtroom':  'The meetinghouse is a church on Sunday and a courtroom the rest of the week — same room, same people, and the seating chart still on the wall.',
 
   // --- the law, present --------------------------------------------------
