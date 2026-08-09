@@ -377,6 +377,8 @@ export const NPCS = {
           'So instead they let me be cold, and wait for me to leave of my own accord.',
           'The agreement is on the table there. Read it, if you think I am making a grievance out of nothing. Every term of it is written out and signed by men who are still living.',
           { learn: 'paper.agreement' },
+          { say: 'He returns to his papers, and speaks without looking up.', who: null },
+          'If you want the version this village tells itself rather than the one I am telling you, go to the ordinary on the road. Deacon Ingersoll hears everything twice and believes most of it.',
         ],
       },
       {
@@ -541,11 +543,14 @@ export const NPCS = {
         ],
       },
       {
-        id: 'topsfield', chapter: 'march', label: 'There is a boundary stone in the woods.',
-        require: ['clue.marker'],
+        id: 'topsfield', chapter: 'march', label: 'What does your father argue about?',
         lines: [
           { say: 'She puts the mending down entirely.', who: null },
-          'You went up there.',
+          {
+            if: { knows: ['clue.marker'] },
+            then: ['You went up there. To the stone.'],
+            else: ['The line. It is always the line.'],
+          },
           'That line is the Topsfield line, and it has been argued over since before I was born. My grandfather argued it. My father argues it now.',
           { learn: ['fact.topsfield'] },
           'The Topsfield men say the grant was theirs. We say it was ours and they took the timber off it besides.',
@@ -561,6 +566,14 @@ export const NPCS = {
           'You will hear it called a small thing. It is not a small thing. It is the only thing my father has talked about at that table my whole life.',
           'The petition about it is on our table. My father put his name to it. His father\'s name is on the older one underneath.',
           { learn: 'paper.topsfield' },
+          {
+            if: { knows: ['clue.marker'] },
+            then: ['You have been up and seen the stone, then. Then you know it is a real line and not a story.'],
+            else: [
+              'If you think it is a small thing, go north into the woods and find the stone. It is there. It is a real mark on a real rock and men have walked out in the rain to argue about it.',
+              'And when you have seen it, go and ask the family on the other side of it what they think. Their farm is west.',
+            ],
+          },
         ],
       },
       {
@@ -663,6 +676,9 @@ export const NPCS = {
           'And within the week the girls began giving names.',
           { say: 'She picks the bucket back up.', who: null },
           'You may draw your own line between those two things. Everyone else here has.',
+          { say: 'She starts to go, and then does not.', who: null },
+          'If you want to understand this place before you understand the girls, go and look at the wood stacked against the parsonage. It is the first thing anyone here would show you.',
+          'Half this village has stopped paying the minister. That quarrel is older than the sickness and it will still be here after.',
         ],
       },
       {
@@ -950,6 +966,8 @@ export const NPCS = {
           { say: 'He straightens up.', who: null },
           'That was not two weeks ago. And this week the girls have started giving names.',
           'I am not saying the one made the other. I am saying I keep an ordinary — a tavern — and I have watched a great many things start in this room, and they all start about that quick.',
+          { say: 'He taps the book lying open on the bar.', who: null },
+          'And if you want to know how this village really works, do not listen to me. Look at that. Everyone in it is in there, and the book does not have an opinion.',
         ],
       },
       {
@@ -989,14 +1007,18 @@ export const NPCS = {
         ],
       },
       {
-        id: 'seatinglist', chapter: 'march', label: 'The seating in the meetinghouse.',
-        require: ['clue.seating'],
+        id: 'seatinglist', chapter: 'march', label: 'How are the meetinghouse seats decided?',
         lines: [
           'I am a deacon of that church. I have sat on the committee that does it.',
           'It is not malice. Somebody has to put five hundred people in a room in some order, and the order we use is what each household pays in rates.',
           { say: 'He stops wiping.', who: null },
           'That is a defence, and I notice I am making one.',
-          'The working sheet is still pinned up beside the chart, if you want to see how the thing is actually done. Names crossed out and written in again.',
+          {
+            if: { knows: ['clue.seating'] },
+            then: ['You have stood in front of the chart, then. You will have seen where the back rows start.'],
+            else: ['Go and look at it. It is nailed up by the door where nobody can avoid it, which is not an accident either.'],
+          },
+          'The working sheet is still pinned up beside the chart. Names crossed out and written in again — that is how the thing is actually done.',
           { learn: 'paper.seating' },
           'A man can be moved back a row by a vote of six men in a room, and then sit in that row in front of his neighbours every Sunday for the rest of his life.',
         ],

@@ -97,7 +97,6 @@ export const DIRECTIONS = {
   parris: {
     'nurse': 'The Nurse farm is west. They do not come to my meeting. You may make of that what you like.',
     'ingersoll': 'Deacon Ingersoll keeps the ordinary. He will tell you he hears everything. He is not wrong.',
-    'clue.seating': 'The seating is set down in the meeting house. Who sits where is not my invention. It is the committee\'s.',
   },
 
   /* ---- the village --------------------------------------------------- */
@@ -110,7 +109,6 @@ export const DIRECTIONS = {
   },
 
   ingersoll: {
-    'clue.seating': 'You want to know how this village ranks itself, go and look at where it sits on a Sunday.',
     'nurse': 'Goodwife Nurse. West, past the meeting house. Seventy-one years old and she still walks it.',
     'mercy': {
       march: 'The Lewis girl is usually out in the road. She works for the Putnams and she is not often indoors.',
@@ -143,7 +141,6 @@ export const DIRECTIONS = {
   goodwife: {
     'nurse': 'Rebecca Nurse? West, past the meeting house. The big farm on the left.',
     'clue.marker': 'North, in the trees, there is a stone with a mark cut in it. Boys dare each other to move it.',
-    'clue.seating': 'If you want to know who is who here, go into the meeting house and see who sits at the front.',
     'ingersoll': 'Ingersoll keeps the ordinary, on the road. You cannot miss it, nobody ever has.',
     'annjr': 'The Putnams are south-east, past the bend. The big house.',
     'francis': 'Old Francis Nurse is up at the farm, west. Somebody ought to go and stand with him.',
@@ -166,7 +163,6 @@ export const DIRECTIONS = {
   watchman: {
     'clue.marker': 'North, in the trees, there is a boundary stone. I have been sent out to look at it twice this year.',
     'nurse': 'The Nurse place is west of the meeting house.',
-    'clue.seating': 'The seating is set down inside. I sit at the back and I am not sorry about it.',
     'ingersoll': 'Ingersoll\'s, on the road. Where else would a man be.',
     'jail': 'Down the road, in the town. There is a cellar under the house they keep them in.',
   },

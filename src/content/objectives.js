@@ -51,7 +51,9 @@ const firstMissing = (s, list, has) => {
   // `via` is an ordinary waypoint in its own right — it has a flag, a place
   // and a line — so everything downstream (the arrow, the goal text, the
   // key an NPC can point at) works on it without knowing it is a detour.
-  if (e.via && !s.knows(e.via.flag)) return e.via;
+  // Marked as a detour so the goal text knows the destination has changed
+  // out from under the step and must say so.
+  if (e.via && !s.knows(e.via.flag)) return { ...e.via, detour: true };
   return e;
 };
 const byFlag = (s, e) => s.knows(e.flag);
@@ -182,21 +184,98 @@ export const STEPS_BY_CHAPTER = {
     { id: 'gap', where: at('memorial', 13, 4), text: 'Go through the gap in the far wall', done: (s) => s.visited.has('road') },
   ],
 
+  /* ------------------------------------------------------------------ *
+   * March 1692 — one thing leading to the next
+   *
+   * This chapter used to be three lists: look at four things, talk to six
+   * people, read four papers. Everything in it happened, and none of it
+   * happened for a reason. A student was told to walk to the Nurse farm
+   * before they had heard the name Nurse, and then told to visit the tavern,
+   * and the only thing connecting those instructions was that both were on
+   * the list.
+   *
+   * The chain below visits exactly the same places in the same chapter. The
+   * difference is that every step is CAUSED by the one before it, and the
+   * goal line says which: the firewood sends you to the minister, the
+   * minister's grievance sends you to the man who hears everything, his
+   * ledger sends you to the family every debt runs to, their petition sends
+   * you to the boundary it is about, and the boundary sends you to the family
+   * on the other side of it.
+   *
+   * Firewood -> salary -> committee -> factions -> debts -> Putnams ->
+   * boundary -> Nurses. That is not a route invented to link the map
+   * together; it is the actual shape of the quarrel this village was having
+   * in the winter of 1692, and walking it in order is the argument.
+   *
+   * The chain is a suggested order, not a gate. `currentStep` takes the first
+   * incomplete step, so anything done early completes silently and the
+   * tracker moves on — a student who wanders into the tavern first loses the
+   * handoff line and nothing else.
+   * ------------------------------------------------------------------ */
   march: [
-    { id: 'walk', where: at('village', 22, 20), text: 'Walk north up the road to Salem Village', done: (s) => s.visited.has('village') },
-    { id: 'meetnurse', where: at('nursehouse', 5, 3, 'nurse'), text: 'Find Rebecca Nurse. Her farm is west, past the meetinghouse',
+    { id: 'walk', where: at('village', 22, 20), text: 'Walk north up the road to Salem Village',
+      done: (s) => s.visited.has('village') },
+
+    { id: 'first', where: at('village', 29, 23, 'mercy'),
+      text: 'A young woman is carrying water in the road ahead. Ask her what people are saying',
+      done: (s) => s.hasSpokenTo('mercy') },
+
+    { id: 'woodpile', where: at('village', 14, 27, 'clue.woodpile'),
+      text: 'She says the village is at war over the minister. Go and look at the woodpile against the parsonage',
+      done: (s) => s.knows('clue.woodpile') },
+
+    { id: 'parris', where: at('parsonage', 8, 4, 'parris'),
+      text: 'That is a few days\' burning, in March. Go inside and ask Rev. Parris about it',
+      done: (s) => s.knows('fact.salary') },
+
+    { id: 'agreement', where: (s) => firstMissing(s, [MARCH_DOC_WHERE[0]], byDoc),
+      text: 'He says the terms were agreed in writing. Read the agreement on the table',
+      done: (s) => s.hasDoc('parrisAgreement') },
+
+    { id: 'tituba', where: at('parsonage', 3, 3, 'tituba'),
+      text: 'The woman at the hearth is the one who carries that wood. Talk to her',
+      done: (s) => s.hasSpokenTo('tituba') },
+
+    { id: 'cake', where: at('parsonage', 3, 3, 'tituba'),
+      text: 'You have heard what Mary Sibley had Tituba do. Ask her about the cake',
+      done: (s) => s.knows('asked.tituba.cake') },
+
+    { id: 'ingersoll', where: at('tavern', 6, 4, 'ingersoll'),
+      text: 'Everyone points at the same man. Ingersoll keeps the ordinary, out on the road east',
+      done: (s) => s.hasSpokenTo('ingersoll') },
+
+    { id: 'accountbook', where: at('tavern', 2, 3, 'clue.accounts'),
+      text: 'He keeps a book of what this village owes. It is open on the bar',
+      done: (s) => s.knows('clue.accounts') },
+
+    { id: 'accountpage', where: (s) => firstMissing(s, [MARCH_DOC_WHERE[2]], byDoc),
+      text: 'Ask him about the book, and read the page he turns out for you',
+      done: (s) => s.hasDoc('accountBookPage') },
+
+    { id: 'seatingtalk', where: at('tavern', 6, 4, 'paper.seating'),
+      text: 'He is a deacon as well as a publican. Ask him how the meetinghouse seating is decided',
+      done: (s) => s.knows('paper.seating') },
+
+    { id: 'seating', where: (s) => firstMissing(s, [MARCH_DOC_WHERE[1]], byDoc),
+      text: 'This village writes down who matters. The chart is inside the meetinghouse',
+      done: (s) => s.knows('clue.seating') && s.hasDoc('seatingList') },
+
+    { id: 'annjr', where: at('putnamhouse', 3, 3, 'annjr'),
+      text: 'Every credit in that ledger ran to one family. The Putnam house is south-east, past the bend',
+      done: (s) => s.hasSpokenTo('annjr') && s.knows('fact.topsfield') },
+
+    { id: 'petition', where: (s) => firstMissing(s, [MARCH_DOC_WHERE[3]], byDoc),
+      text: 'Ann says her father put his name to a petition about it. Read it, on their own table',
+      done: (s) => s.hasDoc('topsfieldPetition') },
+
+    { id: 'marker', where: at('village', 15, 4, 'clue.marker'),
+      text: 'All of it is about one line in the woods. Go north and find the stone that marks it',
+      done: (s) => s.knows('clue.marker') },
+
+    { id: 'nurse', where: at('nursehouse', 5, 3, 'nurse'),
+      text: 'The far side of that line is Nurse ground. Rebecca Nurse is west, past the meetinghouse',
       done: (s) => s.hasSpokenTo('nurse') },
-    // Named, not hinted. A student who cannot find the boundary stone is not
-    // learning anything from being kept in the dark about it.
-    { id: 'clues', where: (s) => firstMissing(s, CLUE_WHERE, byFlag), text: 'Look at four things: the woodpile by the parsonage, the seating chart inside the meetinghouse, the account book in the tavern, and a stone in the north woods',
-      done: (s) => CLUE_SET.every((f) => s.knows(f)),
-      count: (s) => [CLUE_SET.filter((f) => s.knows(f)).length, CLUE_SET.length] },
-    { id: 'people', where: (s) => firstMissing(s, MARCH_CAST_WHERE, byNpc), text: 'Talk to everyone who lives here',
-      done: (s) => MARCH_CAST.every((id) => s.hasSpokenTo(id)),
-      count: (s) => [MARCH_CAST.filter((id) => s.hasSpokenTo(id)).length, MARCH_CAST.length] },
-    { id: 'papers', where: (s) => firstMissing(s, MARCH_DOC_WHERE, byDoc), text: 'Four papers are now readable, indoors on tables. Stand at one and press Z',
-      done: (s) => MARCH_DOCS.every((d) => s.hasDoc(d)),
-      count: (s) => [MARCH_DOCS.filter((d) => s.hasDoc(d)).length, MARCH_DOCS.length] },
+
     { id: 'leave', where: at('village', 11, 22), text: 'Behind the parsonage the ground dips. Walk onto it',
       done: (s) => s.visited.has('dig') },
   ],
@@ -296,10 +375,27 @@ export function outstanding(state, step) {
   return w && (w.flag || w.doc || w.npc || w.key) ? w : null;
 }
 
-/** The goal line to print: the outstanding item if the step has parts. */
+/**
+ * The goal line to print.
+ *
+ * Three cases, in order:
+ *
+ *   1. A DETOUR wins outright. The player has been sent somewhere other than
+ *      where the step is about — go and ask this person before that table
+ *      has anything on it — and the line has to say the new place.
+ *   2. A STEP THAT COVERS SEVERAL ITEMS names the one still outstanding,
+ *      because its own text would otherwise list all four while the counter
+ *      says two of them are done. Those steps are the ones carrying `count`.
+ *   3. OTHERWISE the step's own text, which is where the reason lives.
+ *      March is a chain — each goal says what the last beat was, and why
+ *      that sends you here — and a generic "read the agreement on the table"
+ *      pulled from the waypoint throws exactly that away.
+ */
 export function stepText(state, step) {
   if (!step) return null;
   const w = outstanding(state, step);
+  if (w && w.detour) return w.line || step.text;
+  if (step.text && !step.count) return step.text;
   return (w && w.line) || step.text;
 }
 

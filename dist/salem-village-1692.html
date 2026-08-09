@@ -4343,7 +4343,9 @@ const firstMissing = (s, list, has) => {
   // `via` is an ordinary waypoint in its own right — it has a flag, a place
   // and a line — so everything downstream (the arrow, the goal text, the
   // key an NPC can point at) works on it without knowing it is a detour.
-  if (e.via && !s.knows(e.via.flag)) return e.via;
+  // Marked as a detour so the goal text knows the destination has changed
+  // out from under the step and must say so.
+  if (e.via && !s.knows(e.via.flag)) return { ...e.via, detour: true };
   return e;
 };
 const byFlag = (s, e) => s.knows(e.flag);
@@ -4473,21 +4475,98 @@ const STEPS_BY_CHAPTER = {
     { id: 'gap', where: at('memorial', 13, 4), text: 'Go through the gap in the far wall', done: (s) => s.visited.has('road') },
   ],
 
+  /* ------------------------------------------------------------------ *
+   * March 1692 — one thing leading to the next
+   *
+   * This chapter used to be three lists: look at four things, talk to six
+   * people, read four papers. Everything in it happened, and none of it
+   * happened for a reason. A student was told to walk to the Nurse farm
+   * before they had heard the name Nurse, and then told to visit the tavern,
+   * and the only thing connecting those instructions was that both were on
+   * the list.
+   *
+   * The chain below visits exactly the same places in the same chapter. The
+   * difference is that every step is CAUSED by the one before it, and the
+   * goal line says which: the firewood sends you to the minister, the
+   * minister's grievance sends you to the man who hears everything, his
+   * ledger sends you to the family every debt runs to, their petition sends
+   * you to the boundary it is about, and the boundary sends you to the family
+   * on the other side of it.
+   *
+   * Firewood -> salary -> committee -> factions -> debts -> Putnams ->
+   * boundary -> Nurses. That is not a route invented to link the map
+   * together; it is the actual shape of the quarrel this village was having
+   * in the winter of 1692, and walking it in order is the argument.
+   *
+   * The chain is a suggested order, not a gate. `currentStep` takes the first
+   * incomplete step, so anything done early completes silently and the
+   * tracker moves on — a student who wanders into the tavern first loses the
+   * handoff line and nothing else.
+   * ------------------------------------------------------------------ */
   march: [
-    { id: 'walk', where: at('village', 22, 20), text: 'Walk north up the road to Salem Village', done: (s) => s.visited.has('village') },
-    { id: 'meetnurse', where: at('nursehouse', 5, 3, 'nurse'), text: 'Find Rebecca Nurse. Her farm is west, past the meetinghouse',
+    { id: 'walk', where: at('village', 22, 20), text: 'Walk north up the road to Salem Village',
+      done: (s) => s.visited.has('village') },
+
+    { id: 'first', where: at('village', 29, 23, 'mercy'),
+      text: 'A young woman is carrying water in the road ahead. Ask her what people are saying',
+      done: (s) => s.hasSpokenTo('mercy') },
+
+    { id: 'woodpile', where: at('village', 14, 27, 'clue.woodpile'),
+      text: 'She says the village is at war over the minister. Go and look at the woodpile against the parsonage',
+      done: (s) => s.knows('clue.woodpile') },
+
+    { id: 'parris', where: at('parsonage', 8, 4, 'parris'),
+      text: 'That is a few days\' burning, in March. Go inside and ask Rev. Parris about it',
+      done: (s) => s.knows('fact.salary') },
+
+    { id: 'agreement', where: (s) => firstMissing(s, [MARCH_DOC_WHERE[0]], byDoc),
+      text: 'He says the terms were agreed in writing. Read the agreement on the table',
+      done: (s) => s.hasDoc('parrisAgreement') },
+
+    { id: 'tituba', where: at('parsonage', 3, 3, 'tituba'),
+      text: 'The woman at the hearth is the one who carries that wood. Talk to her',
+      done: (s) => s.hasSpokenTo('tituba') },
+
+    { id: 'cake', where: at('parsonage', 3, 3, 'tituba'),
+      text: 'You have heard what Mary Sibley had Tituba do. Ask her about the cake',
+      done: (s) => s.knows('asked.tituba.cake') },
+
+    { id: 'ingersoll', where: at('tavern', 6, 4, 'ingersoll'),
+      text: 'Everyone points at the same man. Ingersoll keeps the ordinary, out on the road east',
+      done: (s) => s.hasSpokenTo('ingersoll') },
+
+    { id: 'accountbook', where: at('tavern', 2, 3, 'clue.accounts'),
+      text: 'He keeps a book of what this village owes. It is open on the bar',
+      done: (s) => s.knows('clue.accounts') },
+
+    { id: 'accountpage', where: (s) => firstMissing(s, [MARCH_DOC_WHERE[2]], byDoc),
+      text: 'Ask him about the book, and read the page he turns out for you',
+      done: (s) => s.hasDoc('accountBookPage') },
+
+    { id: 'seatingtalk', where: at('tavern', 6, 4, 'paper.seating'),
+      text: 'He is a deacon as well as a publican. Ask him how the meetinghouse seating is decided',
+      done: (s) => s.knows('paper.seating') },
+
+    { id: 'seating', where: (s) => firstMissing(s, [MARCH_DOC_WHERE[1]], byDoc),
+      text: 'This village writes down who matters. The chart is inside the meetinghouse',
+      done: (s) => s.knows('clue.seating') && s.hasDoc('seatingList') },
+
+    { id: 'annjr', where: at('putnamhouse', 3, 3, 'annjr'),
+      text: 'Every credit in that ledger ran to one family. The Putnam house is south-east, past the bend',
+      done: (s) => s.hasSpokenTo('annjr') && s.knows('fact.topsfield') },
+
+    { id: 'petition', where: (s) => firstMissing(s, [MARCH_DOC_WHERE[3]], byDoc),
+      text: 'Ann says her father put his name to a petition about it. Read it, on their own table',
+      done: (s) => s.hasDoc('topsfieldPetition') },
+
+    { id: 'marker', where: at('village', 15, 4, 'clue.marker'),
+      text: 'All of it is about one line in the woods. Go north and find the stone that marks it',
+      done: (s) => s.knows('clue.marker') },
+
+    { id: 'nurse', where: at('nursehouse', 5, 3, 'nurse'),
+      text: 'The far side of that line is Nurse ground. Rebecca Nurse is west, past the meetinghouse',
       done: (s) => s.hasSpokenTo('nurse') },
-    // Named, not hinted. A student who cannot find the boundary stone is not
-    // learning anything from being kept in the dark about it.
-    { id: 'clues', where: (s) => firstMissing(s, CLUE_WHERE, byFlag), text: 'Look at four things: the woodpile by the parsonage, the seating chart inside the meetinghouse, the account book in the tavern, and a stone in the north woods',
-      done: (s) => CLUE_SET.every((f) => s.knows(f)),
-      count: (s) => [CLUE_SET.filter((f) => s.knows(f)).length, CLUE_SET.length] },
-    { id: 'people', where: (s) => firstMissing(s, MARCH_CAST_WHERE, byNpc), text: 'Talk to everyone who lives here',
-      done: (s) => MARCH_CAST.every((id) => s.hasSpokenTo(id)),
-      count: (s) => [MARCH_CAST.filter((id) => s.hasSpokenTo(id)).length, MARCH_CAST.length] },
-    { id: 'papers', where: (s) => firstMissing(s, MARCH_DOC_WHERE, byDoc), text: 'Four papers are now readable, indoors on tables. Stand at one and press Z',
-      done: (s) => MARCH_DOCS.every((d) => s.hasDoc(d)),
-      count: (s) => [MARCH_DOCS.filter((d) => s.hasDoc(d)).length, MARCH_DOCS.length] },
+
     { id: 'leave', where: at('village', 11, 22), text: 'Behind the parsonage the ground dips. Walk onto it',
       done: (s) => s.visited.has('dig') },
   ],
@@ -4586,10 +4665,27 @@ function outstanding(state, step) {
   return w && (w.flag || w.doc || w.npc || w.key) ? w : null;
 }
 
-/** The goal line to print: the outstanding item if the step has parts. */
+/**
+ * The goal line to print.
+ *
+ * Three cases, in order:
+ *
+ *   1. A DETOUR wins outright. The player has been sent somewhere other than
+ *      where the step is about — go and ask this person before that table
+ *      has anything on it — and the line has to say the new place.
+ *   2. A STEP THAT COVERS SEVERAL ITEMS names the one still outstanding,
+ *      because its own text would otherwise list all four while the counter
+ *      says two of them are done. Those steps are the ones carrying `count`.
+ *   3. OTHERWISE the step's own text, which is where the reason lives.
+ *      March is a chain — each goal says what the last beat was, and why
+ *      that sends you here — and a generic "read the agreement on the table"
+ *      pulled from the waypoint throws exactly that away.
+ */
 function stepText(state, step) {
   if (!step) return null;
   const w = outstanding(state, step);
+  if (w && w.detour) return w.line || step.text;
+  if (step.text && !step.count) return step.text;
   return (w && w.line) || step.text;
 }
 
@@ -4735,7 +4831,6 @@ const DIRECTIONS = {
   parris: {
     'nurse': 'The Nurse farm is west. They do not come to my meeting. You may make of that what you like.',
     'ingersoll': 'Deacon Ingersoll keeps the ordinary. He will tell you he hears everything. He is not wrong.',
-    'clue.seating': 'The seating is set down in the meeting house. Who sits where is not my invention. It is the committee\'s.',
   },
 
   /* ---- the village --------------------------------------------------- */
@@ -4748,7 +4843,6 @@ const DIRECTIONS = {
   },
 
   ingersoll: {
-    'clue.seating': 'You want to know how this village ranks itself, go and look at where it sits on a Sunday.',
     'nurse': 'Goodwife Nurse. West, past the meeting house. Seventy-one years old and she still walks it.',
     'mercy': {
       march: 'The Lewis girl is usually out in the road. She works for the Putnams and she is not often indoors.',
@@ -4781,7 +4875,6 @@ const DIRECTIONS = {
   goodwife: {
     'nurse': 'Rebecca Nurse? West, past the meeting house. The big farm on the left.',
     'clue.marker': 'North, in the trees, there is a stone with a mark cut in it. Boys dare each other to move it.',
-    'clue.seating': 'If you want to know who is who here, go into the meeting house and see who sits at the front.',
     'ingersoll': 'Ingersoll keeps the ordinary, on the road. You cannot miss it, nobody ever has.',
     'annjr': 'The Putnams are south-east, past the bend. The big house.',
     'francis': 'Old Francis Nurse is up at the farm, west. Somebody ought to go and stand with him.',
@@ -4804,7 +4897,6 @@ const DIRECTIONS = {
   watchman: {
     'clue.marker': 'North, in the trees, there is a boundary stone. I have been sent out to look at it twice this year.',
     'nurse': 'The Nurse place is west of the meeting house.',
-    'clue.seating': 'The seating is set down inside. I sit at the back and I am not sorry about it.',
     'ingersoll': 'Ingersoll\'s, on the road. Where else would a man be.',
     'jail': 'Down the road, in the town. There is a cellar under the house they keep them in.',
   },
@@ -5402,6 +5494,7 @@ const CLUES = {
     { learn: 'clue.marker', source: 'observed' },
     { say: 'The line it marks runs down to the brook and follows it. That is how boundaries were drawn out here — you cannot argue with water.', who: null },
     { say: 'Except that somebody has, twice. Somebody thought it was worth walking all the way out here to cut that notch again.', who: null },
+    { say: 'The ground on the far side of the brook is Nurse land. The farm is west of the meeting house — the big one on the left, with the wall along the road.', who: null },
   ],
 
   /* The meetinghouse seating chart. A literal map of who matters, seen by
@@ -5427,6 +5520,8 @@ const CLUES = {
     { say: 'You start reading down the credit side and stop, because you have read the same surname four times in six lines.', who: null },
     { learn: 'clue.accounts', source: 'observed' },
     { say: 'Putnam. Putnam. Putnam.', who: null },
+    { say: 'Timber, cattle, seed, cash against the harvest — owed to one family, by half the households on the page.', who: null },
+    { say: 'Their house is south-east of the meeting house, past the bend. The big one.', who: null },
   ],
 
   parsonageHearth: [
@@ -5906,6 +6001,8 @@ const NPCS = {
           'So instead they let me be cold, and wait for me to leave of my own accord.',
           'The agreement is on the table there. Read it, if you think I am making a grievance out of nothing. Every term of it is written out and signed by men who are still living.',
           { learn: 'paper.agreement' },
+          { say: 'He returns to his papers, and speaks without looking up.', who: null },
+          'If you want the version this village tells itself rather than the one I am telling you, go to the ordinary on the road. Deacon Ingersoll hears everything twice and believes most of it.',
         ],
       },
       {
@@ -6070,11 +6167,14 @@ const NPCS = {
         ],
       },
       {
-        id: 'topsfield', chapter: 'march', label: 'There is a boundary stone in the woods.',
-        require: ['clue.marker'],
+        id: 'topsfield', chapter: 'march', label: 'What does your father argue about?',
         lines: [
           { say: 'She puts the mending down entirely.', who: null },
-          'You went up there.',
+          {
+            if: { knows: ['clue.marker'] },
+            then: ['You went up there. To the stone.'],
+            else: ['The line. It is always the line.'],
+          },
           'That line is the Topsfield line, and it has been argued over since before I was born. My grandfather argued it. My father argues it now.',
           { learn: ['fact.topsfield'] },
           'The Topsfield men say the grant was theirs. We say it was ours and they took the timber off it besides.',
@@ -6090,6 +6190,14 @@ const NPCS = {
           'You will hear it called a small thing. It is not a small thing. It is the only thing my father has talked about at that table my whole life.',
           'The petition about it is on our table. My father put his name to it. His father\'s name is on the older one underneath.',
           { learn: 'paper.topsfield' },
+          {
+            if: { knows: ['clue.marker'] },
+            then: ['You have been up and seen the stone, then. Then you know it is a real line and not a story.'],
+            else: [
+              'If you think it is a small thing, go north into the woods and find the stone. It is there. It is a real mark on a real rock and men have walked out in the rain to argue about it.',
+              'And when you have seen it, go and ask the family on the other side of it what they think. Their farm is west.',
+            ],
+          },
         ],
       },
       {
@@ -6192,6 +6300,9 @@ const NPCS = {
           'And within the week the girls began giving names.',
           { say: 'She picks the bucket back up.', who: null },
           'You may draw your own line between those two things. Everyone else here has.',
+          { say: 'She starts to go, and then does not.', who: null },
+          'If you want to understand this place before you understand the girls, go and look at the wood stacked against the parsonage. It is the first thing anyone here would show you.',
+          'Half this village has stopped paying the minister. That quarrel is older than the sickness and it will still be here after.',
         ],
       },
       {
@@ -6479,6 +6590,8 @@ const NPCS = {
           { say: 'He straightens up.', who: null },
           'That was not two weeks ago. And this week the girls have started giving names.',
           'I am not saying the one made the other. I am saying I keep an ordinary — a tavern — and I have watched a great many things start in this room, and they all start about that quick.',
+          { say: 'He taps the book lying open on the bar.', who: null },
+          'And if you want to know how this village really works, do not listen to me. Look at that. Everyone in it is in there, and the book does not have an opinion.',
         ],
       },
       {
@@ -6518,14 +6631,18 @@ const NPCS = {
         ],
       },
       {
-        id: 'seatinglist', chapter: 'march', label: 'The seating in the meetinghouse.',
-        require: ['clue.seating'],
+        id: 'seatinglist', chapter: 'march', label: 'How are the meetinghouse seats decided?',
         lines: [
           'I am a deacon of that church. I have sat on the committee that does it.',
           'It is not malice. Somebody has to put five hundred people in a room in some order, and the order we use is what each household pays in rates.',
           { say: 'He stops wiping.', who: null },
           'That is a defence, and I notice I am making one.',
-          'The working sheet is still pinned up beside the chart, if you want to see how the thing is actually done. Names crossed out and written in again.',
+          {
+            if: { knows: ['clue.seating'] },
+            then: ['You have stood in front of the chart, then. You will have seen where the back rows start.'],
+            else: ['Go and look at it. It is nailed up by the door where nobody can avoid it, which is not an accident either.'],
+          },
+          'The working sheet is still pinned up beside the chart. Names crossed out and written in again — that is how the thing is actually done.',
           { learn: 'paper.seating' },
           'A man can be moved back a row by a vote of six men in a room, and then sit in that row in front of his neighbours every Sunday for the rest of his life.',
         ],

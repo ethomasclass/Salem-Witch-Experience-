@@ -412,6 +412,7 @@ export const CLUES = {
     { learn: 'clue.marker', source: 'observed' },
     { say: 'The line it marks runs down to the brook and follows it. That is how boundaries were drawn out here — you cannot argue with water.', who: null },
     { say: 'Except that somebody has, twice. Somebody thought it was worth walking all the way out here to cut that notch again.', who: null },
+    { say: 'The ground on the far side of the brook is Nurse land. The farm is west of the meeting house — the big one on the left, with the wall along the road.', who: null },
   ],
 
   /* The meetinghouse seating chart. A literal map of who matters, seen by
@@ -437,6 +438,8 @@ export const CLUES = {
     { say: 'You start reading down the credit side and stop, because you have read the same surname four times in six lines.', who: null },
     { learn: 'clue.accounts', source: 'observed' },
     { say: 'Putnam. Putnam. Putnam.', who: null },
+    { say: 'Timber, cattle, seed, cash against the harvest — owed to one family, by half the households on the page.', who: null },
+    { say: 'Their house is south-east of the meeting house, past the bend. The big one.', who: null },
   ],
 
   parsonageHearth: [

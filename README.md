@@ -131,6 +131,19 @@ September 1692, and back to the memorial.
   only harmony in the game, a bare fifth. The jail gets one low note at long
   intervals. The present day gets no melody at all, which is what makes the
   first step into 1692 land. The Sound button cycles all / no music / off.
+- **March is a chain, not a checklist.** It used to be three lists — look at
+  four things, talk to six people, read four papers — and a student was told
+  to walk to the Nurse farm before they had heard the name Nurse. Now every
+  goal is *caused* by the one before it and says so: the firewood sends you to
+  the minister, his grievance sends you to the man who hears everything, that
+  man's ledger sends you to the family every debt runs to, their petition
+  sends you to the boundary it is about, and the boundary sends you to the
+  family on the other side of it. **Firewood → salary → committee → factions
+  → debts → Putnams → boundary → Nurses.** That is not a route invented to
+  link the map together; it is the shape of the quarrel this village was
+  actually having in the winter of 1692, and walking it in order is the
+  argument. Each handoff is also *spoken* by whoever caused it, so the tracker
+  is confirming what a person just told you rather than issuing orders.
 - **A goal tracker** in the corner that asks for **one thing at a time**, with
   a progress count and the standing question underneath. A four-part goal
   names only the part still outstanding, and it takes that line from the same
@@ -226,6 +239,18 @@ player can actually see, and that everything can be walked to. It exists
 because two documents shipped correctly defined, correctly gated, reachable
 — and invisible, standing on empty tiles.
 
+`node tools/check-chain.mjs` walks each chapter's goals **in order**, letting
+each step do only what is in the room the tracker sends the player to, and
+fails if a goal cannot be completed when the player arrives at it. It exists
+because March became a chain and immediately grew a failure nothing was
+watching for: a step whose topic is gated on something a *later* step
+provides. The chapter is still completable — go off-script, do the later
+thing, come back — so `check-play` reports it green while the chain is
+unwalkable. The first version of this checker made the mistake it was written
+to catch: it walked the steps in order but let each pass touch the whole
+village, so the topic gated on the seating chart opened anyway. Restricting a
+pass to one room is the entire check.
+
 `node tools/check-directions.mjs` checks the directions characters give:
 that every line can actually fire somewhere, that nobody points at something
 the player could already see, that nobody points at a document (the person who
@@ -274,7 +299,7 @@ estimates.
 ### For a classroom — the single file
 
 **[`dist/salem-village-1692.html`](dist/salem-village-1692.html)** is the whole
-game in one self-contained file, about 587 KB. Download it and double-click
+game in one self-contained file, about 593 KB. Download it and double-click
 it. No server, no install, no network. Email it, put it on a shared drive, or
 upload it to Canvas or Google Classroom as a file.
 

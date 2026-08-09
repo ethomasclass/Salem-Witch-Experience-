@@ -106,6 +106,11 @@ const report = await page.evaluate(() => {
           if (t.chapter && t.chapter !== chapter) continue;
           if (t.require && !st.knowsAll(t.require)) continue;
           if (t.hide && st.knowsAll(t.hide)) continue;
+          // Taking a topic records that it was taken. buildTopicMenu prepends
+          // this to every option, and content gates on it — a step can ask
+          // "did they actually ask her about the cake", which is a different
+          // question from "did they learn what a cake is".
+          got.add(`asked.${def.id}.${t.id}`);
           teach(t.lines, st, got);
         }
         for (const f of got) st.learn(f, def.id);
