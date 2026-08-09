@@ -7,7 +7,7 @@ import { Input } from './engine/input.js';
 import { DialogueRunner, buildTopicMenu } from './engine/dialogue.js';
 import {
   buildMap, renderMap, computeCamera, isSolid, warpAt, interactAt, triggerAt, updateCritters,
-  terrainAt, DIR_VEC, DIR_INDEX, VIEW_W, VIEW_H, initArt,
+  terrainAt, DIR_VEC, DIR_INDEX, VIEW_W, VIEW_H, initArt, updateWalkers,
 } from './engine/world.js';
 import { TS } from './engine/art-ground.js';
 import { buildActor, buildPortrait, PLAYER_SPEC, SPR_H } from './engine/art-actors.js';
@@ -213,7 +213,8 @@ class Game {
       dir: placement.dir || 'down',
       dirIndex: DIR_INDEX[placement.dir || 'down'],
       homeDir: placement.dir || 'down',
-      animFrame: 0, moving: false,
+      homeX: placement.x, homeY: placement.y,
+      animFrame: 0, moving: false, t: 0, steps: 0,
       frames: buildActor(def.spec),
     };
   }
@@ -878,6 +879,8 @@ class Game {
     if (inWorld) {
       const here = this.mapFor(this.player.map);
       updateCritters(here, dt, this.clock);
+      updateWalkers(here, dt, this.clock,
+                    this.convNpc && this.convNpc.id, this.player);
       this.syncPapers(here);
 
       // Villagers who are doing a job loop two frames on the spot. Actors
@@ -886,7 +889,10 @@ class Game {
       // a village and a diorama. Offset per character so the well and the
       // woodpile are not in time with each other.
       for (const a of here.actors || []) {
-        if (!a.def || !a.def.busy) continue;
+        // Not while they are walking — updateWalkers owns the frame then,
+        // and a villager doing the work-fidget while crossing the road looks
+        // like a rendering fault rather than a person.
+        if (!a.def || !a.def.busy || a.moving) continue;
         const off = (a.tx * 3 + a.ty) * 0.37;
         a.animFrame = Math.floor(this.clock * 1.7 + off) % 2;
       }
@@ -1512,6 +1518,7 @@ window.__KNOWLEDGE = KNOWLEDGE;
 window.__NPCS = NPCS;
 window.__chapterComplete = chapterComplete;
 window.__updateCritters = updateCritters;
+window.__updateWalkers = updateWalkers;
 window.__isSolid = isSolid;
 window.__CLUES = CLUES;
 window.__reckoningScript = reckoningScript;

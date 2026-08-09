@@ -6795,6 +6795,7 @@ const NPCS = {
    * -------------------------------------------------------------------- */
 
   swineboy: {
+    wanders: true,
     // Visibly working: the sprite loops two frames on the spot.
     busy: true,
     id: 'swineboy',
@@ -6813,6 +6814,8 @@ const NPCS = {
   },
 
   goodwife: {
+    // Fetches water and goes back. Never a goal target, so free to move.
+    wanders: true,
     // Visibly working: the sprite loops two frames on the spot.
     busy: true,
     id: 'goodwife',
@@ -9282,6 +9285,82 @@ const CRITTER_STEP = 0.85;      // seconds per tile. They are not in a hurry.
 const CRITTER_RANGE = 6;        // tiles from where it started, Manhattan
 
 /**
+ * Villagers who move about, as opposed to villagers doing a job on the spot.
+ *
+ * Same tethered wander as the livestock, with four rules an animal does not
+ * need and a person does:
+ *
+ *   ONLY THE AMBIENT CAST WALKS. Every goal in the game points at a named
+ *   character — Tituba, Ingersoll, Rebecca Nurse, the man at the fence — and
+ *   an arrow pointing at a moving target is a bug report waiting to happen.
+ *   The woman at the well and the boy with the swine are never a goal, so
+ *   they are free to move. `wanders` is opt-in per placement for that reason.
+ *
+ *   NOBODY WALKS AWAY MID-SENTENCE. An actor in conversation is frozen.
+ *
+ *   NOBODY STANDS IN A DOORWAY OR ON SOMETHING YOU CAN EXAMINE. A villager
+ *   parked on a warp tile or on the woodpile would make the thing the player
+ *   was sent to do impossible, and it would look like nothing at all — they
+ *   would simply press Z and get a person.
+ *
+ *   AND NOBODY WALKS THROUGH ANYBODY. Including the player.
+ */
+function updateWalkers(map, dt, now, busyId, player) {
+  for (const a of map.actors || []) {
+    if (!a.def || !a.def.wanders || a.id === busyId) continue;
+
+    if (a.moving) {
+      a.t += dt / WALK_STEP;
+      if (a.t >= 1) {
+        a.t = 0; a.moving = false;
+        a.px = a.tx * TS; a.py = a.ty * TS;
+        a.animFrame = 0;
+        a.wait = 2.5 + hash(a.tx, a.ty, Math.floor(now)) * 7;
+      } else {
+        a.px = (a.fromX + (a.tx - a.fromX) * a.t) * TS;
+        a.py = (a.fromY + (a.ty - a.fromY) * a.t) * TS;
+        a.animFrame = [0, 1, 0, 2][(a.steps + (a.t > 0.5 ? 1 : 0)) % 4];
+      }
+      continue;
+    }
+
+    a.wait = (a.wait === undefined ? 1 + hash(a.tx, a.ty, 11) * 4 : a.wait) - dt;
+    if (a.wait > 0) continue;
+
+    const r = hash(a.tx * 29 + 5, a.ty * 19 + 11, Math.floor(now * 2));
+    const d = Math.floor(r * 4);
+    const [dx, dy] = [[0, -1], [1, 0], [0, 1], [-1, 0]][d];
+    const nx = a.tx + dx, ny = a.ty + dy;
+    const key = `${nx},${ny}`;
+
+    const strayed = Math.abs(nx - a.homeX) + Math.abs(ny - a.homeY) > WALK_RANGE;
+    const occupied = (player && player.tx === nx && player.ty === ny)
+      || map.actors.some((o) => o !== a && o.tx === nx && o.ty === ny);
+    if (strayed || occupied
+        || nx < 0 || ny < 0 || nx >= map.w || ny >= map.h
+        || isSolid(map, nx, ny)
+        || map.warps.has(key) || map.interact.has(key)) {
+      a.wait = 1.5 + r * 3;
+      // Look where they thought about going. A villager who changes their
+      // mind and turns is doing more for the village than one who does not
+      // move at all, and it costs nothing.
+      a.dir = dx < 0 ? 'left' : dx > 0 ? 'right' : dy < 0 ? 'up' : 'down';
+      a.dirIndex = DIR_INDEX[a.dir];
+      continue;
+    }
+    a.fromX = a.tx; a.fromY = a.ty;
+    a.tx = nx; a.ty = ny;
+    a.steps = (a.steps || 0) + 1;
+    a.dir = dx < 0 ? 'left' : dx > 0 ? 'right' : dy < 0 ? 'up' : 'down';
+    a.dirIndex = DIR_INDEX[a.dir];
+    a.moving = true;
+  }
+}
+
+const WALK_STEP = 0.55;         // seconds per tile — a person, not an animal
+const WALK_RANGE = 5;           // tiles from where they started, Manhattan
+
+/**
  * Smoke from the chimneys.
  *
  * Drawn rather than stored: every puff is a function of the clock and the
@@ -9471,6 +9550,8 @@ function renderMap(g, map, cam, actors, clock = 0) {
   //
   // soft-light rather than a flat overlay: it shifts the hue of what is
   // already there instead of fogging it, so the pixel art keeps its contrast.
+  if (!map.indoor) drawWeather(g, map.chapter, clock, VW, VH);
+
   const season = SEASON_LIGHT[map.chapter];
   if (season && map.era !== 'present') {
     g.save();
@@ -9481,6 +9562,72 @@ function renderMap(g, map, cam, actors, clock = 0) {
     g.fillStyle = season;
     g.fillRect(0, 0, VIEW_W, VIEW_H);
     g.restore();
+  }
+}
+
+/**
+ * Weather, drawn as a stateless function of the clock.
+ *
+ * No particle array and nothing to update: every mote's position is computed
+ * from its index and the time, wrapped. That means it costs nothing when the
+ * player is indoors, survives a map change without leaking, and cannot drift
+ * out of sync with anything.
+ *
+ * March gets sleet. The first week of March 1692 in Essex County was cold and
+ * wet — the roads in this village are drawn as mud for a reason — and the
+ * arrival text says the cold "is in the ground, and it comes up". Fine, fast,
+ * driven almost sideways.
+ *
+ * June gets nothing. It is dry, dusty and hot, and the absence is doing work:
+ * three chapters that all had weather would read as one place with an effect
+ * on it, rather than as three different days.
+ *
+ * September gets leaves, drifting slowly across a low gold afternoon. Almost
+ * still. The village has emptied by then and the weather should feel like
+ * nothing is in a hurry any more.
+ */
+function drawWeather(g, chapter, clock, VW, VH) {
+  if (chapter === 'march') {
+    // Sleet: short streaks, steep and quick, with two speeds so it has depth.
+    g.save();
+    g.strokeStyle = 'rgba(198, 214, 236, 0.42)';
+    g.lineWidth = 1;
+    g.beginPath();
+    for (let i = 0; i < 90; i++) {
+      const far = i % 3 === 0;
+      const speed = far ? 150 : 260;
+      const drift = far ? 34 : 58;
+      const x = (hash(i, 1, 91) * VW * 1.4 - clock * drift) % (VW + 40);
+      const y = (hash(i, 2, 97) * VH + clock * speed) % (VH + 20);
+      const len = far ? 3 : 5;
+      g.moveTo(x, y);
+      g.lineTo(x + len * 0.34, y + len);
+    }
+    g.stroke();
+    g.restore();
+    return;
+  }
+
+  if (chapter === 'september') {
+    // Leaves. Few, slow, and each one drifting on its own sine so they do
+    // not fall as a sheet.
+    // Contrast matters more than accuracy here: a brown leaf over brown mud
+    // under an amber season wash is invisible. Two of the four are lifted
+    // well above the ground tone so some of them always read.
+    const COLOURS = ['#d8a758', '#8a5626', '#c68f3e', '#6d4520'];
+    for (let i = 0; i < 26; i++) {
+      const speed = 16 + hash(i, 5, 71) * 14;
+      const y = (hash(i, 6, 73) * VH + clock * speed) % (VH + 12);
+      const sway = Math.sin(clock * (0.5 + hash(i, 7, 79) * 0.6) + i) * 11;
+      const x = (hash(i, 8, 83) * VW + clock * 9 + sway) % (VW + 12);
+      g.fillStyle = COLOURS[i % COLOURS.length];
+      g.globalAlpha = 0.92;
+      // Three pixels, tilted, so it reads as a leaf turning over rather than
+      // as a speck of dirt.
+      g.fillRect(Math.floor(x), Math.floor(y), 2, 1);
+      g.fillRect(Math.floor(x) + (i % 2 ? 1 : -1), Math.floor(y) + 1, 2, 1);
+      g.globalAlpha = 1;
+    }
   }
 }
 
@@ -11087,7 +11234,8 @@ class Game {
       dir: placement.dir || 'down',
       dirIndex: DIR_INDEX[placement.dir || 'down'],
       homeDir: placement.dir || 'down',
-      animFrame: 0, moving: false,
+      homeX: placement.x, homeY: placement.y,
+      animFrame: 0, moving: false, t: 0, steps: 0,
       frames: buildActor(def.spec),
     };
   }
@@ -11752,6 +11900,8 @@ class Game {
     if (inWorld) {
       const here = this.mapFor(this.player.map);
       updateCritters(here, dt, this.clock);
+      updateWalkers(here, dt, this.clock,
+                    this.convNpc && this.convNpc.id, this.player);
       this.syncPapers(here);
 
       // Villagers who are doing a job loop two frames on the spot. Actors
@@ -11760,7 +11910,10 @@ class Game {
       // a village and a diorama. Offset per character so the well and the
       // woodpile are not in time with each other.
       for (const a of here.actors || []) {
-        if (!a.def || !a.def.busy) continue;
+        // Not while they are walking — updateWalkers owns the frame then,
+        // and a villager doing the work-fidget while crossing the road looks
+        // like a rendering fault rather than a person.
+        if (!a.def || !a.def.busy || a.moving) continue;
         const off = (a.tx * 3 + a.ty) * 0.37;
         a.animFrame = Math.floor(this.clock * 1.7 + off) % 2;
       }
@@ -12386,6 +12539,7 @@ window.__KNOWLEDGE = KNOWLEDGE;
 window.__NPCS = NPCS;
 window.__chapterComplete = chapterComplete;
 window.__updateCritters = updateCritters;
+window.__updateWalkers = updateWalkers;
 window.__isSolid = isSolid;
 window.__CLUES = CLUES;
 window.__reckoningScript = reckoningScript;

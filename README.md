@@ -106,6 +106,21 @@ September 1692, and back to the memorial.
   it was done, that it took ten months, and that nobody has ever agreed on
   why. Skippable, and skipped automatically on Continue. A student who walks
   into the memorial cold reads twenty bench names as decoration.
+- **Weather that is only in two of the three chapters.** March gets sleet —
+  fine, fast, driven almost sideways, at two speeds so it has depth. September
+  gets leaves, few and slow, each drifting on its own sine so they do not fall
+  as a sheet. June gets nothing, and the absence is the point: three chapters
+  that all had weather would read as one place with an effect on it rather
+  than as three different days. Drawn as a stateless function of the clock —
+  no particle list, nothing to update, nothing to leak on a map change.
+- **Two villagers who walk.** The woman at the well and the boy with the swine
+  wander on a five-tile tether, the same one the livestock use. Only the
+  ambient cast moves: every goal in the game points at a named character, and
+  an arrow pointing at a moving target is a bug report waiting to happen. They
+  freeze mid-conversation, never step onto a doorway, an examinable or the
+  player, and turn to look where they thought about going when a step is
+  refused. Verified by simulating twenty minutes of village time and asserting
+  none of those ever happens.
 - **The light of the season.** Same village, three visits, three different
   skies: the cold of the first week of March that is in the ground and comes
   up, high washed midday for June when the examinations were drawing carts

@@ -1051,6 +1051,7 @@ export const NPCS = {
    * -------------------------------------------------------------------- */
 
   swineboy: {
+    wanders: true,
     // Visibly working: the sprite loops two frames on the spot.
     busy: true,
     id: 'swineboy',
@@ -1069,6 +1070,8 @@ export const NPCS = {
   },
 
   goodwife: {
+    // Fetches water and goes back. Never a goal target, so free to move.
+    wanders: true,
     // Visibly working: the sprite loops two frames on the spot.
     busy: true,
     id: 'goodwife',
