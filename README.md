@@ -11,6 +11,15 @@ and go home.
 the whole game — every goal in order, where each item is, and what to do when
 a class gets stuck.
 
+**[`docs/WORKSHEET.md`](docs/WORKSHEET.md)** is a 100-point student worksheet
+filled in chapter by chapter as they play, with
+**[`docs/WORKSHEET-KEY.md`](docs/WORKSHEET-KEY.md)** for grading. It does not
+depend on the notes export — students record the main idea of each
+conversation and each document, and name their source every time, which is the
+part the export cannot make them do. It ends by having them rank all four
+causes with evidence, and then name one thing their top-ranked case cannot
+explain.
+
 The design is in [`docs/DESIGN.md`](docs/DESIGN.md); the chapter-by-chapter
 plan it was built from is in [`docs/OUTLINE.md`](docs/OUTLINE.md).
 
